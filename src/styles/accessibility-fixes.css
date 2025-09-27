@@ -1,0 +1,96 @@
+/* ====================================
+   CORRECTIONS D'ACCESSIBILITÉ
+   ==================================== */
+
+/* Fix spécifique pour l'élément "Tableau de bord" identifié dans les logs */
+.text-sm.font-medium.text-center.leading-tight.text-gray-800 {
+  color: #111827 !important; /* Contraste 4.5:1 minimum */
+  font-weight: 600 !important;
+}
+
+/* Classes globales pour un meilleur contraste */
+.text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.text-gray-700 {
+  color: #374151 !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+}
+
+/* Support pour les préférences de contraste élevé */
+@media (prefers-contrast: high) {
+  .text-gray-800 {
+    color: #000000 !important;
+  }
+  
+  .text-gray-700 {
+    color: #1f2937 !important;
+  }
+  
+  .text-gray-600 {
+    color: #374151 !important;
+  }
+  
+  /* Améliorer tous les éléments de navigation */
+  nav span,
+  nav a,
+  .navigation-text {
+    color: #000000 !important;
+    font-weight: 600 !important;
+  }
+  
+  .dark nav span,
+  .dark nav a,
+  .dark .navigation-text {
+    color: #ffffff !important;
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+  }
+}
+
+/* États de focus améliorés pour l'accessibilité clavier */
+.focus\:outline-none:focus {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
+.focus\:ring-2:focus {
+  --tw-ring-color: #3b82f6 !important;
+  --tw-ring-offset-width: 2px !important;
+}
+
+/* Amélioration des liens et boutons */
+a, button {
+  transition: all 0.15s ease-in-out;
+}
+
+a:hover, button:hover {
+  transform: translateY(-1px);
+}
+
+a:focus, button:focus {
+  transform: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* Corrections spécifiques pour les éléments de navigation */
+[role="navigation"] span,
+[role="menuitem"] span,
+.nav-item span {
+  color: #111827 !important;
+  font-weight: 500 !important;
+}
+
+.dark [role="navigation"] span,
+.dark [role="menuitem"] span,
+.dark .nav-item span {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+} 

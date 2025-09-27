@@ -1,0 +1,31 @@
+{
+  "imports": {
+    "http/": "https://deno.land/std@0.208.0/http/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "postgres/": "https://deno.land/x/postgres@v0.17.0/",
+    "mysql/": "https://deno.land/x/mysql@v2.11.0/"
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-env index.ts"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "lib": ["deno.window", "deno.unstable", "esnext"],
+    "types": ["deno"]
+  }
+}

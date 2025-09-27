@@ -1,0 +1,8 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Ne pas appliquer les règles aux fichiers ou dossiers existants
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  # Rediriger toutes les autres requêtes vers index.html
+  RewriteRule . /index.html [L]
+</IfModule> 

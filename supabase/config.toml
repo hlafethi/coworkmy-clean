@@ -1,0 +1,49 @@
+project_id = "vlboqwnnfatwfprflzsv"
+
+[analytics]
+enabled = false
+
+[api]
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 5433
+major_version = 15
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+file_size_limit = "50MiB"
+
+[functions.send-email]
+verify_jwt = true
+
+[functions.stripe-public-test]
+verify_jwt = false
+
+[functions.create-payment-session]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "https://localhost:3000",
+  "http://localhost:3000/auth/reset-password",
+  "https://localhost:3000/auth/reset-password",
+  "http://localhost:3000/auth/callback",
+  "https://localhost:3000/auth/callback"
+]
+jwt_expiry = 3600
+enable_signup = true

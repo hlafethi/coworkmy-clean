@@ -1,0 +1,10 @@
+/* Correction immédiate du contraste pour "Tableau de bord" */
+.text-gray-800 {
+  color: #111827 !important;
+}
+
+/* Correction spécifique pour le span problématique */
+span.text-sm.font-medium.text-center.leading-tight.text-gray-800 {
+  color: #000000 !important;
+  font-weight: 600 !important;
+} 

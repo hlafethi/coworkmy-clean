@@ -1,0 +1,93 @@
+
+import { useEffect, useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+
+interface EmailHistoryItem {
+  id: string;
+  recipient: string;
+  subject: string;
+  status: string;
+  sent_at: string | null;
+  error_message: string | null;
+}
+
+export const EmailHistory = () => {
+  const [history, setHistory] = useState<EmailHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("email_history")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setHistory(data || []);
+      } catch (error) {
+        console.error("Erreur lors de la récupération de l'historique:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  if (loading) {
+    return <div>Chargement de l'historique...</div>;
+  }
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Historique des envois</h3>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Destinataire</TableHead>
+            <TableHead>Sujet</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead>Date d'envoi</TableHead>
+            <TableHead>Message d'erreur</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {history.map((item) => (
+            <TableRow key={item.id}>
+              <TableCell>{item.recipient}</TableCell>
+              <TableCell>{item.subject}</TableCell>
+              <TableCell>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs ${
+                    item.status === "sent"
+                      ? "bg-green-100 text-green-800"
+                      : item.status === "error"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {item.status}
+                </span>
+              </TableCell>
+              <TableCell>
+                {item.sent_at
+                  ? new Date(item.sent_at).toLocaleString()
+                  : "Non envoyé"}
+              </TableCell>
+              <TableCell>{item.error_message || "-"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};

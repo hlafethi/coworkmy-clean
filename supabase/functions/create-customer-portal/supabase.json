@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "create-customer-portal": {
+      "verify_jwt": false
+    }
+  }
+} 

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>CoWorkMy</title>
+    <meta name="description" content="CoWorkMy - Espace de coworking moderne" />
+    <meta name="author" content="CoWorkMy" />
+
+    <!-- Favicon et icônes -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-192x192.png">
+    <link rel="shortcut icon" type="image/png" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+    <meta property="og:title" content="CoWorkMy" />
+    <meta property="og:description" content="CoWorkMy - Espace de coworking moderne" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@CoWorkMy" />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
+    <link rel="manifest" href="/manifest.webmanifest">
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Chatwoot Widget (support utilisateur persistant) -->
+    <script>
+      window.chatwootSettings = {
+        hideMessageBubble: false,
+        position: 'right',
+        locale: 'fr',
+        type: 'standard',
+        launcherTitle: 'Besoin d\'aide ?',
+        showPopoutButton: true,
+        darkMode: 'auto',
+      };
+      (function(d,t) {
+        var BASE_URL="https://app.chatwoot.com";
+        var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+        g.src=BASE_URL+"/packs/js/sdk.js";
+        g.defer = true;
+        g.async = true;
+        s.parentNode.insertBefore(g,s);
+        g.onload=function(){
+          window.chatwootSDK.run({
+            websiteToken: 'XYRt63CS9ug5AL1LbaWRFU8J', // Token Chatwoot réel
+            baseUrl: BASE_URL
+          });
+        }
+      })(document,"script");
+    </script>
+    <!-- Fin Chatwoot Widget -->
+  </body>
+</html>

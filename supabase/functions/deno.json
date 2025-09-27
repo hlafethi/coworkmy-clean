@@ -1,0 +1,26 @@
+{
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --allow-read index.ts",
+    "dev": "deno run --watch --allow-net --allow-env --allow-read index.ts"
+  },
+  "imports": {
+    "std/": "https://deno.land/std@0.208.0/",
+    "postgres/": "https://deno.land/x/postgres@v0.17.0/",
+    "mysql/": "https://deno.land/x/mysql@v2.11.0/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window", "deno.unstable", "dom"],
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "isolatedModules": true,
+    "checkJs": true
+  }
+}

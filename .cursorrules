@@ -1,0 +1,19 @@
+You are an expert in React, TypeScript, Supabase, and real-time applications.
+
+Code Style:
+- Use TypeScript with strict mode
+- Prefer hooks and functional components
+- Use proper error boundaries
+- Implement loading states and error handling
+
+Supabase Best Practices:
+- Always handle connection failures gracefully
+- Implement retry logic for real-time subscriptions
+- Use proper cleanup in useEffect hooks
+- Add comprehensive error logging
+
+Focus on:
+- Performance optimization
+- Real-time data synchronization
+- User experience during network issues
+- Proper TypeScript typing

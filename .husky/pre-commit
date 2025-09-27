@@ -1,0 +1,67 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run security checks
+npm run security:check
+
+# Run linting
+npm run lint
+
+# Run type checking
+npx tsc --noEmit
+
+# Check for sensitive data
+if git diff --cached | grep -E "(password|secret|key|token|auth).*=.*[A-Za-z0-9]+" ; then
+  echo "WARNING: Possible sensitive data detected in changes"
+  echo "Please review the above lines carefully before committing"
+  exit 1
+fi
+
+# Check for large files (>5MB)
+max_size=$((5 * 1024 * 1024)) # 5MB in bytes
+for file in $(git diff --cached --name-only); do
+  if [ -f "$file" ]; then
+    size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
+    if [ "$size" -gt $max_size ]; then
+      echo "Error: $file is larger than 5MB"
+      echo "Please remove this file from your commit"
+      exit 1
+    fi
+  fi
+done
+
+# Check for merge conflicts
+if git diff --cached | grep -E '<<<<<<< |>>>>>>> |=======' ; then
+  echo "Error: Merge conflicts detected"
+  echo "Please resolve conflicts before committing"
+  exit 1
+fi
+
+# Check for debug statements
+if git diff --cached | grep -E 'console\.(log|debug|info)|debugger' ; then
+  echo "Warning: Debug statements detected"
+  echo "Please remove debug statements before committing"
+  exit 1
+fi
+
+# Check for environment files
+if git diff --cached --name-only | grep -E '\.env($|\.[^.]+$)' ; then
+  echo "Error: Attempting to commit environment file"
+  echo "Please remove environment files from your commit"
+  exit 1
+fi
+
+# Check for temporary files
+if git diff --cached --name-only | grep -E '\.(swp|swo|tmp|temp|DS_Store)$' ; then
+  echo "Error: Temporary files detected"
+  echo "Please remove temporary files from your commit"
+  exit 1
+fi
+
+# Run security audit on dependencies
+npm audit --audit-level=high
+if [ $? -eq 1 ]; then
+  echo "High severity vulnerabilities found"
+  echo "Please run 'npm audit fix' and review changes"
+  exit 1
+fi

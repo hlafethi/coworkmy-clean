@@ -1,0 +1,18 @@
+# robots.txt for CoWorkMy
+# This file tells search engine crawlers which pages they can and cannot request from your site.
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /dashboard/
+
+# Allow important pages
+Allow: /spaces
+Allow: /booking
+Allow: /legal/
+
+# Sitemap location
+Sitemap: https://coworkmy.com/sitemap.xml

@@ -1,0 +1,218 @@
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { withRetry } from "@/utils/supabaseUtils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/utils/dateUtils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Edit, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { updateBookingStatus } from "@/components/admin/bookings/bookingService";
+import { useUserBookings } from "@/hooks/useUserBookings";
+import { formatPrice } from "@/utils/bookingUtils";
+import { useState, useEffect } from "react";
+
+interface CardTitleH2Props {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const CardTitleH2 = ({ children, className = "" }: CardTitleH2Props) => (
+  <h2 className={`text-2xl ${className}`}>{children}</h2>
+);
+
+export function AllBookings() {
+  // Utilisation du hook temps réel pour les réservations utilisateur
+  const { bookings, loading, error, refetch } = useUserBookings();
+  const navigate = useNavigate();
+
+
+
+  const getStatusBadgeClass = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "confirmed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "confirmed":
+        return "Confirmée";
+      case "pending":
+        return "En attente";
+      case "cancelled":
+        return "Annulée";
+      case "completed":
+        return "Terminée";
+      default:
+        return status;
+    }
+  };
+
+  const handleEdit = (bookingId: string) => {
+    navigate(`/booking/edit/${bookingId}`);
+  };
+
+  const handleCancel = async (bookingId: string) => {
+    try {
+      const success = await updateBookingStatus(bookingId, "cancelled");
+      if (success) {
+        // La mise à jour sera gérée automatiquement par le hook temps réel
+        console.log("✅ Annulation demandée, mise à jour automatique via WebSocket");
+        toast.success("Réservation annulée avec succès");
+        refetch();
+      } else {
+        toast.error("Impossible d'annuler la réservation");
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'annulation:", error);
+      toast.error("Une erreur est survenue lors de l'annulation");
+    }
+  };
+
+  const handleDelete = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("id", bookingId);
+
+      if (error) {
+        console.error("Erreur lors de la suppression:", error);
+        throw error;
+      }
+      
+      toast.success("Réservation supprimée avec succès");
+      refetch();
+    } catch (error) {
+      console.error("❌ Erreur lors de la suppression:", error);
+      toast.error("Impossible de supprimer la réservation");
+    }
+  };
+
+  const canModifyBooking = (status: string) => {
+    return status.toLowerCase() !== "cancelled" && status.toLowerCase() !== "completed";
+  };
+
+  // Trier les réservations : futures en premier, puis par date de création
+  const sortedBookings = bookings.sort((a, b) => {
+    const aEndTime = new Date(a.end_time);
+    const bEndTime = new Date(b.end_time);
+    const now = new Date();
+    
+    const aIsFuture = aEndTime > now;
+    const bIsFuture = bEndTime > now;
+    
+    if (aIsFuture && !bIsFuture) return -1;
+    if (!aIsFuture && bIsFuture) return 1;
+    
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+
+
+  if (loading) {
+    return <Skeleton className="h-40 w-full" />;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {sortedBookings.map((booking) => {
+        const endTime = new Date(booking.end_time);
+        const now = new Date();
+        const isPast = endTime < now;
+        
+        return (
+          <Card key={booking.id} className={`flex flex-col h-full ${isPast ? 'opacity-75' : ''}`}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitleH2>{booking.spaces?.name}</CardTitleH2>
+                  <CardDescription>
+                    {formatDateTime(booking.start_time)}
+                    {isPast && <span className="text-gray-500 ml-2">(Terminée)</span>}
+                  </CardDescription>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(booking.status)}`}>
+                  {getStatusLabel(booking.status)}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Affichage dynamique du prix selon le type de tarification */}
+              <div className="border-t pt-3 mb-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Prix HT:</span>
+                  <span className="text-sm">{formatPrice(booking.total_price_ht)} €</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">TVA (20%):</span>
+                  <span className="text-sm">{formatPrice(booking.total_price_ttc - booking.total_price_ht)} €</span>
+                </div>
+                <div className="flex justify-between items-center font-medium">
+                  <span>Total TTC:</span>
+                  <span>{formatPrice(booking.total_price_ttc)} €</span>
+                </div>
+              </div>
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-2">
+                {canModifyBooking(booking.status) && !isPast && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(booking.id)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleCancel(booking.id)}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Annuler
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette réservation ?")) {
+                      handleDelete(booking.id);
+                    }
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Supprimer
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+export default AllBookings; 
