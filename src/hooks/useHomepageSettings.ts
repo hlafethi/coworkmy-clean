@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from '@/lib/api-client';
 
 interface HomepageSettings {
   title?: string;
@@ -24,24 +24,54 @@ export function useHomepageSettings() {
     const fetchSettings = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("admin_settings")
-          .select("key, value")
-          .eq("key", "homepage")
-          .maybeSingle();
+        console.log("🖼️ Chargement des paramètres homepage depuis l'API...");
         
-        if (error) {
-          console.error("Erreur lors du chargement des paramètres homepage:", error);
+        const response = await apiClient.get('/homepage-settings');
+        
+        if (response.success && response.data) {
+          console.log("✅ Paramètres homepage chargés depuis l'API:", response.data);
+          setSettings(response.data);
+        } else {
+          console.warn("⚠️ Aucun paramètre homepage trouvé, utilisation des paramètres par défaut");
+          
+          // Paramètres par défaut si l'API ne retourne rien
+          const defaultSettings: HomepageSettings = {
+            title: "CoworkMy",
+            description: "Plateforme de coworking moderne",
+            hero_title: "Bienvenue sur CoworkMy",
+            hero_subtitle: "Découvrez nos espaces de coworking",
+            hero_background_image: "https://images.unsplash.com/photo-1600508774636-7b9d1a4db91f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+            cta_text: "Commencer",
+            features_title: "Fonctionnalités",
+            features_subtitle: "Découvrez nos services",
+            cta_section_title: "Prêt à commencer ?",
+            cta_section_subtitle: "Rejoignez-nous dès aujourd'hui",
+            cta_secondary_button_text: "En savoir plus",
+            is_published: true
+          };
+          
+          setSettings(defaultSettings);
         }
-        
-        // Extraire les valeurs du JSONB value
-        const homepageSettings = data?.value || {};
-        
-        console.log("🖼️ Paramètres homepage chargés:", homepageSettings);
-        
-        setSettings(homepageSettings);
       } catch (error) {
-        console.error("Erreur lors du chargement des paramètres:", error);
+        console.error("❌ Erreur lors du chargement des paramètres homepage:", error);
+        
+        // En cas d'erreur, utiliser les paramètres par défaut
+        const defaultSettings: HomepageSettings = {
+          title: "CoworkMy",
+          description: "Plateforme de coworking moderne",
+          hero_title: "Bienvenue sur CoworkMy",
+          hero_subtitle: "Découvrez nos espaces de coworking",
+          hero_background_image: "https://images.unsplash.com/photo-1600508774636-7b9d1a4db91f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+          cta_text: "Commencer",
+          features_title: "Fonctionnalités",
+          features_subtitle: "Découvrez nos services",
+          cta_section_title: "Prêt à commencer ?",
+          cta_section_subtitle: "Rejoignez-nous dès aujourd'hui",
+          cta_secondary_button_text: "En savoir plus",
+          is_published: true
+        };
+        
+        setSettings(defaultSettings);
       } finally {
         setLoading(false);
       }

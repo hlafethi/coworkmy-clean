@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AdminSupportService } from '@/services/adminSupportService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,19 +49,8 @@ export const AdminSupportFaqs = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { data, error } = await supabase
-                .from('support_faqs')
-                .select('*')
-                .order('order_index', { ascending: true })
-                .order('created_at', { ascending: true });
-
-            if (error) {
-                setError(`Erreur lors du chargement des FAQ: ${error.message}`);
-                toast.error('Erreur lors du chargement des FAQ');
-                return;
-            }
-
-            setFaqs(data || []);
+            const data = await AdminSupportService.getFAQs();
+            setFaqs(data);
         } catch (err) {
             setError(`Erreur inattendue: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
             toast.error('Erreur inattendue');

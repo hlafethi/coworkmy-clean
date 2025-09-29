@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Review } from '@/types/database.types';
-import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/context/AuthContextPostgreSQL';
+
+interface Review {
+  id: string;
+  space_id: string;
+  user_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useReviews = (spaceId?: string) => {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -12,19 +21,8 @@ export const useReviews = (spaceId?: string) => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        let query = supabase
-          .from('reviews')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (spaceId) {
-          query = query.eq('space_id', spaceId);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-        setReviews(data || []);
+        // Pour PostgreSQL, on utilise des données par défaut pour l'instant
+        setReviews([]);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Une erreur est survenue'));
       } finally {

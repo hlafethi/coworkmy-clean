@@ -119,7 +119,7 @@ export function useDatabase() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Récupérer les données de la source
-      const tables = ['profiles', 'spaces', 'admin_settings', 'time_slots', 'bookings', 'payments', 'support_messages', 'support_chat_sessions'];
+      const tables = ['profiles', 'spaces', 'admin_settings', 'time_slots', 'bookings', 'payments', 'support_messages'];
       const allData: Record<string, any[]> = {};
 
       for (const table of tables) {

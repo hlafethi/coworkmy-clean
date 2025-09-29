@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { useAuth } from "@/context/AuthContextNew";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 
 const Support = () => {
   const { user } = useAuth();

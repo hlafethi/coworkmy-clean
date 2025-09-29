@@ -23,12 +23,12 @@ export default function Callback() {
                     navigate('/dashboard');
                 } else {
                     toast.error('Session non trouvée');
-                    navigate('/login');
+                    navigate('/auth/login');
                 }
             } catch (error) {
                 console.error('Erreur lors de la connexion:', error);
                 toast.error('Erreur lors de la connexion');
-                navigate('/login');
+                navigate('/auth/login');
             }
         };
 

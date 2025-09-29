@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import { createStripeCustomerPortal } from "@/utils/stripeUtils";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContextNew";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 
 interface StripeCustomerPortalProps {
   className?: string;

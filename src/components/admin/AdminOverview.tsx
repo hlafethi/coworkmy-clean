@@ -40,7 +40,7 @@ const AdminStats = () => {
   );
 
   // Composant de statistiques
-  const StatsDisplay = () => {
+  const StatsDisplay = ({ stats }: { stats: any }) => {
     const formatNumber = (num: number) => {
       return new Intl.NumberFormat('fr-FR').format(num);
     };
@@ -60,9 +60,9 @@ const AdminStats = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(stats.total_users)}</div>
+            <div className="text-2xl font-bold">{formatNumber(stats?.total_users || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.active_users} actifs
+              {stats?.active_users || 0} actifs
             </p>
           </CardContent>
         </Card>
@@ -73,9 +73,9 @@ const AdminStats = () => {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(stats.total_spaces)}</div>
+            <div className="text-2xl font-bold">{formatNumber(stats?.total_spaces || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.available_spaces} disponibles
+              {stats?.available_spaces || 0} disponibles
             </p>
           </CardContent>
         </Card>
@@ -86,9 +86,9 @@ const AdminStats = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(stats.total_bookings)}</div>
+            <div className="text-2xl font-bold">{formatNumber(stats?.total_bookings || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.active_bookings} actives
+              {stats?.active_bookings || 0} actives
             </p>
           </CardContent>
         </Card>
@@ -99,9 +99,9 @@ const AdminStats = () => {
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.total_revenue)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(stats?.total_revenue || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(stats.monthly_revenue)} ce mois
+              {formatCurrency(stats?.monthly_revenue || 0)} ce mois
             </p>
           </CardContent>
         </Card>
@@ -116,7 +116,7 @@ const AdminStats = () => {
       ) : error ? (
         <ErrorDisplay />
       ) : (
-        <StatsDisplay />
+        <StatsDisplay stats={stats} />
       )}
       <RecentBookings />
     </div>

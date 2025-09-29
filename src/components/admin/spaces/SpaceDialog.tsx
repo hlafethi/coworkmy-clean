@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { supabaseAdmin } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
+import { apiClient } from "@/lib/api-client";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ export const SpaceDialog = ({
   mode,
 }: SpaceDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   const isEditMode = mode === "edit";
 
   // Fonction pour gérer la fermeture du dialogue
@@ -38,40 +39,18 @@ export const SpaceDialog = ({
     }
   };
 
-  // Fonction pour synchroniser avec Stripe
+  // Fonction pour synchroniser avec Stripe (désactivée - Supabase non configuré)
   const syncWithStripe = async (spaceId: string) => {
-    try {
-      console.log("🔄 Démarrage de la synchronisation Stripe pour l'espace:", spaceId);
-      
-      // Utiliser le client Supabase avec la clé service_role
-      const { data, error } = await supabaseAdmin.functions.invoke('stripe-sync-queue', {
-        body: { 
-          action: 'sync_single',
-          spaceId,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-      if (error) {
-        console.error("❌ Erreur lors de la synchronisation Stripe:", error);
-        throw new Error(`Erreur Stripe: ${error.message}`);
-      }
-
-      console.log("✅ Synchronisation Stripe réussie:", data);
-      return data;
-    } catch (error) {
-      console.error("❌ Erreur lors de la synchronisation Stripe:", error);
-      throw error;
-    }
+    console.log("⚠️ Synchronisation Stripe désactivée (Supabase non configuré)");
+    return { success: true, message: "Synchronisation Stripe désactivée" };
   };
 
   const handleSubmit = async (data: SpaceFormValues) => {
     try {
       setIsSubmitting(true);
       
-      // Récupérer l'utilisateur connecté
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError) throw new Error("Authentification requise");
+      // Vérifier que l'utilisateur est connecté
+      if (!user) throw new Error("Authentification requise");
       
       // Patch image_url : si vide et en édition, on garde l'ancienne valeur
       let imageUrlToSave = data.image_url;
@@ -96,35 +75,32 @@ export const SpaceDialog = ({
         pricing_type: data.pricing_type,
         image_url: imageUrlToSave,
         price_per_hour: data.hourly_price,
-        created_by: userData.user?.id,
+        created_by: user?.id,
       };
 
       let result;
       let spaceId: string;
       
       if (isEditMode && space?.id) {
-        // Sécurité : ne jamais envoyer de champ payload
-        delete operationData.payload;
         // Mise à jour de l'espace existant
-        result = await supabase
-          .from("spaces")
-          .update(operationData)
-          .eq("id", space.id)
-          .select('id')
-          .single();
+        const response = await apiClient.put(`/spaces/${space.id}`, operationData);
+        
+        if (!response.success) {
+          throw new Error(response.error || "Erreur lors de la mise à jour");
+        }
         spaceId = space.id;
       } else {
         // Ajout d'un nouvel espace
-        result = await supabase
-          .from("spaces")
-          .insert(operationData)
-          .select('id')
-          .single();
-          
-        spaceId = result.data?.id!;
+        const response = await apiClient.post('/spaces', operationData);
+        if (!response.success) {
+          throw new Error(response.error || "Erreur lors de la création");
+        }
+        if (!response.data?.id) {
+          throw new Error("ID de l'espace non retourné par l'API");
+        }
+        spaceId = response.data.id;
       }
 
-      if (result.error) throw result.error;
 
       // Synchroniser avec Stripe après la création/modification
       if (spaceId) {

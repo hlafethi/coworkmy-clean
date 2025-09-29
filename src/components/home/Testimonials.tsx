@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Star, StarHalf, ExternalLink } from "lucide-react";
 import { useGoogleReviews } from "@/hooks/useGoogleReviews";
 import { Alert } from "@/components/ui/alert";
-import { supabase } from "@/integrations/supabase/client";
 
 interface GoogleReview {
   author_name: string;
@@ -21,24 +20,10 @@ const Testimonials = () => {
   const { data, isLoading, error } = useGoogleReviews();
   const [placeId, setPlaceId] = useState<string>("");
 
-  // Safely fetch the place_id from the API when data is loaded
+  // Mode par défaut pour PostgreSQL
   useEffect(() => {
-    const fetchPlaceId = async () => {
-      try {
-        const { data } = await supabase
-          .from('google_api_settings')
-          .select('place_id')
-          .maybeSingle();
-
-        if (data?.place_id) {
-          setPlaceId(data.place_id);
-        }
-      } catch (error) {
-        console.error("Error fetching place_id:", error);
-      }
-    };
-
-    fetchPlaceId();
+    // Pas de place_id par défaut pour PostgreSQL
+    setPlaceId("");
   }, []);
 
   const renderStars = (rating: number) => {

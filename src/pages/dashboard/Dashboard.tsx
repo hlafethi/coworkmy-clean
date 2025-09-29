@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 
 import { UserHeader } from "@/components/dashboard/UserHeader";
 import { StatsCards } from "@/components/dashboard/StatsCards";
@@ -14,22 +14,18 @@ import { StripeCustomerPortal } from "@/components/common/StripeCustomerPortal";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { loading, stats, userProfile, isAdmin, handleLogout } = useDashboard();
 
   // Tawk.to a été désactivé
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        toast.error("Vous devez être connecté pour accéder à cette page");
-        navigate("/auth/login");
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
+    if (!user) {
+      toast.error("Vous devez être connecté pour accéder à cette page");
+      navigate("/auth/login");
+    }
+  }, [user, navigate]);
 
   // Fonction pour afficher le badge de statut avec la bonne couleur
   const getStatusBadge = (status: string) => {

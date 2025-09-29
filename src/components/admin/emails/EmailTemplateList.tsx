@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { EmailTemplateForm } from "./EmailTemplateForm";
 
@@ -37,16 +37,19 @@ export const EmailTemplateList = () => {
 
   const fetchTemplates = async () => {
     try {
-      const { data, error } = await supabase
-        .from("email_templates")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setTemplates(data || []);
+      const result = await apiClient.get('/email-templates');
+      
+      if (result.success && result.data) {
+        setTemplates(result.data);
+      } else {
+        console.error("Erreur lors de la récupération des modèles:", result.error);
+        toast.error("Erreur lors de la récupération des modèles");
+        setTemplates([]);
+      }
     } catch (error) {
       console.error("Erreur lors de la récupération des modèles:", error);
       toast.error("Erreur lors de la récupération des modèles");
+      setTemplates([]);
     } finally {
       setLoading(false);
     }

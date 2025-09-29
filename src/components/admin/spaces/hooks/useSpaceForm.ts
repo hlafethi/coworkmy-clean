@@ -39,6 +39,12 @@ const spaceFormSchema = z.object({
   pricing_type: z.enum(["hourly", "daily", "half_day", "monthly", "quarter", "yearly", "custom"]),
   is_active: z.boolean().default(true),
   image_url: z.string().optional(),
+  time_slots: z.array(z.object({
+    id: z.string(),
+    startTime: z.string(),
+    endTime: z.string(),
+    label: z.string()
+  })).optional(),
 }).refine((data) => {
   // Validation conditionnelle selon le type de tarification
   switch (data.pricing_type) {
@@ -91,6 +97,7 @@ export const useSpaceForm = ({ defaultValues, onSubmit, onSuccess }: UseSpaceFor
       pricing_type: defaultValues?.pricing_type ?? "hourly",
       is_active: defaultValues?.is_active ?? true,
       image_url: defaultValues?.image_url ?? "",
+      time_slots: defaultValues?.time_slots ?? [],
     },
   });
 
@@ -113,6 +120,7 @@ export const useSpaceForm = ({ defaultValues, onSubmit, onSuccess }: UseSpaceFor
         pricing_type: defaultValues.pricing_type ?? "hourly",
         is_active: defaultValues.is_active ?? true,
         image_url: defaultValues.image_url ?? "",
+        time_slots: defaultValues.time_slots ?? [],
       });
     } else {
       // Si pas de defaultValues, réinitialiser avec des valeurs vides (mode ajout)
@@ -132,6 +140,7 @@ export const useSpaceForm = ({ defaultValues, onSubmit, onSuccess }: UseSpaceFor
         pricing_type: "hourly",
         is_active: true,
         image_url: "",
+        time_slots: [],
       });
     }
   }, [defaultValues, form]);

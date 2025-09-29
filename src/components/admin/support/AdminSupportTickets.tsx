@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { AdminSupportService } from '@/services/adminSupportService';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -46,18 +46,9 @@ export const AdminSupportTickets = () => {
             setIsLoadingTickets(true);
             setError(null);
             console.log('[AdminSupportTickets] Chargement des tickets');
-            const { data, error } = await supabase
-                .from('support_tickets')
-                .select('id, user_id, subject, message, status, created_at')
-                .order('created_at', { ascending: false });
-            if (error) {
-                console.error('[AdminSupportTickets] Erreur lors du chargement des tickets:', error);
-                setError(`Erreur lors du chargement des tickets: ${error.message}`);
-                toast.error('Erreur lors du chargement des tickets');
-                return;
-            }
+            const data = await AdminSupportService.getTickets();
             console.log('[AdminSupportTickets] Tickets récupérés:', data);
-            if (!error && data) setTickets(data);
+            setTickets(data);
         } catch (err) {
             console.error('[AdminSupportTickets] Erreur inattendue:', err);
             setError(`Erreur inattendue: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
@@ -73,19 +64,9 @@ export const AdminSupportTickets = () => {
             setIsLoadingResponses(true);
             setError(null);
             console.log('[AdminSupportTickets] Chargement des réponses pour ticket:', ticketId);
-            const { data, error } = await supabase
-                .from('support_ticket_responses')
-                .select('*')
-                .eq('ticket_id', ticketId)
-                .order('created_at', { ascending: true });
-            if (error) {
-                console.error('[AdminSupportTickets] Erreur lors du chargement des réponses:', error);
-                setError(`Erreur lors du chargement des réponses: ${error.message}`);
-                toast.error('Erreur lors du chargement des réponses');
-                return;
-            }
+            const data = await AdminSupportService.getTicketResponses(ticketId);
             console.log('[AdminSupportTickets] Réponses récupérées:', data);
-            if (!error && data) setResponses(data);
+            setResponses(data);
         } catch (err) {
             console.error('[AdminSupportTickets] Erreur inattendue:', err);
             setError(`Erreur inattendue: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
@@ -115,41 +96,15 @@ export const AdminSupportTickets = () => {
             setError(null);
             console.log('[AdminSupportTickets] Envoi de réponse pour ticket:', selectedTicket.id);
             
-            // Récupérer l'ID de l'utilisateur authentifié (l'admin)
-            const { data: { user: adminUser } } = await supabase.auth.getUser();
-            if (!adminUser) {
-                setError("Utilisateur non authentifié");
-                throw new Error("Utilisateur non authentifié");
-            }
-            
-            const { error } = await supabase.from('support_ticket_responses').insert([
-                {
-                    ticket_id: selectedTicket.id,
-                    user_id: adminUser.id,
-                    message: reply,
-                    is_admin: true,
-                },
-            ]);
-            
-            if (error) {
-                console.error('[AdminSupportTickets] Erreur lors de l\'envoi de la réponse:', error);
-                setError(`Erreur lors de l'envoi de la réponse: ${error.message}`);
-                toast.error("Impossible d'envoyer la réponse");
-                return;
-            }
+            await AdminSupportService.addTicketResponse(selectedTicket.id, reply);
             
             setReply('');
             toast.success("Réponse envoyée avec succès");
             console.log('[AdminSupportTickets] Réponse envoyée avec succès');
             
             // Rafraîchir les réponses immédiatement
-            const { data, error: fetchError } = await supabase
-                .from('support_ticket_responses')
-                .select('*')
-                .eq('ticket_id', selectedTicket.id)
-                .order('created_at', { ascending: true });
-            
-            if (!fetchError && data) setResponses(data);
+            const data = await AdminSupportService.getTicketResponses(selectedTicket.id);
+            setResponses(data);
         } catch (error) {
             console.error('[AdminSupportTickets] Erreur inattendue lors de l\'envoi de la réponse:', error);
             setError(`Erreur inattendue: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
@@ -167,14 +122,7 @@ export const AdminSupportTickets = () => {
             setError(null);
             console.log('[AdminSupportTickets] Changement de statut pour ticket:', selectedTicket.id, '->', newStatus);
             
-            const { error } = await supabase.from('support_tickets').update({ status: newStatus }).eq('id', selectedTicket.id);
-            
-            if (error) {
-                console.error('[AdminSupportTickets] Erreur lors du changement de statut:', error);
-                setError(`Erreur lors du changement de statut: ${error.message}`);
-                toast.error('Erreur lors du changement de statut');
-                return;
-            }
+            await AdminSupportService.updateTicketStatus(selectedTicket.id, newStatus);
             
             setStatus(newStatus);
             toast.success('Statut mis à jour avec succès');
@@ -210,11 +158,8 @@ export const AdminSupportTickets = () => {
         );
     };
 
-    useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => {
-            console.log('[DEBUG ADMIN] ID connecté:', data.user?.id);
-        });
-    }, []);
+    // Note: L'authentification est maintenant gérée par l'API PostgreSQL
+    // L'ID utilisateur est disponible via le token JWT dans les requêtes API
 
     // Abonnement Realtime pour notifications tickets/réponses
     useRealtimeSubscription({
@@ -358,6 +303,7 @@ export const AdminSupportTickets = () => {
                                 >
                                     <div className="font-medium">{t.subject}</div>
                                     <div className="text-xs text-gray-500 truncate">{t.message}</div>
+                                    <div className="text-xs text-blue-600 font-medium">{t.user_email}</div>
                                     <div className="text-xs text-gray-400">{new Date(t.created_at).toLocaleString('fr-FR')}</div>
                                     <span className={`text-xs px-2 py-1 rounded-full border ${t.status === 'open' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                         t.status === 'in_progress' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :

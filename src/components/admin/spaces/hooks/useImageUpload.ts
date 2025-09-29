@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 export const useImageUpload = (initialImageUrl: string | null = null) => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -25,23 +24,22 @@ export const useImageUpload = (initialImageUrl: string | null = null) => {
   const uploadImage = async (file: File): Promise<string> => {
     try {
       setIsUploading(true);
-      const fileExt = file.name.split('.').pop();
-      // Générer un identifiant unique sans dépendance externe
-      const uniqueId = crypto.randomUUID();
-      const fileName = `${uniqueId}.${fileExt}`;
-      const filePath = `spaces/${fileName}`;
       
-      const { error: uploadError } = await supabase.storage
-        .from('spaces')
-        .upload(filePath, file);
-        
-      if (uploadError) throw uploadError;
+      // Convertir l'image en base64 pour le stockage
+      const base64String = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Erreur lors de la conversion de l\'image'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier'));
+        reader.readAsDataURL(file);
+      });
       
-      const { data } = supabase.storage
-        .from('spaces')
-        .getPublicUrl(filePath);
-        
-      return data.publicUrl;
+      return base64String;
     } catch (error) {
       console.error('Erreur lors de l\'upload de l\'image:', error);
       toast.error("Impossible d'uploader l'image");

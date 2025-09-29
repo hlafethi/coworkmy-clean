@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -18,6 +18,7 @@ interface RegisterFormValues {
 export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const form = useForm<RegisterFormValues>({
     defaultValues: {
@@ -28,15 +29,12 @@ export default function RegisterForm() {
     },
   });
 
-  const currentPassword = form.watch("password");
-
-  // Validation de mot de passe simple
   const validatePasswordStrength = (password: string): boolean => {
-    if (password.length < 8) return false;
     const hasLowerCase = /[a-z]/.test(password);
     const hasUpperCase = /[A-Z]/.test(password);
     const hasNumbers = /\d/.test(password);
-    return hasLowerCase && hasUpperCase && hasNumbers;
+    const hasMinLength = password.length >= 8;
+    return hasLowerCase && hasUpperCase && hasNumbers && hasMinLength;
   };
 
   const getPasswordStrengthMessage = (password: string): string => {
@@ -63,178 +61,156 @@ export default function RegisterForm() {
     }
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            full_name: values.fullName || values.email.split('@')[0]
-          }
-        }
-      });
-      if (error) {
-        if (
-          error.message.includes('already') ||
-          error.message.includes('registered')
-        ) {
-          toast.error("Cette adresse email est déjà utilisée ou en attente de confirmation.");
-          return;
-        }
-        if (error.message.includes('Password should be at least')) {
-          toast.error("Le mot de passe doit contenir au moins 6 caractères.");
-          return;
-        }
-        if (error.message.includes('Invalid email')) {
-          toast.error("Adresse email invalide.");
-          return;
-        }
-        if (error.message.includes('Signup is disabled')) {
-          toast.error("Les inscriptions sont temporairement désactivées.");
-          return;
-        }
-        if (error.message.includes('Email rate limit exceeded')) {
-          toast.error("Trop de tentatives. Veuillez attendre avant de réessayer.");
-          return;
-        }
-        toast.error(`Erreur lors de l'inscription: ${error.message}`);
-        return;
-      }
-      if (data.user && !data.session) {
-        toast.success(
-          "Inscription réussie ! Vérifiez votre email pour confirmer votre compte avant de vous connecter.",
-          { duration: 8000 }
-        );
-        navigate('/auth/login', {
-          state: {
-            message: "Vérifiez votre email pour confirmer votre compte.",
-            email: values.email
-          }
-        });
-      } else if (data.session) {
-        toast.success("Inscription réussie ! Vous êtes maintenant connecté.");
-        navigate('/dashboard');
-      } else {
-        toast.success("Inscription réussie !");
+      const result = await signUp(
+        values.email,
+        values.password,
+        values.fullName || values.email.split('@')[0]
+      );
+      
+      if (result.user && !result.error) {
+        toast.success("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
         navigate('/auth/login');
+      } else {
+        if (result.error?.includes('already') || result.error?.includes('registered')) {
+          toast.error("Cette adresse email est déjà utilisée.");
+        } else if (result.error?.includes('Invalid email')) {
+          toast.error("Adresse email invalide.");
+        } else {
+          toast.error(result.error || "Erreur lors de la création du compte.");
+        }
       }
     } catch (error) {
-      console.error('❌ Erreur complète inscription:', error);
-      toast.error("Une erreur inattendue s'est produite. Veuillez réessayer.");
+      console.error("Erreur d'inscription:", error);
+      toast.error("Erreur lors de la création du compte.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full max-w-md mx-auto p-6">
-        <FormField
-          control={form.control}
-          name="email"
-          rules={{
-            required: "Email requis",
-            pattern: {
-              value: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
-              message: "Adresse email invalide"
-            }
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="email@example.com"
-                  {...field}
-                  disabled={isLoading}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          rules={{
-            required: "Mot de passe requis",
-            minLength: {
-              value: 8,
-              message: "Le mot de passe doit contenir au moins 8 caractères"
-            }
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mot de passe</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Mot de passe sécurisé"
-                  {...field}
-                  disabled={isLoading}
-                />
-              </FormControl>
-              {currentPassword && (
-                <p className={`text-xs mt-1 ${validatePasswordStrength(currentPassword)
-                    ? "text-green-600"
-                    : "text-orange-600"
-                  }`}>
-                  {getPasswordStrengthMessage(currentPassword)}
-                </p>
-              )}
-              {!currentPassword && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Utilisez au moins 8 caractères avec majuscules, minuscules et chiffres
-                </p>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="confirmPassword"
-          rules={{
-            required: "Confirmation requise",
-            validate: (value) =>
-              value === form.getValues().password || "Les mots de passe ne correspondent pas"
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Confirmer le mot de passe</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Confirmer le mot de passe"
-                  {...field}
-                  disabled={isLoading}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Inscription en cours...
-            </>
-          ) : (
-            "S'inscrire"
-          )}
-        </Button>
-        <p className="text-center text-sm text-gray-600">
-          Déjà un compte ?{" "}
+    <div className="w-full max-w-md mx-auto">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold">Créer un compte</h1>
+        <p className="text-muted-foreground mt-2">
+          Rejoignez CoworkMy pour commencer
+        </p>
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="fullName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nom complet (optionnel)</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Votre nom complet"
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            rules={{
+              required: "L'email est requis",
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "Adresse email invalide",
+              },
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="email"
+                    placeholder="votre@email.com"
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="password"
+            rules={{
+              required: "Le mot de passe est requis",
+              minLength: {
+                value: 8,
+                message: "Le mot de passe doit contenir au moins 8 caractères",
+              },
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mot de passe</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="password"
+                    placeholder="••••••••"
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <div className="text-sm text-muted-foreground">
+                  {getPasswordStrengthMessage(field.value)}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            rules={{
+              required: "Confirmez votre mot de passe",
+              validate: (value) =>
+                value === form.getValues("password") ||
+                "Les mots de passe ne correspondent pas",
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirmer le mot de passe</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="password"
+                    placeholder="••••••••"
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Création du compte..." : "Créer un compte"}
+          </Button>
+        </form>
+      </Form>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Vous avez déjà un compte ?{" "}
           <Link to="/auth/login" className="text-primary hover:underline">
             Se connecter
           </Link>
         </p>
-      </form>
-    </Form>
+      </div>
+    </div>
   );
 }

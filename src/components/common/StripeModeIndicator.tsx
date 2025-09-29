@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, TestTube, Zap } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 
 interface StripeConfig {
   mode?: 'test' | 'live';
@@ -14,21 +14,8 @@ export const StripeModeIndicator = () => {
   useEffect(() => {
     const fetchStripeMode = async () => {
       try {
-        const { data, error } = await supabase
-          .from('admin_settings')
-          .select('value')
-          .eq('key', 'stripe')
-          .single();
-
-        if (error) {
-          console.warn("Impossible de récupérer le mode Stripe:", error);
-          setMode('test'); // Fallback en mode test
-        } else if (data?.value) {
-          const stripeConfig = data.value as StripeConfig;
-          setMode(stripeConfig.mode || 'test');
-        } else {
-          setMode('test'); // Fallback en mode test
-        }
+        // Mode par défaut en test pour PostgreSQL
+        setMode('test');
       } catch (error) {
         console.error("Erreur lors de la récupération du mode Stripe:", error);
         setMode('test'); // Fallback en mode test

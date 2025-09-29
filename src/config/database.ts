@@ -13,6 +13,17 @@ export interface DatabaseConfig {
 
 export const DATABASE_CONFIGS: DatabaseConfig[] = [
   {
+    id: 'vps-postgresql',
+    name: 'VPS PostgreSQL (Production)',
+    type: 'postgresql',
+    host: '147.93.58.155',
+    port: 5432,
+    database: 'coworkmy',
+    username: 'vpshostinger',
+    password: 'Fethi@2025!',
+    ssl: false,
+  },
+  {
     id: 'supabase',
     name: 'Supabase (Cloud)',
     type: 'supabase',
@@ -47,18 +58,26 @@ export const DATABASE_CONFIGS: DatabaseConfig[] = [
     id: 'mysql-production',
     name: 'MySQL Production',
     type: 'mysql',
-    host: process.env.MYSQL_HOST || 'localhost',
-    port: parseInt(process.env.MYSQL_PORT || '3306'),
-    database: process.env.MYSQL_DATABASE || 'coworkmy',
-    username: process.env.MYSQL_USER || 'root',
-    password: process.env.MYSQL_PASSWORD || '',
-    ssl: process.env.MYSQL_SSL === 'true',
+    host: import.meta.env.VITE_MYSQL_HOST || 'localhost',
+    port: parseInt(import.meta.env.VITE_MYSQL_PORT || '3306'),
+    database: import.meta.env.VITE_MYSQL_DATABASE || 'coworkmy',
+    username: import.meta.env.VITE_MYSQL_USER || 'root',
+    password: import.meta.env.VITE_MYSQL_PASSWORD || '',
+    ssl: import.meta.env.VITE_MYSQL_SSL === 'true',
   }
 ];
 
 export const getCurrentDatabaseConfig = (): DatabaseConfig => {
-  const currentDb = localStorage.getItem('selected_database') || 'supabase';
-  return DATABASE_CONFIGS.find(config => config.id === currentDb) || DATABASE_CONFIGS[0];
+  // Utiliser PostgreSQL VPS par défaut
+  const currentDb = localStorage.getItem('selected_database') || 'vps-postgresql';
+  const config = DATABASE_CONFIGS.find(config => config.id === currentDb);
+  
+  if (config) {
+    return config;
+  }
+  
+  // Fallback sur PostgreSQL VPS si la configuration n'est pas trouvée
+  return DATABASE_CONFIGS.find(config => config.id === 'vps-postgresql') || DATABASE_CONFIGS[0];
 };
 
 export const setCurrentDatabase = (databaseId: string) => {

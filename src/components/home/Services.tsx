@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
@@ -17,13 +17,19 @@ const Services = () => {
   const { data: spaces, isLoading } = useQuery({
     queryKey: ["available-spaces"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("spaces")
-        .select("id, name, description, image_url, is_active")
-        .eq("is_active", true);
-
-      if (error) throw error;
-      return data as Space[];
+      console.log('🔄 Chargement des espaces...');
+      
+      const response = await apiClient.get('/spaces');
+      
+      if (!response.success) {
+        console.error('❌ Erreur chargement espaces:', response.error);
+        throw new Error(response.error || 'Erreur lors du chargement des espaces');
+      }
+      
+      // Filtrer seulement les espaces actifs
+      const activeSpaces = response.data.filter((space: Space) => space.is_active);
+      console.log('✅ Espaces chargés:', activeSpaces);
+      return activeSpaces as Space[];
     },
   });
 

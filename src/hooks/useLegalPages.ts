@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { withRetry } from "@/utils/supabaseUtils";
 
 export type LegalPageType = "terms" | "privacy" | "legal";
 
@@ -28,12 +27,9 @@ export function useLegalPages() {
       setLoading(true);
       console.log('🔄 Chargement des pages légales...');
       
-      const { data, error } = await withRetry(async () => {
-        return await supabase
-          .from('legal_pages')
-          .select('*')
-          .order('type');
-      });
+      const result = await apiClient.get('/legal-pages');
+      const data = result.success ? result.data : null;
+      const error = result.success ? null : { message: result.error };
 
       if (error) {
         console.error('❌ Erreur SQL:', error);

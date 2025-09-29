@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import AdminSupportChat from '@/components/admin/support/AdminSupportChat';
+// AdminSupportChat supprimé
 import AdminSupportTickets from '@/components/admin/support/AdminSupportTickets';
 import { AdminSupportFaqs } from '@/components/admin/support/AdminSupportFaqs';
 import AdminSupportKnowledgeBase from '@/components/admin/support/AdminSupportKnowledgeBase';
@@ -8,12 +8,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { useState } from 'react';
 
 const AdminSupport = () => {
-    const [tab, setTab] = useState('chat');
+    const [tab, setTab] = useState('tickets');
     return (
         <>
             <Helmet>
                 <title>Support Admin - CoWorkMy</title>
-                <meta name="description" content="Interface d'administration pour répondre au chat support utilisateur." />
+                <meta name="description" content="Interface d'administration pour gérer les tickets de support utilisateur." />
             </Helmet>
             <main className="min-h-screen bg-gray-50 py-12">
                 <div className="container mx-auto px-4">
@@ -27,14 +27,12 @@ const AdminSupport = () => {
                         <CardContent>
                             <Tabs value={tab} onValueChange={setTab} className="w-full">
                                 <TabsList className="mb-6 w-full grid grid-cols-4">
-                                    <TabsTrigger value="chat">Chat en ligne</TabsTrigger>
+                                    {/* Onglet chat supprimé */}
                                     <TabsTrigger value="tickets">Tickets</TabsTrigger>
                                     <TabsTrigger value="faq">FAQ</TabsTrigger>
                                     <TabsTrigger value="kb">Base de connaissances</TabsTrigger>
                                 </TabsList>
-                                <TabsContent value="chat">
-                                    <AdminSupportChat />
-                                </TabsContent>
+                                {/* Contenu chat supprimé */}
                                 <TabsContent value="tickets">
                                     <AdminSupportTickets />
                                 </TabsContent>

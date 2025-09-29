@@ -1,6 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { withRetry } from "@/utils/supabaseUtils";
 import {
   Card,
   CardContent,
@@ -86,14 +85,11 @@ export function AllBookings() {
 
   const handleDelete = async (bookingId: string) => {
     try {
-      const { error } = await supabase
-        .from("bookings")
-        .delete()
-        .eq("id", bookingId);
+      const response = await apiClient.delete(`/bookings/${bookingId}`);
 
-      if (error) {
-        console.error("Erreur lors de la suppression:", error);
-        throw error;
+      if (!response.success) {
+        console.error("Erreur lors de la suppression:", response.error);
+        throw new Error(response.error || "Erreur lors de la suppression");
       }
       
       toast.success("Réservation supprimée avec succès");
@@ -136,7 +132,7 @@ export function AllBookings() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {sortedBookings.map((booking) => {
-        const endTime = new Date(booking.end_time);
+        const endTime = new Date(booking.end_date);
         const now = new Date();
         const isPast = endTime < now;
         
@@ -145,9 +141,9 @@ export function AllBookings() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitleH2>{booking.spaces?.name}</CardTitleH2>
+                  <CardTitleH2>{booking.space_name}</CardTitleH2>
                   <CardDescription>
-                    {formatDateTime(booking.start_time)}
+                    {formatDateTime(booking.start_date)}
                     {isPast && <span className="text-gray-500 ml-2">(Terminée)</span>}
                   </CardDescription>
                 </div>
@@ -161,15 +157,15 @@ export function AllBookings() {
               <div className="border-t pt-3 mb-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Prix HT:</span>
-                  <span className="text-sm">{formatPrice(booking.total_price_ht)} €</span>
+                  <span className="text-sm">{formatPrice(parseFloat(booking.total_price || 0))} €</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">TVA (20%):</span>
-                  <span className="text-sm">{formatPrice(booking.total_price_ttc - booking.total_price_ht)} €</span>
+                  <span className="text-sm">{formatPrice(parseFloat(booking.total_price || 0) * 0.2)} €</span>
                 </div>
                 <div className="flex justify-between items-center font-medium">
                   <span>Total TTC:</span>
-                  <span>{formatPrice(booking.total_price_ttc)} €</span>
+                  <span>{formatPrice(parseFloat(booking.total_price || 0) * 1.2)} €</span>
                 </div>
               </div>
               {/* Actions */}

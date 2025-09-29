@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { withRetry } from "@/utils/supabaseUtils";
+import { apiClient } from "@/lib/api-client";
 import { Palette, Settings, Save } from "lucide-react"; // 🔧 Suppression de 'Eye'
 
 interface CookieSettings {
@@ -51,20 +50,33 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
       try {
         console.log('🔄 Chargement des paramètres cookies...');
         
-        const { data, error } = await withRetry(async () => {
-          return await supabase
-            .from('cookie_settings')
-            .select('*')
-            .single();
-        });
-
-        if (error) throw error;
+        const result = await apiClient.get('/cookie-settings');
         
-        console.log('✅ Paramètres cookies chargés:', data);
-        setSettings(data);
+        if (result.success && result.data) {
+          console.log('✅ Paramètres cookies chargés:', result.data);
+          setSettings(result.data);
+        } else {
+          console.log('📝 Aucun paramètre trouvé, utilisation des valeurs par défaut');
+          setSettings({
+            id: 'default',
+            title: 'Paramètres de Cookies',
+            description: 'Gérez vos préférences de cookies',
+            accept_button_text: 'Accepter',
+            reject_button_text: 'Refuser',
+            // ... autres valeurs par défaut
+          });
+        }
       } catch (error) {
         console.error('❌ Erreur lors du chargement des paramètres:', error);
-        toast.error("Impossible de charger les paramètres des cookies");
+        console.log('📝 Erreur API, utilisation des valeurs par défaut');
+        setSettings({
+          id: 'default',
+          title: 'Paramètres de Cookies',
+          description: 'Gérez vos préférences de cookies',
+          accept_button_text: 'Accepter',
+          reject_button_text: 'Refuser',
+          // ... autres valeurs par défaut
+        });
       } finally {
         setLoading(false);
       }
@@ -81,38 +93,10 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
     try {
       console.log('💾 Sauvegarde des paramètres cookies...');
       
-      const { error } = await withRetry(async () => {
-        return await supabase
-          .from('cookie_settings')
-          .update({
-            title: settings.title,
-            description: settings.description,
-            accept_button_text: settings.accept_button_text,
-            reject_button_text: settings.reject_button_text,
-            settings_button_text: settings.settings_button_text,
-            save_preferences_text: settings.save_preferences_text,
-            necessary_cookies_title: settings.necessary_cookies_title,
-            necessary_cookies_description: settings.necessary_cookies_description,
-            analytics_cookies_title: settings.analytics_cookies_title,
-            analytics_cookies_description: settings.analytics_cookies_description,
-            analytics_cookies_enabled: settings.analytics_cookies_enabled,
-            marketing_cookies_title: settings.marketing_cookies_title,
-            marketing_cookies_description: settings.marketing_cookies_description,
-            marketing_cookies_enabled: settings.marketing_cookies_enabled,
-            privacy_policy_url: settings.privacy_policy_url,
-            cookie_policy_url: settings.cookie_policy_url,
-            is_active: settings.is_active,
-            banner_position: settings.banner_position,
-            banner_layout: settings.banner_layout,
-            primary_color: settings.primary_color,
-            secondary_color: settings.secondary_color,
-            background_color: settings.background_color,
-            text_color: settings.text_color
-          })
-          .eq('id', settings.id);
-      });
-
-      if (error) throw error;
+      const response = await apiClient.put('/cookie-settings', settings);
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la sauvegarde');
+      }
       
       console.log('✅ Paramètres cookies sauvegardés');
       toast.success("Paramètres des cookies enregistrés avec succès");

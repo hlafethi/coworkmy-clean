@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client"; // Désactivé - utilisation de PostgreSQL
 import { toast } from "sonner";
 
 interface ImageUploadFormProps {
@@ -80,51 +80,23 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
         type: reconstructedFile.type
       });
       
-      // Générer un nom de fichier unique
-      const fileExt = reconstructedFile.name.split('.').pop()?.toLowerCase();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `admin-images/${fileName}`;
-
-      console.log('📤 Upload carrousel vers:', filePath);
-
-      // Récupérer la configuration Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      // Upload direct avec fetch
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/images/${filePath}`;
-      
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token || supabaseKey}`,
-          'Content-Type': reconstructedFile.type,
-          'x-upsert': 'false'
-        },
-        body: reconstructedFile
+      // Solution alternative : convertir l'image en base64
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          if (result) {
+            console.log('🔗 URL carrousel générée (base64):', result.substring(0, 50) + '...');
+            resolve(result);
+          } else {
+            reject(new Error('Impossible de lire le fichier'));
+          }
+        };
+        reader.onerror = () => {
+          reject(new Error('Erreur lors de la lecture du fichier'));
+        };
+        reader.readAsDataURL(reconstructedFile);
       });
-
-      console.log('📡 Réponse upload carrousel:', {
-        status: response.status,
-        statusText: response.statusText
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Erreur upload carrousel:', errorText);
-        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
-      }
-
-      // Obtenir l'URL publique
-      const { data: urlData } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
-
-      const imageUrl = urlData.publicUrl;
-      console.log('🔗 URL carrousel générée:', imageUrl);
-      
-      return imageUrl;
     } catch (error) {
       console.error('❌ Erreur upload carrousel complète:', error);
       throw error;

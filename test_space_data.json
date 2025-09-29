@@ -1,0 +1,10 @@
+{
+  "name": "Test API",
+  "description": "Test Description",
+  "capacity": 5,
+  "hourly_price": 10,
+  "daily_price": 50,
+  "half_day_price": 25,
+  "image_url": null,
+  "is_active": true
+}

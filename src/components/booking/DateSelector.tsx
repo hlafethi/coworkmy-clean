@@ -29,6 +29,7 @@ export const DateSelector = ({
   spaceId,
   space
 }: DateSelectorProps) => {
+  console.log('🔍 DateSelector reçu:', { timeSlotsLength: timeSlots.length, timeSlots, selectedSlot });
   const [customHours, setCustomHours] = useState<string>("");
   const { setCustomDuration, getCurrentSlotDuration } = useTimeSlots();
   const { checkAvailability } = useSpaceAvailability(spaceId || "");

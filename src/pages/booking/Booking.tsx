@@ -10,15 +10,17 @@ import { ArrowLeft } from "lucide-react";
 import type { TimeSlotOption } from "@/types/booking";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/utils/logger';
 import { useToast } from "@/hooks/use-toast";
 import { useStripePayment } from "@/hooks/useStripePayment";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
+import { apiClient } from "@/lib/api-client";
 
 export default function Booking() {
   const { spaceId } = useParams<{ spaceId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const { space, loading, timeSlots, selectedSlot, setSelectedSlot } = useBooking(spaceId);
   const [selectedDays, setSelectedDays] = useState<Date[]>([]);
@@ -108,15 +110,14 @@ export default function Booking() {
     }
 
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
+      if (!user) {
         toast({
           title: "Erreur",
           description: "Vous devez être connecté pour effectuer une réservation",
           variant: "destructive",
           duration: 5000,
         });
-        navigate("/login");
+        navigate("/auth/login");
         return;
       }
 
@@ -128,42 +129,51 @@ export default function Booking() {
       endTime.setHours(parseInt(selectedSlot.endTime.split(':')[0]));
       endTime.setMinutes(parseInt(selectedSlot.endTime.split(':')[1]));
 
-      // 1. Créer la réservation en pending
-      const { data: booking, error } = await supabase
-        .from('bookings')
-        .insert({
-          user_id: user.id,
-          space_id: space.id,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          status: 'pending',
-          total_price_ht: selectedSlot.price,
-          total_price_ttc: selectedSlot.price * 1.2, // TVA 20%
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error || !booking) throw error;
-
-      // 2. Créer la session Stripe
-      toast({
-        description: "Redirection vers le paiement sécurisé Stripe...",
-        variant: "loading"
-      });
+      // 1. Créer la réservation en pending via l'API
+      // Utiliser le prix de l'espace si le slot n'a pas de prix défini
+      const slotPrice = selectedSlot.price || space.price_per_hour || 0;
       
-      const { url, mode } = await createPaymentSession(
-        booking.id,
-        Math.round(selectedSlot.price * 120), // TTC en centimes
-        user.email || "",
-        { space_name: space.name }
-      );
+      const bookingData = {
+        user_id: user.id,
+        space_id: space.id,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: 'pending',
+        total_price_ht: slotPrice,
+        total_price_ttc: slotPrice * 1.2, // TVA 20%
+        description: `Réservation pour ${space.name}`,
+        attendees: 1
+      };
 
-      // Rediriger vers Stripe
-      setTimeout(() => {
-      window.location.href = url;
-      }, 800);
+      console.log('🔍 Données de réservation envoyées:', JSON.stringify(bookingData, null, 2));
+      console.log('🔍 User ID:', user.id);
+      console.log('🔍 Space ID:', space.id);
+      console.log('🔍 Start Time:', startTime.toISOString());
+      console.log('🔍 End Time:', endTime.toISOString());
+      console.log('🔍 Selected Slot:', selectedSlot);
+      console.log('🔍 Slot Price:', selectedSlot.price);
+      console.log('🔍 Space Price:', space.price_per_hour);
+      console.log('🔍 Calculated Price:', slotPrice);
+
+      const bookingResponse = await apiClient.post('/bookings', bookingData);
+
+      if (!bookingResponse.success) {
+        throw new Error(bookingResponse.error || 'Erreur lors de la création de la réservation');
+      }
+
+      const booking = bookingResponse.data;
+
+      // 2. Pour l'instant, créer la réservation sans paiement Stripe
+      console.log('✅ Réservation créée avec succès:', booking);
+      
+      toast({
+        title: "Réservation créée !",
+        description: `Votre réservation pour ${space.name} a été créée avec succès.`,
+        variant: "default"
+      });
+
+      // Rediriger vers le dashboard
+      navigate('/dashboard');
     } catch (error) {
       toast({
         title: "Erreur",

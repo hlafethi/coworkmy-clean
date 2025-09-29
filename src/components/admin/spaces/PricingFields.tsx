@@ -2,6 +2,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Control } from "react-hook-form";
 import { PricingType, SpaceFormValues } from "./types";
+import { TimeSlotsFields } from "./TimeSlotsFields";
 
 
 const PriceInput = ({ 
@@ -52,28 +53,35 @@ const PriceInput = ({
 interface PricingFieldsProps {
   control: Control<SpaceFormValues>;
   pricingType: PricingType;
+  onTimeSlotsChange?: (timeSlots: any[]) => void;
 }
 
-export const PricingFields = ({ control, pricingType }: PricingFieldsProps) => {
+export const PricingFields = ({ control, pricingType, onTimeSlotsChange }: PricingFieldsProps) => {
   if (pricingType === "hourly") {
     return (
-      <PriceInput
-        control={control}
-        name="hourly_price"
-        label="Prix horaire HT (€)"
-        step={0.5}
-      />
+      <div className="space-y-4">
+        <PriceInput
+          control={control}
+          name="hourly_price"
+          label="Prix horaire HT (€)"
+          step={0.5}
+        />
+        <TimeSlotsFields control={control} pricingType={pricingType} onTimeSlotsChange={onTimeSlotsChange} />
+      </div>
     );
   }
 
   if (pricingType === "daily") {
     return (
-      <PriceInput
-        control={control}
-        name="daily_price"
-        label="Prix journalier HT (€)"
-        step={1}
-      />
+      <div className="space-y-4">
+        <PriceInput
+          control={control}
+          name="daily_price"
+          label="Prix journalier HT (€)"
+          step={1}
+        />
+        <TimeSlotsFields control={control} pricingType={pricingType} onTimeSlotsChange={onTimeSlotsChange} />
+      </div>
     );
   }
 
@@ -90,12 +98,15 @@ export const PricingFields = ({ control, pricingType }: PricingFieldsProps) => {
 
   if (pricingType === "half_day") {
     return (
-      <PriceInput
-        control={control}
-        name="half_day_price"
-        label="Prix demi-journée HT (€)"
-        step={0.5}
-      />
+      <div className="space-y-4">
+        <PriceInput
+          control={control}
+          name="half_day_price"
+          label="Prix demi-journée HT (€)"
+          step={0.5}
+        />
+        <TimeSlotsFields control={control} pricingType={pricingType} onTimeSlotsChange={onTimeSlotsChange} />
+      </div>
     );
   }
 
@@ -123,7 +134,7 @@ export const PricingFields = ({ control, pricingType }: PricingFieldsProps) => {
 
   if (pricingType === "custom") {
     return (
-      <>
+      <div className="space-y-4">
         <FormField
           control={control}
           name="custom_label"
@@ -146,7 +157,8 @@ export const PricingFields = ({ control, pricingType }: PricingFieldsProps) => {
           label="Prix personnalisé HT (€)"
           step={1}
         />
-      </>
+        <TimeSlotsFields control={control} pricingType={pricingType} onTimeSlotsChange={onTimeSlotsChange} />
+      </div>
     );
   }
 

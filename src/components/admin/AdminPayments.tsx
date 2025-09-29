@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { 
   Card, 
@@ -76,62 +76,20 @@ const AdminPayments = () => {
     try {
       setLoading(true);
       
-      // Get payments with booking details
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          booking:booking_id (
-            id,
-            user_id,
-            space_id,
-            start_time,
-            end_time,
-            status
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      // Get payments from API
+      const result = await apiClient.get('/payments');
       
-      // Get profiles and spaces for additional data
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .throwOnError();
-        
-      if (profilesError) throw profilesError;
-      
-      const { data: spaces, error: spacesError } = await supabase
-        .from('spaces')
-        .select('*')
-        .throwOnError();
-        
-      if (spacesError) throw spacesError;
-      
-      // Map the data to include user and space details
-      const enhancedPayments = data.map((payment: Payment) => {
-        if (!payment.booking) return payment;
-        
-        const profile = profiles?.find((p: Profile) => p.id === payment.booking?.user_id) || {} as Profile;
-        const space = spaces?.find((s: Space) => s.id === payment.booking?.space_id) || {} as Space;
-        
-        return {
-          ...payment,
-          booking: {
-            ...payment.booking,
-            user_name: profile.first_name && profile.last_name
-              ? `${profile.first_name} ${profile.last_name}`
-              : 'Utilisateur inconnu',
-            space_name: space.name || 'Espace inconnu'
-          }
-        };
-      });
-      
-      setPayments(enhancedPayments);
+      if (result.success && result.data) {
+        setPayments(result.data);
+      } else {
+        console.error('Error fetching payments:', result.error);
+        toast.error("Impossible de récupérer les paiements");
+        setPayments([]);
+      }
     } catch (error) {
       console.error('Error fetching payments:', error);
       toast.error("Impossible de récupérer les paiements");
+      setPayments([]);
     } finally {
       setLoading(false);
     }

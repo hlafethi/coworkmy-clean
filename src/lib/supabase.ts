@@ -16,20 +16,17 @@ if (import.meta.env.MODE === 'development') {
   });
 }
 
-// Vérification stricte des variables d'environnement
+// Vérification des variables d'environnement - mode gracieux
 if (!supabaseUrl || !supabaseAnonKey) {
-  const error = new Error('Configuration Supabase manquante: Vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY dans .env.local');
-  logger.error('⚠️', error.message);
-  if (import.meta.env.MODE === 'production') {
-    throw error;
-  }
+  logger.log('ℹ️ Configuration Supabase manquante - utilisation de PostgreSQL par défaut');
+  // Ne pas lancer d'erreur, utiliser PostgreSQL à la place
 }
 
 // Client Supabase avec configuration sécurisée (singleton)
 let supabaseInstance: ReturnType<typeof createClient> | null = null;
 
 export const supabase = (() => {
-  if (!supabaseInstance) {
+  if (!supabaseInstance && supabaseUrl && supabaseAnonKey) {
     supabaseInstance = createClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -63,7 +60,7 @@ export const supabase = (() => {
 
 // Client Supabase avec clé service_role pour les fonctions Edge
 const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-export const supabaseAdmin = createClient(
+export const supabaseAdmin = supabaseUrl && (supabaseServiceKey || supabaseAnonKey) ? createClient(
   supabaseUrl,
   supabaseServiceKey || supabaseAnonKey, // Fallback sur anon si service_role n'est pas disponible
   {
@@ -72,17 +69,30 @@ export const supabaseAdmin = createClient(
       persistSession: false
     }
   }
-);
+) : null;
 
 // Création d'un client Supabase Storage pour l'upload d'images
 export function createStorageClient() {
   return supabase;
 }
 
-logger.log('✅ Client Supabase créé avec PKCE');
+// Vérifier si Supabase est configuré
+export const isSupabaseConfigured = () => {
+  return !!(supabaseUrl && supabaseAnonKey);
+};
+
+if (isSupabaseConfigured()) {
+  logger.log('✅ Client Supabase créé avec PKCE');
+} else {
+  logger.log('ℹ️ Supabase non configuré - utilisation de PostgreSQL');
+}
 
 // Gestion du rafraîchissement des tokens
 export const handleTokenRefresh = async () => {
+  if (!isSupabaseConfigured() || !supabase) {
+    return;
+  }
+  
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -119,8 +129,10 @@ export const handleAuthStateChange = async (event: AuthChangeEvent) => {
   }
 };
 
-// Configuration de l'observateur d'état
-supabase.auth.onAuthStateChange(handleAuthStateChange);
+// Configuration de l'observateur d'état (seulement si Supabase est configuré)
+if (isSupabaseConfigured() && supabase) {
+  supabase.auth.onAuthStateChange(handleAuthStateChange);
+}
 
 // Log de vérification de la configuration
 logger.log('🔒 Configuration de sécurité:', {
@@ -132,6 +144,10 @@ logger.log('🔒 Configuration de sécurité:', {
 
 // Utilitaires session
 export const checkSession = async (retries = 3): Promise<Session | null> => {
+  if (!isSupabaseConfigured() || !supabase) {
+    return null;
+  }
+  
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
@@ -146,6 +162,10 @@ export const checkSession = async (retries = 3): Promise<Session | null> => {
 };
 
 export const refreshSession = async (retries = 3): Promise<Session | null> => {
+  if (!isSupabaseConfigured() || !supabase) {
+    return null;
+  }
+  
   try {
     const { data: { session }, error } = await supabase.auth.refreshSession();
     if (error) throw error;

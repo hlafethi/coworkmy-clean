@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import {
   Carousel,
   CarouselContent,
@@ -21,24 +21,21 @@ interface CarouselImage {
 export function WorkspaceCarousel() {
   const carouselRef = useRef<CarouselApi>();
   
-  // 🔧 CORRECTION : Charger SEULEMENT les images du carrousel
+  // 🔧 CORRECTION : Charger SEULEMENT les images du carrousel via l'API
   const { data: carouselImages, isLoading } = useQuery({
     queryKey: ["carousel-images"],
     queryFn: async () => {
       console.log('🔄 Chargement des images du carrousel...');
       
-      const { data, error } = await supabase
-        .from("carousel_images")
-        .select("*")
-        .order("display_order", { ascending: true });
-
-      if (error) {
-        console.error('❌ Erreur chargement carrousel:', error);
-        throw error;
+      const response = await apiClient.get('/carousel-images');
+      
+      if (!response.success) {
+        console.error('❌ Erreur chargement carrousel:', response.error);
+        throw new Error(response.error || 'Erreur lors du chargement des images');
       }
       
-      console.log('✅ Images du carrousel chargées:', data);
-      return data as CarouselImage[];
+      console.log('✅ Images du carrousel chargées:', response.data);
+      return response.data as CarouselImage[];
     },
   });
 

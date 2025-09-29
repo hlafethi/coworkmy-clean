@@ -135,9 +135,9 @@ export function MyBookings() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitleH2>{booking.spaces?.name}</CardTitleH2>
+                <CardTitleH2>{booking.space_name}</CardTitleH2>
                 <CardDescription>
-                  {formatDateTime(booking.start_time)}
+                  {formatDateTime(booking.start_date)}
                 </CardDescription>
               </div>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(booking.status)}`}>
@@ -152,15 +152,15 @@ export function MyBookings() {
             <div className="border-t pt-3 mb-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Prix HT:</span>
-                <span className="text-sm">{formatPrice(booking.total_price_ht)} €</span>
+                <span className="text-sm">{formatPrice(parseFloat(booking.total_price))} €</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">TVA (20%):</span>
-                <span className="text-sm">{formatPrice(booking.total_price_ttc - booking.total_price_ht)} €</span>
+                <span className="text-sm">{formatPrice(parseFloat(booking.total_price) * 0.2)} €</span>
               </div>
               <div className="flex justify-between items-center font-medium">
                 <span>Total TTC:</span>
-                <span>{formatPrice(booking.total_price_ttc)} €</span>
+                <span>{formatPrice(parseFloat(booking.total_price) * 1.2)} €</span>
               </div>
             </div>
             {/* Actions */}

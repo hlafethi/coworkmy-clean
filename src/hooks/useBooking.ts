@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/api-client";
 import type { TimeSlotOption } from "@/types/booking";
 
 export function useBooking(spaceId: string | undefined) {
@@ -12,22 +12,41 @@ export function useBooking(spaceId: string | undefined) {
   useEffect(() => {
     if (!spaceId) return;
     setLoading(true);
-    supabase
-      .from("spaces")
-      .select("*")
-      .eq("id", spaceId)
-      .single()
-      .then(({ data }) => {
-        setSpace(data);
+    
+    const fetchSpace = async () => {
+      try {
+        const response = await apiClient.get(`/spaces/${spaceId}`);
+        if (response.success) {
+          setSpace(response.data);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de l\'espace:', error);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    
+    fetchSpace();
   }, [spaceId]);
 
   // 2. Générer dynamiquement les créneaux selon le type de tarification
   useEffect(() => {
     if (!space) return;
     let slots: TimeSlotOption[] = [];
-    switch (space.pricing_type) {
+    
+    // Détecter automatiquement le type de tarification si non défini
+    let pricingType = space.pricing_type;
+    if (!pricingType) {
+      if (space.hourly_price) pricingType = "hourly";
+      else if (space.daily_price) pricingType = "daily";
+      else if (space.half_day_price) pricingType = "half_day";
+      else if (space.monthly_price) pricingType = "monthly";
+      else if (space.quarter_price) pricingType = "quarter";
+      else if (space.yearly_price) pricingType = "yearly";
+      else if (space.custom_price) pricingType = "custom";
+    }
+    
+    switch (pricingType) {
       case "hourly":
         slots = [
           { id: "1", label: "09:00 - 10:00", startTime: "09:00", endTime: "10:00", price: space.hourly_price, isAvailable: true },
@@ -70,7 +89,20 @@ export function useBooking(spaceId: string | undefined) {
         ];
         break;
       default:
-        slots = [];
+        // Si aucun type de tarification n'est défini, générer des créneaux par défaut
+        if (space.price_per_hour) {
+          slots = [
+            { id: "1", label: "09:00 - 10:00", startTime: "09:00", endTime: "10:00", price: space.price_per_hour, isAvailable: true },
+            { id: "2", label: "10:00 - 11:00", startTime: "10:00", endTime: "11:00", price: space.price_per_hour, isAvailable: true },
+            { id: "3", label: "11:00 - 12:00", startTime: "11:00", endTime: "12:00", price: space.price_per_hour, isAvailable: true },
+            { id: "4", label: "14:00 - 15:00", startTime: "14:00", endTime: "15:00", price: space.price_per_hour, isAvailable: true },
+            { id: "5", label: "15:00 - 16:00", startTime: "15:00", endTime: "16:00", price: space.price_per_hour, isAvailable: true },
+            { id: "6", label: "16:00 - 17:00", startTime: "16:00", endTime: "17:00", price: space.price_per_hour, isAvailable: true },
+          ];
+        } else {
+          slots = [];
+        }
+        break;
     }
     setTimeSlots(slots);
   }, [space]);

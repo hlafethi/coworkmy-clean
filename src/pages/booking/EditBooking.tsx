@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -40,38 +40,22 @@ const EditBooking = () => {
       try {
         if (!id) return;
 
-        const { data: bookingData, error: bookingError } = await supabase
-          .from("bookings")
-          .select(`
-            *,
-            spaces (*)
-          `)
-          .eq("id", id)
-          .single();
-
-        if (bookingError) throw bookingError;
-        if (!bookingData) {
+        const response = await apiClient.get(`/bookings/${id}`);
+        
+        if (!response.success) {
           toast.error("Réservation non trouvée");
           navigate("/dashboard");
           return;
         }
 
-        setBooking(bookingData);
-        setSpaceType(bookingData.space_id);
-        setDate(new Date(bookingData.start_time));
-        
-        // Find matching time slot
-        const startTime = new Date(bookingData.start_time);
-        const endTime = new Date(bookingData.end_time);
-        const matchingSlot = timeSlots.find(slot => {
-          const slotStart = startTime.getHours().toString().padStart(2, '0') + ':' + startTime.getMinutes().toString().padStart(2, '0');
-          const slotEnd = endTime.getHours().toString().padStart(2, '0') + ':' + endTime.getMinutes().toString().padStart(2, '0');
-          return slot.label === `${slotStart} - ${slotEnd}`;
+        setBooking(response.data);
+        console.log('🔍 Données de réservation:', {
+          space_id: response.data.space_id,
+          start_date: response.data.start_date,
+          end_date: response.data.end_date
         });
-        
-        if (matchingSlot) {
-          setTimeSlot(matchingSlot.id);
-        }
+        setSpaceType(response.data.space_id);
+        setDate(new Date(response.data.start_date));
       } catch (error) {
         console.error("Error fetching booking:", error);
         toast.error("Erreur lors du chargement de la réservation");
@@ -82,23 +66,78 @@ const EditBooking = () => {
     };
 
     fetchBooking();
-  }, [id, navigate, setDate, setSpaceType, setTimeSlot, timeSlots]);
+  }, [id, navigate, setDate, setSpaceType, setTimeSlot]);
+
+  // Effet séparé pour sélectionner le créneau quand timeSlots est disponible
+  useEffect(() => {
+    console.log('🔍 useEffect timeSlots:', { booking: !!booking, timeSlotsLength: timeSlots.length, timeSlots });
+    
+    // Si on a des créneaux mais pas de réservation chargée, sélectionner le premier créneau
+    if (timeSlots.length > 0 && !booking && !timeSlot) {
+      console.log('🔍 Sélection automatique du premier créneau');
+      setTimeSlot(timeSlots[0].id);
+      return;
+    }
+    
+    if (!booking || timeSlots.length === 0) return;
+    
+    console.log('🔍 Recherche du créneau correspondant:', {
+      start_date: booking.start_date,
+      end_date: booking.end_date,
+      timeSlotsAvailable: timeSlots.length
+    });
+    
+    const startTime = new Date(booking.start_date);
+    const endTime = new Date(booking.end_date);
+    
+    // Convertir les heures en format local (UTC+1)
+    const localStartTime = new Date(startTime.getTime() + (startTime.getTimezoneOffset() * 60000));
+    const localEndTime = new Date(endTime.getTime() + (endTime.getTimezoneOffset() * 60000));
+    
+    const startHour = localStartTime.getHours();
+    const endHour = localEndTime.getHours();
+    
+    console.log('🔍 Heures locales:', { startHour, endHour });
+    
+    // Chercher un créneau qui correspond à l'heure de début
+    const matchingSlot = timeSlots.find(slot => {
+      const slotStartHour = parseInt(slot.startTime.split(':')[0]);
+      return slotStartHour === startHour;
+    });
+    
+    console.log('🔍 Créneau trouvé:', matchingSlot);
+    
+    if (matchingSlot) {
+      setTimeSlot(matchingSlot.id);
+    } else {
+      // Si aucun créneau ne correspond, sélectionner le premier créneau disponible
+      console.log('⚠️ Aucun créneau correspondant trouvé, sélection du premier créneau');
+      if (timeSlots.length > 0) {
+        setTimeSlot(timeSlots[0].id);
+      }
+    }
+  }, [booking, timeSlots, setTimeSlot]);
 
   const handleSubmit = async () => {
+    console.log('🔍 handleSubmit appelé:', { booking: !!booking, spaceType, date, timeSlot });
+    
     try {
       if (!booking || !spaceType || !date || !timeSlot) {
+        console.log('❌ Données manquantes pour la soumission');
         toast.error("Veuillez remplir tous les champs");
         return;
       }
 
       const selectedSpace = spaces.find(space => space.id === spaceType);
       if (!selectedSpace) {
+        console.log('❌ Espace non trouvé');
         toast.error("Espace non trouvé");
         return;
       }
 
       const selectedTimeSlotObj = timeSlots.find(slot => slot.id === timeSlot);
       if (!selectedTimeSlotObj) {
+        console.log('❌ Créneau horaire non trouvé');
         toast.error("Créneau horaire non trouvé");
         return;
       }
@@ -106,24 +145,31 @@ const EditBooking = () => {
       const { startTime, endTime } = getTimeSlotTimes(date, selectedTimeSlotObj.label);
       const prices = getSpacePrice(selectedSpace);
 
-      const { error } = await supabase
-        .from("bookings")
-        .update({
-          space_id: selectedSpace.id,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          total_price_ht: prices.ht,
-          total_price_ttc: prices.ttc,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", booking.id);
+      const updateData = {
+        space_id: selectedSpace.id,
+        start_date: startTime.toISOString(),
+        end_date: endTime.toISOString(),
+        total_price: prices.ht,
+        status: 'pending'
+      };
 
-      if (error) throw error;
+      console.log('📝 Données de mise à jour:', updateData);
 
+      const response = await apiClient.put(`/bookings/${booking.id}`, updateData);
+      console.log('📝 Réponse API:', response);
+
+      if (!response.success) {
+        console.log('❌ Erreur dans la réponse API:', response);
+        throw new Error(response.error || 'Erreur lors de la mise à jour');
+      }
+
+      console.log('✅ Réservation modifiée avec succès, redirection vers /dashboard');
       toast.success("Réservation modifiée avec succès");
+      console.log('🚀 Tentative de redirection vers /dashboard...');
       navigate("/dashboard");
+      console.log('🚀 Redirection exécutée');
     } catch (error) {
-      console.error("Error updating booking:", error);
+      console.error("❌ Error updating booking:", error);
       toast.error("Erreur lors de la modification de la réservation");
     }
   };
@@ -154,6 +200,15 @@ const EditBooking = () => {
   const selectedSpace = spaces.find(space => space.id === spaceType);
   const prices = getSpacePrice(selectedSpace);
   const selectedTimeSlotObj = timeSlots.find(slot => slot.id === timeSlot);
+  
+  // Log permanent pour déboguer l'état du bouton
+  console.log('🔍 État du bouton:', {
+    isSubmitting,
+    spaceType: !!spaceType,
+    date: !!date,
+    timeSlot: !!timeSlot,
+    disabled: isSubmitting || !spaceType || !date || !timeSlot
+  });
 
   const selectedSpaceForSummary: Space | undefined = selectedSpace
     ? {
@@ -236,8 +291,20 @@ const EditBooking = () => {
                 Annuler
               </Button>
               <Button
-                type="submit"
+                type="button"
                 disabled={isSubmitting || !spaceType || !date || !timeSlot}
+                onClick={() => {
+                  console.log('🔍 CLIC SUR LE BOUTON DÉTECTÉ !');
+                  console.log('🔍 État des variables:', {
+                    isSubmitting,
+                    spaceType,
+                    date,
+                    timeSlot,
+                    disabled: isSubmitting || !spaceType || !date || !timeSlot
+                  });
+                  console.log('🔍 Appel direct de handleSubmit...');
+                  handleSubmit();
+                }}
               >
                 Modifier la réservation
               </Button>

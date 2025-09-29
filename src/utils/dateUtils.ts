@@ -73,13 +73,13 @@ export function formatTime(date: Date | string): string {
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function formatDateTime(date: Date | string): string {
+export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) {
-    throw new Error('Invalid date');
+    return 'Date non disponible';
   }
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) {
-    throw new Error('Invalid date format');
+    return 'Date invalide';
   }
   return `${formatDate(d)} à ${formatTime(d)}`;
 }

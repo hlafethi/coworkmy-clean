@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { ImageUploadForm } from "./carousel/ImageUploadForm";
 import { CarouselImageList } from "./carousel/CarouselImageList";
@@ -24,18 +24,19 @@ export function CarouselImageManager() {
     try {
       console.log('🔄 Chargement des images du carrousel...');
       
-      const { data, error } = await supabase
-        .from('carousel_images')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
+      const result = await apiClient.get('/carousel-images');
       
-      console.log('✅ Images chargées:', data?.length || 0);
-      setImages(data || []);
+      if (result.success && result.data) {
+        console.log('✅ Images chargées:', result.data.length);
+        setImages(result.data);
+      } else {
+        console.log('📝 Aucune image trouvée, utilisation d\'une liste vide');
+        setImages([]);
+      }
     } catch (error) {
       console.error('❌ Erreur lors du chargement des images:', error);
-      toast.error("Impossible de charger les images du carrousel");
+      console.log('📝 Erreur API, utilisation d\'une liste vide');
+      setImages([]);
     } finally {
       setIsLoading(false);
     }
@@ -45,26 +46,26 @@ export function CarouselImageManager() {
     try {
       console.log('🔄 Ajout d\'une nouvelle image:', imageUrl);
       
-      const { error } = await supabase
-        .from('carousel_images')
-        .insert({
-          image_url: imageUrl,
-          display_order: images.length
-        });
-
-      if (error) throw error;
-      
-      console.log('✅ Image ajoutée à la DB');
-      
-      // 🔧 CORRECTION : Invalider le cache React Query
-      await queryClient.invalidateQueries({ 
-        queryKey: ["carousel-images"] 
+      const result = await apiClient.post('/carousel-images', {
+        image_url: imageUrl,
+        display_order: images.length
       });
-      
-      console.log('✅ Cache React Query invalidé');
-      
-      toast.success("Image ajoutée avec succès");
-      loadCarouselImages();
+
+      if (result.success) {
+        console.log('✅ Image ajoutée à la DB');
+        
+        // Invalider le cache React Query
+        await queryClient.invalidateQueries({ 
+          queryKey: ["carousel-images"] 
+        });
+        
+        console.log('✅ Cache React Query invalidé');
+        
+        toast.success("Image ajoutée avec succès");
+        loadCarouselImages();
+      } else {
+        throw new Error(result.error || 'Erreur lors de l\'ajout');
+      }
     } catch (error) {
       console.error('❌ Erreur lors de l\'ajout de l\'image:', error);
       toast.error("Impossible d'ajouter l'image");
@@ -75,24 +76,23 @@ export function CarouselImageManager() {
     try {
       console.log('🗑️ Suppression de l\'image:', id);
       
-      const { error } = await supabase
-        .from('carousel_images')
-        .delete()
-        .eq('id', id);
+      const result = await apiClient.delete(`/carousel-images/${id}`);
 
-      if (error) throw error;
-      
-      console.log('✅ Image supprimée de la DB');
-      
-      // 🔧 CORRECTION : Invalider le cache React Query
-      await queryClient.invalidateQueries({ 
-        queryKey: ["carousel-images"] 
-      });
-      
-      console.log('✅ Cache React Query invalidé');
-      
-      toast.success("Image supprimée avec succès");
-      loadCarouselImages();
+      if (result.success) {
+        console.log('✅ Image supprimée de la DB');
+        
+        // Invalider le cache React Query
+        await queryClient.invalidateQueries({ 
+          queryKey: ["carousel-images"] 
+        });
+        
+        console.log('✅ Cache React Query invalidé');
+        
+        toast.success("Image supprimée avec succès");
+        loadCarouselImages();
+      } else {
+        throw new Error(result.error || 'Erreur lors de la suppression');
+      }
     } catch (error) {
       console.error('❌ Erreur lors de la suppression:', error);
       toast.error("Impossible de supprimer l'image");

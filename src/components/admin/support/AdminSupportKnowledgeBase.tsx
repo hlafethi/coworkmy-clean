@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, createStorageClient } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { AdminSupportService } from '@/services/adminSupportService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,19 +74,7 @@ export const AdminSupportKnowledgeBase = () => {
     setError(null);
     try {
       console.log('[AdminSupportKnowledgeBase] Chargement des articles...');
-      const { data, error } = await supabase
-        .from('support_kb_articles')
-        .select('*')
-        .order('order_index', { ascending: true })
-        .order('created_at', { ascending: true });
-      
-      if (error) {
-        console.error('[AdminSupportKnowledgeBase] Erreur:', error);
-        setError(error.message);
-        toast.error('Erreur lors du chargement des articles');
-        return;
-      }
-      
+      const data = await AdminSupportService.getKBArticles();
       console.log('[AdminSupportKnowledgeBase] Articles chargés:', data?.length || 0);
       setArticles(data || []);
     } catch (err) {

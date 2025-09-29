@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/AuthContextNew";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { useToast } from "@/hooks/use-toast";
 import { createStripeCheckoutSession } from "@/utils/stripeUtils";
 

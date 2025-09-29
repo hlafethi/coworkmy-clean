@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CreditCard, CheckCircle, AlertCircle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -43,28 +43,24 @@ export const PaymentConfig = () => {
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('value')
-        .eq('key', 'stripe')
-        .single();
+      const result = await apiClient.get('/admin/settings');
       
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erreur chargement settings:', error);
-        return;
-      }
-      
-      if (data?.value) {
-        const stripeData = data.value as StripeConfig;
-        setStripeConfig({
-          test_publishable_key: stripeData.test_publishable_key || '',
-          test_secret_key: stripeData.test_secret_key || '',
-          webhook_secret: stripeData.webhook_secret || '',
-          live_publishable_key: stripeData.live_publishable_key || '',
-          live_secret_key: stripeData.live_secret_key || '',
-          live_webhook_secret: stripeData.live_webhook_secret || '',
-          mode: stripeData.mode || 'test'
-        });
+      if (result.success && result.data) {
+        // Chercher la configuration Stripe dans les paramètres
+        const stripeSetting = result.data.find((setting: any) => setting.key === 'stripe');
+        if (stripeSetting?.value) {
+          // stripeSetting.value est déjà un objet, pas besoin de JSON.parse
+          const stripeData = stripeSetting.value as StripeConfig;
+          setStripeConfig({
+            test_publishable_key: stripeData.test_publishable_key || '',
+            test_secret_key: stripeData.test_secret_key || '',
+            webhook_secret: stripeData.webhook_secret || '',
+            live_publishable_key: stripeData.live_publishable_key || '',
+            live_secret_key: stripeData.live_secret_key || '',
+            live_webhook_secret: stripeData.live_webhook_secret || '',
+            mode: stripeData.mode || 'test'
+          });
+        }
       }
     } catch (error) {
       console.error('Erreur inattendue:', error);
@@ -78,40 +74,19 @@ export const PaymentConfig = () => {
     try {
       setIsLoading(true);
       
-      // D'abord, vérifier si l'enregistrement existe
-      const { data: existingData } = await supabase
-        .from('admin_settings')
-        .select('id')
-        .eq('key', 'stripe')
-        .single();
-      
-      if (existingData) {
-        // Mise à jour si l'enregistrement existe
-        const { error } = await supabase
-          .from('admin_settings')
-          .update({
-            value: stripeConfig,
-            updated_at: new Date().toISOString()
-          })
-          .eq('key', 'stripe');
-        
-        if (error) throw error;
-      } else {
-        // Insertion si l'enregistrement n'existe pas
-        const { error } = await supabase
-          .from('admin_settings')
-          .insert({
-            key: 'stripe',
-            value: stripeConfig
-          });
-        
-        if (error) throw error;
-      }
-      
-      toast({
-        title: "Succès",
-        description: "Les paramètres Stripe ont été mis à jour avec succès",
+      const result = await apiClient.post('/admin/settings', {
+        key: 'stripe',
+        value: JSON.stringify(stripeConfig)
       });
+      
+      if (result.success) {
+        toast({
+          title: "Succès",
+          description: "Les paramètres Stripe ont été mis à jour avec succès",
+        });
+      } else {
+        throw new Error(result.error || 'Erreur de sauvegarde');
+      }
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
       toast({

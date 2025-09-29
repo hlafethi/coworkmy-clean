@@ -1,0 +1,172 @@
+const API_BASE_URL = 'http://localhost:5000/api';
+
+interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  user?: any;
+  token?: string;
+}
+
+class ApiClient {
+  private token: string | null = null;
+
+  constructor() {
+    // Récupérer le token depuis localStorage
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('coworkmy-token');
+    }
+  }
+
+  // Méthode pour mettre à jour le token
+  updateToken() {
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('coworkmy-token');
+    }
+  }
+
+  private async request<T = any>(
+    endpoint: string, 
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    // Mettre à jour le token avant chaque requête
+    this.updateToken();
+    
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+      console.log('🔑 Token utilisé pour la requête:', this.token.substring(0, 20) + '...');
+    } else {
+      console.log('⚠️ Aucun token disponible pour la requête');
+    }
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Erreur serveur' };
+      }
+
+      return { success: true, data: data.data };
+    } catch (error) {
+      console.error('Erreur API:', error);
+      return { success: false, error: 'Erreur de connexion' };
+    }
+  }
+
+  // Authentification
+  async signIn(email: string, password: string) {
+    const result = await this.request('/auth/signin', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (result.data) {
+      this.token = result.data.token;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('coworkmy-token', this.token);
+      }
+    }
+
+    return result;
+  }
+
+  async signUp(email: string, password: string, fullName?: string) {
+    const result = await this.request('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, full_name: fullName }),
+    });
+
+    if (result.data) {
+      this.token = result.data.token;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('coworkmy-token', this.token);
+      }
+    }
+
+    return result;
+  }
+
+  async getCurrentUser() {
+    return this.request('/auth/me');
+  }
+
+  // Méthode générique GET
+  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'GET' });
+  }
+
+  // Méthode générique POST
+  async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  // Méthode générique PUT
+  async put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
+  // Méthode générique DELETE
+  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  async signOut() {
+    this.token = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('coworkmy-token');
+    }
+  }
+
+  // Espaces
+  async getSpaces() {
+    return this.request('/spaces');
+  }
+
+  async createSpace(spaceData: any) {
+    return this.request('/spaces', {
+      method: 'POST',
+      body: JSON.stringify(spaceData),
+    });
+  }
+
+  // Réservations
+  async getBookings() {
+    return this.request('/bookings');
+  }
+
+  async createBooking(bookingData: any) {
+    return this.request('/bookings', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  // Paramètres admin
+  async getAdminSettings() {
+    return this.request('/admin/settings');
+  }
+
+  // Santé de l'API
+  async healthCheck() {
+    return this.request('/health');
+  }
+}
+
+export const apiClient = new ApiClient();

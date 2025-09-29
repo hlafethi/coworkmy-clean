@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContextNew";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import { CookieSettingsAdmin } from "@/components/admin/CookieSettings";

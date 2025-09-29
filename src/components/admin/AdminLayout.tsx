@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContextNew";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import {

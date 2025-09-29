@@ -30,7 +30,7 @@ const AdminSpaces = () => {
     selectedSpace,
     triggerRefresh,
     handleEditClick,
-    handleCloseEditDialog
+    handleDialogClose
   } = useSpaces();
 
   // Function to handle successful space operations
@@ -106,7 +106,7 @@ const AdminSpaces = () => {
         <SpaceDialog
           mode="edit"
           open={editDialogOpen}
-          onOpenChange={handleCloseEditDialog}
+          onOpenChange={setEditDialogOpen}
           onSuccess={handleSpaceSuccess}
           space={selectedSpace}
         />

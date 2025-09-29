@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export type UserProfile = {
@@ -35,47 +35,17 @@ export const useUsers = () => {
     try {
       setLoading(true);
       
-      // Récupérer tous les profils avec gestion d'erreur améliorée
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
+      // Pour PostgreSQL, on utilise des données par défaut pour l'instant
+      console.log('Fetching users...');
+      const response = await apiClient.get('/users');
       
-      if (!profiles) {
+      if (response.success && response.data) {
+        const usersData = Array.isArray(response.data) ? response.data : [];
+        setUsers(usersData);
+      } else {
+        // Données par défaut si l'API n'est pas disponible
         setUsers([]);
-        return;
       }
-      
-      const formattedUsers = profiles.map((profile: any) => ({
-        id: profile.id,
-        user_id: profile.user_id,
-        email: profile.email,
-        first_name: profile.first_name || '',
-        last_name: profile.last_name || '',
-        phone: profile.phone || '',
-        company: profile.company || '',
-        created_at: profile.created_at,
-        updated_at: profile.updated_at,
-        address: profile.address || '',
-        address_street: profile.address_street || '',
-        address_city: profile.address_city || '',
-        address_postal_code: profile.address_postal_code || '',
-        address_country: profile.address_country || '',
-        birth_date: profile.birth_date || '',
-        profile_picture: profile.profile_picture || '',
-        avatar_url: profile.avatar_url || '',
-        logo_url: profile.logo_url || '',
-        presentation: profile.presentation || '',
-        company_name: profile.company_name || '',
-        full_name: profile.full_name || '',
-        phone_number: profile.phone_number || '',
-      }));
-      
-      setUsers(formattedUsers);
     } catch (error) {
       console.error('Erreur lors de la récupération des profils:', error);
       toast.error("Impossible de récupérer les utilisateurs");

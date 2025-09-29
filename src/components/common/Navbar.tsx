@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, User, Settings, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContextNew";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { StripeModeIndicator } from "./StripeModeIndicator";
 

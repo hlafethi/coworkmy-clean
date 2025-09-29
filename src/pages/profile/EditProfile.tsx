@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, User, Building2, MapPin, Camera } from "lucide-react";
-import { useAuth } from "@/context/AuthContextNew";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import AvatarUpload from "@/components/profile/AvatarUpload";
 import LogoUpload from "@/components/profile/LogoUpload";
 

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowDown, ArrowUp, Edit, Plus, Trash } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TimeSlotForm } from "./time-slots/TimeSlotForm";
@@ -15,16 +15,14 @@ import { TimeSlotFormValues } from "./time-slots/timeSlotSchema";
 /* ------------------------------------------------------------------ */
 export interface TimeSlot {
   id: string;
-  label: string;
+  day_of_week: number;
   start_time: string;  // "09:00"
   end_time: string;    // "10:00"
-  duration: number;    // minutes
+  space_id?: string;
+  is_active: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;
-  is_available: boolean;
-  price: number;
-  space_id: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -32,13 +30,15 @@ export interface TimeSlot {
 /* ------------------------------------------------------------------ */
 async function fetchTimeSlots(): Promise<TimeSlot[]> {
   try {
-    const { data, error } = await supabase
-      .from('time_slots')
-      .select('*')
-      .order('display_order', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    const result = await apiClient.get('/time-slots');
+    
+    if (result.success && result.data) {
+      return result.data;
+    } else {
+      console.error('Error fetching time slots:', result.error);
+      toast.error("Impossible de récupérer les créneaux horaires");
+      return [];
+    }
   } catch (error) {
     console.error('Error fetching time slots:', error);
     toast.error("Impossible de récupérer les créneaux horaires");
@@ -50,14 +50,15 @@ async function createTimeSlot(
   data: Omit<TimeSlot, "id" | "created_at" | "updated_at">
 ): Promise<TimeSlot | null> {
   try {
-    const { data: newSlot, error } = await supabase
-      .from('time_slots')
-      .insert([data])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return newSlot;
+    const result = await apiClient.post('/time-slots', data);
+    
+    if (result.success && result.data) {
+      return result.data;
+    } else {
+      console.error('Error creating time slot:', result.error);
+      toast.error("Impossible de créer le créneau horaire");
+      return null;
+    }
   } catch (error) {
     console.error('Error creating time slot:', error);
     toast.error("Impossible de créer le créneau horaire");
@@ -70,15 +71,15 @@ async function updateTimeSlot(
   data: Partial<TimeSlot>
 ): Promise<TimeSlot | null> {
   try {
-    const { data: updatedSlot, error } = await supabase
-      .from('time_slots')
-      .update(data)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return updatedSlot;
+    const result = await apiClient.put(`/time-slots/${id}`, data);
+    
+    if (result.success && result.data) {
+      return result.data;
+    } else {
+      console.error('Error updating time slot:', result.error);
+      toast.error("Impossible de mettre à jour le créneau horaire");
+      return null;
+    }
   } catch (error) {
     console.error('Error updating time slot:', error);
     toast.error("Impossible de mettre à jour le créneau horaire");
@@ -88,13 +89,15 @@ async function updateTimeSlot(
 
 async function deleteTimeSlot(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('time_slots')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-    return true;
+    const result = await apiClient.delete(`/time-slots/${id}`);
+    
+    if (result.success) {
+      return true;
+    } else {
+      console.error('Error deleting time slot:', result.error);
+      toast.error("Impossible de supprimer le créneau horaire");
+      return false;
+    }
   } catch (error) {
     console.error('Error deleting time slot:', error);
     toast.error("Impossible de supprimer le créneau horaire");

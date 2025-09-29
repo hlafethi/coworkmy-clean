@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 
 // État global pour éviter les souscriptions multiples
 let globalState = {
@@ -57,108 +58,41 @@ export function useUserBookings() {
       globalState.error = null;
       notifySubscribers();
       
-      // Récupérer l'utilisateur connecté
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      // Récupérer l'utilisateur connecté via l'API
+      const userResponse = await apiClient.getCurrentUser();
       
-      if (userError || !user) {
+      if (!userResponse.success || !userResponse.data) {
         globalState.bookings = [];
         globalState.loading = false;
         notifySubscribers();
         return;
       }
+      
+      const user = userResponse.data;
 
-      // Si l'utilisateur a changé, nettoyer l'ancien canal
+      // Si l'utilisateur a changé, nettoyer l'ancien état
       if (globalState.userId !== user.id) {
-        if (globalState.channel) {
-          supabase.removeChannel(globalState.channel);
-          globalState.channel = null;
-        }
         globalState.userId = user.id;
       }
       
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          spaces (
-            id,
-            name,
-            description,
-            capacity,
-            hourly_price,
-            daily_price,
-            monthly_price,
-            yearly_price,
-            half_day_price,
-            quarter_price,
-            custom_price,
-            custom_label,
-            image_url,
-            pricing_type
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Récupérer les réservations via l'API
+      const bookingsResponse = await apiClient.get('/bookings');
+      
+      if (!bookingsResponse.success) {
+        throw new Error(bookingsResponse.error || 'Erreur lors du chargement des réservations');
+      }
 
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
+      if (!bookingsResponse.data || bookingsResponse.data.length === 0) {
         globalState.bookings = [];
       } else {
-        globalState.bookings = data;
+        globalState.bookings = bookingsResponse.data;
       }
 
       globalState.loading = false;
       notifySubscribers();
 
-      // Configurer le canal temps réel si pas déjà fait
-      if (!globalState.channel) {
-        globalState.channel = supabase
-          .channel('user_bookings_changes')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'bookings'
-            },
-                        (payload) => {
-              // Vérifier que la réservation appartient à l'utilisateur actuel
-              if (payload.eventType === 'DELETE') {
-                // Pour les suppressions, vérifier si la réservation existe dans notre état local
-                const bookingExists = globalState.bookings.some(booking => booking.id === payload.old?.id);
-                
-                if (!bookingExists) {
-                  return;
-                }
-              } else {
-                // Pour INSERT/UPDATE, vérifier le user_id
-                const bookingUserId = payload.new?.user_id;
-                
-                if (bookingUserId !== user.id) {
-                  return;
-                }
-              }
-              
-              if (payload.eventType === 'DELETE') {
-                // Suppression : retirer de l'état global
-                globalState.bookings = globalState.bookings.filter(booking => booking.id !== payload.old.id);
-                notifySubscribers();
-              } else if (payload.eventType === 'INSERT') {
-                // Nouvelle réservation : ajouter à l'état global
-                globalState.bookings = [payload.new as Booking, ...globalState.bookings];
-                notifySubscribers();
-              } else if (payload.eventType === 'UPDATE') {
-                // Mise à jour : remplacer dans l'état global
-                globalState.bookings = globalState.bookings.map(booking => 
-                  booking.id === payload.new.id ? payload.new as Booking : booking
-                );
-                notifySubscribers();
-              }
-            }
-          )
-          .subscribe();
-      }
+      // Temps réel désactivé - utilisation de PostgreSQL sans Supabase
+      // Les mises à jour se feront via rechargement manuel
     } catch (error) {
       console.error("❌ Erreur lors du chargement des réservations utilisateur:", error);
       globalState.error = "Erreur lors du chargement des réservations";

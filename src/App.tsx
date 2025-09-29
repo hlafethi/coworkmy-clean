@@ -4,13 +4,13 @@ import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Sentry from '@sentry/react';
 import { HelmetProvider } from 'react-helmet-async';
-import { AuthProvider } from "./context/AuthContextNew";
+import { AuthProvider } from "./context/AuthContextPostgreSQL";
 import { CookieConsent } from "./components/common/CookieConsent";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import Support from "@/pages/support/Support";
-import ChatwootUserSync from './components/common/ChatwootUserSync';
+// ChatwootUserSync supprimé
 
 // Lazy load components
 const Index = lazy(() => import("@/pages/Index"));
@@ -95,7 +95,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <BrowserRouter basename="/" >
             <AuthProvider>
-              <ChatwootUserSync />
+              {/* ChatwootUserSync supprimé */}
               <AppRoutes />
               <Toaster position="top-center" />
               <CookieConsent />

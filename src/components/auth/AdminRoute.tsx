@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContextNew';
+import { useAuth } from '@/context/AuthContextPostgreSQL';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useEffect, useRef } from 'react';
 

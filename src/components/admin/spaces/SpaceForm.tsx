@@ -24,9 +24,15 @@ export function SpaceForm({ defaultValues, onSubmit, onCancel, isSubmitting }: S
   });
 
   const [pricingType, setPricingType] = useState<PricingType>(defaultValues?.pricing_type || "hourly");
+  const [timeSlots, setTimeSlots] = useState<Array<{id: string; startTime: string; endTime: string; label: string}>>([]);
 
   const handlePricingTypeChange = (value: PricingType) => {
     setPricingType(value);
+  };
+
+  const handleTimeSlotsChange = (slots: Array<{id: string; startTime: string; endTime: string; label: string}>) => {
+    setTimeSlots(slots);
+    form.setValue('time_slots', slots);
   };
 
   // Protection contre form null/undefined
@@ -53,6 +59,7 @@ export function SpaceForm({ defaultValues, onSubmit, onCancel, isSubmitting }: S
             <PricingFields 
               control={form.control} 
               pricingType={pricingType}
+              onTimeSlotsChange={handleTimeSlotsChange}
             />
             <SpaceStatus control={form.control} />
             <div className="flex justify-end space-x-2">

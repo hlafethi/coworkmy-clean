@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContextNew";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/api-client";
 
 interface DashboardStats {
   totalBookings: number;
@@ -23,7 +23,7 @@ interface DashboardStats {
 
 export function useDashboard() {
   const navigate = useNavigate();
-  const { user, profile, isAdmin: contextIsAdmin, loading: authLoading, profileLoaded } = useAuth();
+  const { user, profile, isAdmin: contextIsAdmin, loading: authLoading, profileLoaded, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalBookings: 0,
@@ -56,37 +56,38 @@ export function useDashboard() {
         return;
       }
       
-      // Récupérer les réservations
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select(`*, spaces:space_id (name, pricing_type)`)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-        
-      if (bookingsError) {
-        toast.error("Erreur lors du chargement des réservations");
-        setLoading(false);
-        return;
-      }
+        // Récupérer les réservations via l'API
+        const bookingsResponse = await apiClient.get('/bookings');
+          
+        if (!bookingsResponse.success) {
+          toast.error("Erreur lors du chargement des réservations");
+          setLoading(false);
+          return;
+        }
+      
+      const bookings = bookingsResponse.data;
       
       // Filtrer les réservations à venir (date de fin > maintenant)
       const now = new Date();
-      const upcomingBookings = bookings?.filter(b => new Date(b.end_time) > now) || [];
+      const upcomingBookings = bookings?.filter(b => {
+        const endTime = new Date(b.end_date);
+        return endTime > now;
+      }) || [];
       
       setStats({
         totalBookings: bookings?.length || 0,
         upcomingBookings: upcomingBookings.length,
         recentActivities: upcomingBookings.slice(0, 5).map(b => ({
           id: b.id,
-          description: `${b.spaces?.name || 'Espace'} - ${b.start_time}`,
-          date: b.start_time,
+          description: `${b.space_name || 'Espace'} - ${b.start_date}`,
+          date: b.start_date,
           status: b.status,
-          total_price_ht: b.total_price_ht || 0,
-          total_price_ttc: b.total_price_ttc || 0,
-          startTime: b.start_time,
-          endTime: b.end_time,
-          spaceName: b.spaces?.name || 'Espace',
-          pricingType: b.spaces?.pricing_type || 'hourly'
+          total_price_ht: b.total_price || 0,
+          total_price_ttc: b.total_price || 0,
+          startTime: b.start_date,
+          endTime: b.end_date,
+          spaceName: b.space_name || 'Espace',
+          pricingType: 'hourly'
         })) || []
       });
       setLoading(false);
@@ -97,9 +98,9 @@ export function useDashboard() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      // Utiliser la fonction signOut du contexte qui gère déjà la redirection
+      await signOut();
       toast.success("Déconnexion réussie");
-      navigate("/auth/login");
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
       toast.error("Une erreur s'est produite lors de la déconnexion");

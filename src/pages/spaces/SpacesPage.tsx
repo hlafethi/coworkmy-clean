@@ -1,98 +1,25 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { formatPrice, getSpacePrice, getPricingLabel } from '@/utils/bookingUtils';
-import { Space, PricingType } from '@/components/admin/spaces/types';
+import { useSpaces } from '@/hooks/useSpacesAPI';
 
-const displayPrice = (space: Space) => {
-  const prices = getSpacePrice(space);
-  const unit = getPricingLabel(space);
-
-  let label;
-  switch (space.pricing_type) {
-    case 'hourly':
-      label = "Prix horaire";
-      break;
-    case 'daily':
-      label = "Prix journalier";
-      break;
-    case 'monthly':
-      label = "Prix mensuel";
-      break;
-    case 'yearly':
-      label = "Prix annuel";
-      break;
-    case 'half_day':
-      label = "Prix demi-journée";
-      break;
-    case 'quarter':
-      label = "Prix trimestriel";
-      break;
-    case 'custom':
-      label = space.custom_label || "Prix personnalisé";
-      break;
-    default:
-      label = "Prix horaire";
-  }
-
+const displayPrice = (space: any) => {
+  // Prix simplifié pour l'API - utiliser les nouveaux noms de champs
+  const price = space.hourly_price || space.daily_price || 0;
+  
   return {
-    label,
-    priceHT: formatPrice(prices.ht),
-    priceTTC: formatPrice(prices.ttc),
-    unit
+    label: space.hourly_price ? "Prix horaire" : "Prix journalier",
+    price: typeof price === 'number' ? price.toFixed(2) : '0.00',
+    unit: "€"
   };
 };
 
 const SpacesPage = () => {
-  const [loading, setLoading] = useState(true);
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  const { spaces, loading, error } = useSpaces();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchSpaces = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("spaces")
-          .select("*")
-          .eq("is_active", true);
-
-        if (error) {
-          throw error;
-        }
-
-        // Validate and transform data
-        const validPricingTypes = ['hourly', 'daily', 'monthly', 'yearly', 'half_day', 'quarter', 'custom'] as PricingType[];
-        const validatedSpaces = (data || []).map(space => {
-          // Ensure pricing_type is valid, default to 'hourly' if not
-          const pricing_type = validPricingTypes.includes(space.pricing_type as PricingType) 
-            ? space.pricing_type
-            : 'hourly' as PricingType;
-
-          return {
-            ...space,
-            pricing_type,
-            is_active: true
-          } as Space;
-        });
-
-        setSpaces(validatedSpaces);
-      } catch (error) {
-        console.error("Erreur lors de la récupération des espaces:", error);
-        toast.error("Une erreur s'est produite lors du chargement des espaces");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSpaces();
-  }, []);
 
   const handleBooking = (spaceId: string) => {
     navigate(`/booking/${spaceId}`);
@@ -128,6 +55,13 @@ const SpacesPage = () => {
                 </CardFooter>
               </Card>
             ))}
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 p-8 rounded-lg text-center">
+            <p className="text-red-600 mb-4">Erreur lors du chargement des espaces: {error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Réessayer
+            </Button>
           </div>
         ) : spaces.length === 0 ? (
           <div className="bg-gray-50 p-8 rounded-lg text-center">
@@ -165,8 +99,7 @@ const SpacesPage = () => {
                       return (
                         <div className="text-center">
                           <p className="text-sm font-medium text-gray-500 mb-2">{priceInfo.label}</p>
-                          <p className="text-sm text-gray-600">HT: <span className="font-semibold">{priceInfo.priceHT} {priceInfo.unit}</span></p>
-                          <p className="text-base text-gray-900">TTC: <span className="font-semibold">{priceInfo.priceTTC} {priceInfo.unit}</span></p>
+                          <p className="text-base text-gray-900">{priceInfo.price} {priceInfo.unit}</p>
                         </div>
                       );
                     })()}

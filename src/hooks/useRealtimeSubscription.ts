@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface UseRealtimeSubscriptionOptions {
   channelName: string;
@@ -58,11 +58,11 @@ export const useRealtimeSubscription = ({
     try {
       console.log(`[useRealtimeSubscription] Création du canal ${channelName}...`);
       
-      // Vérifier que le client Supabase est initialisé
-      if (!supabase) {
-        console.error(`[useRealtimeSubscription] Client Supabase non initialisé pour ${channelName}`);
-        if (onError) {
-          onError(new Error('Client Supabase non initialisé'));
+      // Vérifier que Supabase est configuré
+      if (!isSupabaseConfigured() || !supabase) {
+        console.log(`[useRealtimeSubscription] Supabase non configuré - souscription temps réel désactivée pour ${channelName}`);
+        if (onStatusChange) {
+          onStatusChange('disconnected');
         }
         return;
       }

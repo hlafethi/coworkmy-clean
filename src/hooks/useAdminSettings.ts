@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import type { SettingsFormValues } from "@/types/settings";
 
@@ -49,38 +49,22 @@ export function useAdminSettings() {
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      // Vérifier si l'utilisateur est admin
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (profileError) {
-          console.error("Erreur lors de la vérification des droits admin:", profileError);
-        } else {
-          setIsAdmin(profile?.is_admin || false);
-        }
+      // Vérifier si l'utilisateur est admin via l'API
+      const userResult = await apiClient.getCurrentUser();
+      if (userResult.success && userResult.data && userResult.data.user) {
+        setIsAdmin(userResult.data.user.is_admin || false);
       }
       
-      // Charger les settings homepage, stripe et google_reviews
-      const { data: settingsRows, error: settingsError } = await supabase
-        .from('admin_settings')
-        .select('*')
-        .in('key', SETTINGS_KEYS);
+      // Charger les settings homepage, stripe et google_reviews via l'API
+      const settingsResult = await apiClient.get('/admin/settings');
       
-      if (settingsError) {
-        console.error("Erreur lors du chargement des paramètres:", settingsError);
-        throw settingsError;
-      }
-      
-      // Fusionner les settings dans le form
-      const homepage = settingsRows?.find((row: any) => row.key === 'homepage')?.value || {};
-      const stripe = settingsRows?.find((row: any) => row.key === 'stripe')?.value || {};
-      const googleReviews = settingsRows?.find((row: any) => row.key === 'google_reviews')?.value || {};
-      
-      form.reset({
+      if (settingsResult.success && settingsResult.data) {
+        // Fusionner les settings dans le form
+        const homepage = settingsResult.data.find((row: any) => row.key === 'homepage')?.value || {};
+        const stripe = settingsResult.data.find((row: any) => row.key === 'stripe')?.value || {};
+        const googleReviews = settingsResult.data.find((row: any) => row.key === 'google_reviews')?.value || {};
+        
+        form.reset({
         homepage: {
           title: homepage.title || "",
           description: homepage.description || "",
@@ -111,6 +95,7 @@ export function useAdminSettings() {
           min_rating: googleReviews.min_rating || 4,
         }
       });
+      }
     } catch (error) {
       console.error("Erreur lors du chargement des paramètres:", error);
       toast.error("Impossible de charger les paramètres");
@@ -141,14 +126,28 @@ export function useAdminSettings() {
 
       console.log('[ADMIN_SETTINGS UPSERT]', settingsToUpsert);
 
-      // Upsert tous les paramètres en une seule fois
-      const { error } = await supabase
-        .from('admin_settings')
-        .upsert(settingsToUpsert, { onConflict: 'key' });
+      // Sauvegarder les paramètres homepage via l'endpoint spécifique
+      if (values.homepage) {
+        const homepageResult = await apiClient.post('/homepage-settings', values.homepage);
+        if (!homepageResult.success) {
+          console.error('[HOMEPAGE_SETTINGS SAVE ERROR]', homepageResult.error);
+          throw new Error(homepageResult.error || 'Erreur lors de la sauvegarde des paramètres homepage');
+        }
+        console.log("✅ Paramètres homepage sauvegardés:", homepageResult.data);
+      }
 
-      if (error) {
-        console.error('[ADMIN_SETTINGS UPSERT ERROR]', error);
-        throw error;
+      // Sauvegarder les autres paramètres via l'API générale
+      const otherSettings = settingsToUpsert.filter(s => s.key !== 'homepage');
+      for (const setting of otherSettings) {
+        const result = await apiClient.post('/admin/settings', {
+          key: setting.key,
+          value: setting.value
+        });
+        
+        if (!result.success) {
+          console.error('[ADMIN_SETTINGS SAVE ERROR]', result.error);
+          throw new Error(result.error || 'Erreur lors de la sauvegarde');
+        }
       }
 
       toast.success("Paramètres enregistrés avec succès");

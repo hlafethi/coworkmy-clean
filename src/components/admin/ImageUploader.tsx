@@ -13,7 +13,7 @@ import { UseFormReturn, ControllerRenderProps } from "react-hook-form";
 import { SettingsFormValues } from "@/types/settings";
 import { useId } from "react";
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+// import { supabase } from "@/lib/supabase"; // Désactivé - utilisation de PostgreSQL
 import { toast } from "sonner";
 
 interface HomepageSettingsTabProps {
@@ -314,23 +314,21 @@ export function ImageUploader(props: {
     }
     setIsUploading(true);
     try {
-      // Générer un nom unique
-      const ext = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
-      const filePath = `homepage/${fileName}`;
-      // Upload vers le bucket 'homepage'
-      const { error: uploadError } = await supabase.storage
-        .from('homepage')
-        .upload(filePath, file);
-      if (uploadError) throw uploadError;
-      // Récupérer l'URL publique
-      const { data } = supabase.storage
-        .from('homepage')
-        .getPublicUrl(filePath);
-      if (!data?.publicUrl) throw new Error("Impossible d'obtenir l'URL publique");
-      setPreview(data.publicUrl);
-      props.onChange(data.publicUrl);
-      toast.success("Image uploadée avec succès");
+      // Solution alternative : convertir l'image en base64 ou utiliser une URL temporaire
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          setPreview(result);
+          props.onChange(result);
+          toast.success("Image sélectionnée avec succès");
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Erreur lors de la lecture de l'image");
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
       console.error('Erreur upload image:', error);
       toast.error("Erreur lors de l'upload de l'image");

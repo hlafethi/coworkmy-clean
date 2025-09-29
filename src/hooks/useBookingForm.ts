@@ -1,24 +1,47 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useSpaces } from "./useSpaces";
-import { useTimeSlots } from "./useTimeSlots";
+import { useTimeSlotsAPI } from "./useTimeSlotsAPI";
 import { getTimeSlotTimes, getSpacePrice, getPricingLabel } from "@/utils/bookingUtils";
 import { useStripePayment } from "@/hooks/useStripePayment";
 import { DateRange } from "react-day-picker";
-import { withRetry } from "@/utils/supabaseUtils";
-import { isValidBooking, isValidSpace } from "@/utils/typeGuards";
-import type { Database } from "@/integrations/supabase/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { TimeSlotOption } from "@/types/timeSlots";
 import type { Space } from "@/components/admin/types";
 
-type BookingInsert = Database['public']['Tables']['bookings']['Insert'];
-type BookingUpdate = Database['public']['Tables']['bookings']['Update'];
-type SpaceRow = Database['public']['Tables']['spaces']['Row'];
+// Types simplifiés pour PostgreSQL
+interface BookingInsert {
+  space_id: string;
+  start_time: string;
+  end_time: string;
+  status?: 'pending' | 'confirmed' | 'cancelled';
+  total_price_ht?: number;
+  total_price_ttc?: number;
+}
+
+interface BookingUpdate {
+  status?: 'pending' | 'confirmed' | 'cancelled';
+  total_price_ht?: number;
+  total_price_ttc?: number;
+}
+
+interface SpaceRow {
+  id: string;
+  name: string;
+  description?: string;
+  price_per_hour?: number;
+  price_per_day?: number;
+  price_per_week?: number;
+  price_per_month?: number;
+  capacity?: number;
+  amenities?: string[];
+  image_url?: string;
+  is_active?: boolean;
+}
 
 const bookingSchema = z.object({
   space_id: z.string().min(1, "Espace requis"),
@@ -73,9 +96,15 @@ export function useBookingForm(spaceId?: string) {
   const navigate = useNavigate();
   const { createPaymentSession } = useStripePayment();
   
-  const { timeSlots, selectedSlot: timeSlot, setSelectedSlot: setTimeSlot } = useTimeSlots(
-    selectedSpace?.pricing_type
-  );
+  const { timeSlots } = useTimeSlotsAPI(spaceType);
+  const [timeSlot, setTimeSlot] = useState<string>("");
+  
+  console.log('🔍 useBookingForm:', { 
+    spaceType,
+    selectedSpaceId: selectedSpace?.id, 
+    timeSlotsLength: timeSlots.length,
+    timeSlots 
+  });
 
   // Réinitialiser les sélections quand l'espace change
   useEffect(() => {
@@ -94,18 +123,13 @@ export function useBookingForm(spaceId?: string) {
 
   const createBooking = async (booking: BookingInsert) => {
     try {
-      const { data: bookingData, error } = await supabase
-        .from('bookings')
-        .insert(booking)
-        .select()
-        .single();
-
-      if (error) throw error;
-      if (!bookingData || !isValidBooking(bookingData)) {
-        throw new Error("Erreur lors de la création de la réservation");
+      const response = await apiClient.post('/bookings', booking);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la création de la réservation');
       }
 
-      return bookingData;
+      return response.data;
     } catch (error) {
       console.error('Erreur création réservation:', error);
       throw error;
@@ -119,12 +143,13 @@ export function useBookingForm(spaceId?: string) {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('bookings')
-        .update(update)
-        .eq('id', bookingId as Database['public']['Tables']['bookings']['Row']['id']);
+      const response = await apiClient.put(`/bookings/${bookingId}`, {
+        status
+      });
 
-      if (error) throw error;
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la mise à jour du statut');
+      }
     } catch (error) {
       console.error('Erreur mise à jour statut:', error);
       throw error;

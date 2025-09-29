@@ -16,11 +16,12 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Grid2X2, List, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { createChannel, removeChannel } from "@/lib";
 
 const AdminBookings = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table" | "calendar">("grid");
+  const { user } = useAuth();
   const {
     bookings,
     loading,
@@ -34,7 +35,6 @@ const AdminBookings = () => {
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           toast.error("Vous devez être connecté pour accéder à cette page");
         }
@@ -44,7 +44,7 @@ const AdminBookings = () => {
     };
 
     checkAdminAccess();
-  }, []);
+  }, [user]);
 
   // WebSocket setup for real-time updates
   useEffect(() => {
