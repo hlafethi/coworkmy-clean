@@ -1,7 +1,10 @@
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
+import { useLegalPages } from '@/hooks/useLegalPages';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   const { settings, loading } = useHomepageSettings();
+  const { pages, loading: legalLoading } = useLegalPages();
 
   if (loading) {
     return (
@@ -16,7 +19,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white py-8">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo et description de l'entreprise */}
           <div className="space-y-4">
             {settings?.company_logo_url && (
@@ -86,6 +89,54 @@ export default function Footer() {
                 <p>
                   <span className="font-medium">TVA:</span> {settings.company_vat_number}
                 </p>
+              )}
+            </div>
+          </div>
+
+          {/* Pages légales */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold">Pages légales</h4>
+            <div className="space-y-2 text-gray-300">
+              {!legalLoading && pages && pages.length > 0 ? (
+                pages
+                  .filter(page => page.is_active)
+                  .map((page) => (
+                    <p key={page.id}>
+                      <Link 
+                        to={`/legal/${page.type}`}
+                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        {page.title}
+                      </Link>
+                    </p>
+                  ))
+              ) : (
+                <div className="space-y-2">
+                  <p>
+                    <Link 
+                      to="/legal/legal"
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Mentions légales
+                    </Link>
+                  </p>
+                  <p>
+                    <Link 
+                      to="/legal/terms"
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Conditions générales
+                    </Link>
+                  </p>
+                  <p>
+                    <Link 
+                      to="/legal/privacy"
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Politique de confidentialité
+                    </Link>
+                  </p>
+                </div>
               )}
             </div>
           </div>

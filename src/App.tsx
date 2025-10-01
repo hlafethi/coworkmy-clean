@@ -58,7 +58,7 @@ const AppRoutes = () => {
         <Route path="/test" element={<TestNavigation />} />
 
         {/* Legal pages */}
-        <Route path="/legal" element={<Legal />} />
+        <Route path="/legal/legal" element={<Legal />} />
         <Route path="/legal/privacy" element={<Privacy />} />
         <Route path="/legal/terms" element={<Terms />} />
 
