@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import type { SettingsFormValues } from "@/types/settings";
@@ -62,7 +62,7 @@ export function useAdminSettings() {
   // Utiliser la persistance des formulaires
   const { clearPersistedData } = usePersistedForm(form, 'admin-settings', true);
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log('🔄 Chargement des paramètres...');
@@ -147,7 +147,7 @@ export function useAdminSettings() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [hasLoadedFromServer, clearPersistedData]);
 
   const saveSettings = async (values: SettingsFormValues) => {
     try {

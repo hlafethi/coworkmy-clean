@@ -1318,11 +1318,29 @@ app.get('/api/cookie-settings', async (req, res) => {
       // Retourner des paramètres par défaut
       const defaultSettings = {
         id: 1,
-        enabled: true,
-        message: 'Nous utilisons des cookies pour améliorer votre expérience.',
-        accept_button: 'Accepter',
-        decline_button: 'Refuser',
-        policy_url: '/legal/privacy',
+        title: 'Paramètres de Cookies',
+        description: 'Gérez vos préférences de cookies',
+        accept_button_text: 'Accepter',
+        reject_button_text: 'Refuser',
+        settings_button_text: 'Personnaliser',
+        save_preferences_text: 'Enregistrer',
+        necessary_cookies_title: 'Cookies essentiels',
+        necessary_cookies_description: 'Ces cookies sont nécessaires au fonctionnement du site.',
+        analytics_cookies_title: 'Cookies analytiques',
+        analytics_cookies_description: 'Ces cookies nous aident à améliorer notre site.',
+        analytics_cookies_enabled: false,
+        marketing_cookies_title: 'Cookies marketing',
+        marketing_cookies_description: 'Ces cookies permettent de personnaliser les publicités.',
+        marketing_cookies_enabled: false,
+        privacy_policy_url: '/privacy',
+        cookie_policy_url: '/cookies',
+        is_active: true,
+        banner_position: 'bottom',
+        banner_layout: 'banner',
+        primary_color: '#3B82F6',
+        secondary_color: '#6B7280',
+        background_color: '#FFFFFF',
+        text_color: '#1F2937',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -1338,7 +1356,76 @@ app.get('/api/cookie-settings', async (req, res) => {
   }
 });
 
-// POST /api/cookie-settings
+// PUT /api/cookie-settings
+app.put('/api/cookie-settings', authenticateToken, async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    const cookieData = req.body;
+    console.log('🍪 Sauvegarde des paramètres cookies...', cookieData);
+    
+    // Vérifier s'il existe déjà des paramètres
+    const existing = await pool.query('SELECT id FROM cookie_settings LIMIT 1');
+    
+    let result;
+    if (existing.rows.length > 0) {
+      // Mettre à jour avec tous les champs
+      result = await pool.query(
+        `UPDATE cookie_settings 
+         SET title = $1, description = $2, accept_button_text = $3, reject_button_text = $4, 
+             settings_button_text = $5, save_preferences_text = $6, necessary_cookies_title = $7,
+             necessary_cookies_description = $8, analytics_cookies_title = $9, analytics_cookies_description = $10,
+             analytics_cookies_enabled = $11, marketing_cookies_title = $12, marketing_cookies_description = $13,
+             marketing_cookies_enabled = $14, privacy_policy_url = $15, cookie_policy_url = $16,
+             is_active = $17, banner_position = $18, banner_layout = $19, primary_color = $20,
+             secondary_color = $21, background_color = $22, text_color = $23, updated_at = NOW()
+         WHERE id = $24
+         RETURNING *`,
+        [
+          cookieData.title, cookieData.description, cookieData.accept_button_text, cookieData.reject_button_text,
+          cookieData.settings_button_text, cookieData.save_preferences_text, cookieData.necessary_cookies_title,
+          cookieData.necessary_cookies_description, cookieData.analytics_cookies_title, cookieData.analytics_cookies_description,
+          cookieData.analytics_cookies_enabled, cookieData.marketing_cookies_title, cookieData.marketing_cookies_description,
+          cookieData.marketing_cookies_enabled, cookieData.privacy_policy_url, cookieData.cookie_policy_url,
+          cookieData.is_active, cookieData.banner_position, cookieData.banner_layout, cookieData.primary_color,
+          cookieData.secondary_color, cookieData.background_color, cookieData.text_color, existing.rows[0].id
+        ]
+      );
+    } else {
+      // Créer avec tous les champs
+      result = await pool.query(
+        `INSERT INTO cookie_settings (
+          title, description, accept_button_text, reject_button_text, settings_button_text, save_preferences_text,
+          necessary_cookies_title, necessary_cookies_description, analytics_cookies_title, analytics_cookies_description,
+          analytics_cookies_enabled, marketing_cookies_title, marketing_cookies_description, marketing_cookies_enabled,
+          privacy_policy_url, cookie_policy_url, is_active, banner_position, banner_layout, primary_color,
+          secondary_color, background_color, text_color, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), NOW())
+         RETURNING *`,
+        [
+          cookieData.title, cookieData.description, cookieData.accept_button_text, cookieData.reject_button_text,
+          cookieData.settings_button_text, cookieData.save_preferences_text, cookieData.necessary_cookies_title,
+          cookieData.necessary_cookies_description, cookieData.analytics_cookies_title, cookieData.analytics_cookies_description,
+          cookieData.analytics_cookies_enabled, cookieData.marketing_cookies_title, cookieData.marketing_cookies_description,
+          cookieData.marketing_cookies_enabled, cookieData.privacy_policy_url, cookieData.cookie_policy_url,
+          cookieData.is_active, cookieData.banner_position, cookieData.banner_layout, cookieData.primary_color,
+          cookieData.secondary_color, cookieData.background_color, cookieData.text_color
+        ]
+      );
+    }
+    
+    console.log(`✅ Paramètres cookies sauvegardés`);
+    sendResponse(res, true, result.rows[0]);
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde paramètres cookies:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// POST /api/cookie-settings (alias pour PUT)
 app.post('/api/cookie-settings', authenticateToken, async (req, res) => {
   try {
     // Vérifier que l'utilisateur est admin
@@ -1346,30 +1433,56 @@ app.post('/api/cookie-settings', authenticateToken, async (req, res) => {
       return sendResponse(res, false, null, 'Accès non autorisé');
     }
 
-    const { enabled, message, accept_button, decline_button, policy_url } = req.body;
-    
-    console.log('🍪 Sauvegarde des paramètres cookies...');
+    const cookieData = req.body;
+    console.log('🍪 Sauvegarde des paramètres cookies...', cookieData);
     
     // Vérifier s'il existe déjà des paramètres
     const existing = await pool.query('SELECT id FROM cookie_settings LIMIT 1');
     
     let result;
     if (existing.rows.length > 0) {
-      // Mettre à jour
+      // Mettre à jour avec tous les champs
       result = await pool.query(
         `UPDATE cookie_settings 
-         SET enabled = $1, message = $2, accept_button = $3, decline_button = $4, policy_url = $5, updated_at = NOW()
-         WHERE id = $6
+         SET title = $1, description = $2, accept_button_text = $3, reject_button_text = $4, 
+             settings_button_text = $5, save_preferences_text = $6, necessary_cookies_title = $7,
+             necessary_cookies_description = $8, analytics_cookies_title = $9, analytics_cookies_description = $10,
+             analytics_cookies_enabled = $11, marketing_cookies_title = $12, marketing_cookies_description = $13,
+             marketing_cookies_enabled = $14, privacy_policy_url = $15, cookie_policy_url = $16,
+             is_active = $17, banner_position = $18, banner_layout = $19, primary_color = $20,
+             secondary_color = $21, background_color = $22, text_color = $23, updated_at = NOW()
+         WHERE id = $24
          RETURNING *`,
-        [enabled, message, accept_button, decline_button, policy_url, existing.rows[0].id]
+        [
+          cookieData.title, cookieData.description, cookieData.accept_button_text, cookieData.reject_button_text,
+          cookieData.settings_button_text, cookieData.save_preferences_text, cookieData.necessary_cookies_title,
+          cookieData.necessary_cookies_description, cookieData.analytics_cookies_title, cookieData.analytics_cookies_description,
+          cookieData.analytics_cookies_enabled, cookieData.marketing_cookies_title, cookieData.marketing_cookies_description,
+          cookieData.marketing_cookies_enabled, cookieData.privacy_policy_url, cookieData.cookie_policy_url,
+          cookieData.is_active, cookieData.banner_position, cookieData.banner_layout, cookieData.primary_color,
+          cookieData.secondary_color, cookieData.background_color, cookieData.text_color, existing.rows[0].id
+        ]
       );
     } else {
-      // Créer
+      // Créer avec tous les champs
       result = await pool.query(
-        `INSERT INTO cookie_settings (enabled, message, accept_button, decline_button, policy_url, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+        `INSERT INTO cookie_settings (
+          title, description, accept_button_text, reject_button_text, settings_button_text, save_preferences_text,
+          necessary_cookies_title, necessary_cookies_description, analytics_cookies_title, analytics_cookies_description,
+          analytics_cookies_enabled, marketing_cookies_title, marketing_cookies_description, marketing_cookies_enabled,
+          privacy_policy_url, cookie_policy_url, is_active, banner_position, banner_layout, primary_color,
+          secondary_color, background_color, text_color, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, NOW(), NOW())
          RETURNING *`,
-        [enabled, message, accept_button, decline_button, policy_url]
+        [
+          cookieData.title, cookieData.description, cookieData.accept_button_text, cookieData.reject_button_text,
+          cookieData.settings_button_text, cookieData.save_preferences_text, cookieData.necessary_cookies_title,
+          cookieData.necessary_cookies_description, cookieData.analytics_cookies_title, cookieData.analytics_cookies_description,
+          cookieData.analytics_cookies_enabled, cookieData.marketing_cookies_title, cookieData.marketing_cookies_description,
+          cookieData.marketing_cookies_enabled, cookieData.privacy_policy_url, cookieData.cookie_policy_url,
+          cookieData.is_active, cookieData.banner_position, cookieData.banner_layout, cookieData.primary_color,
+          cookieData.secondary_color, cookieData.background_color, cookieData.text_color
+        ]
       );
     }
     

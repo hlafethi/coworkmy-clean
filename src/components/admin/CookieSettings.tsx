@@ -93,12 +93,21 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
     try {
       console.log('💾 Sauvegarde des paramètres cookies...');
       
-      const response = await apiClient.put('/cookie-settings', settings);
+      const response = await apiClient.post('/cookie-settings', settings);
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de la sauvegarde');
       }
       
       console.log('✅ Paramètres cookies sauvegardés');
+      
+      // Mettre à jour le cache pour que les changements soient visibles immédiatement
+      localStorage.setItem('cookie-settings-cache', JSON.stringify(response.data));
+      
+      // Déclencher un événement personnalisé pour notifier les autres composants
+      window.dispatchEvent(new CustomEvent('cookie-settings-updated', {
+        detail: response.data
+      }));
+      
       toast.success("Paramètres des cookies enregistrés avec succès");
     } catch (error) {
       console.error('❌ Erreur lors de la sauvegarde:', error);
