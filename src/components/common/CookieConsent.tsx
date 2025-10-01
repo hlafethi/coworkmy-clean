@@ -4,16 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useCookieConsent } from '@/hooks/useCookieConsent';
+import { CookieSettings } from '@/types/cookies';
 
 export function CookieConsent() {
   const { 
     acceptCookies, 
     declineCookies, 
     updateCookiePreferences,
-    cookiePreferences 
+    cookiePreferences,
+    showBanner,
+    loading
   } = useCookieConsent();
   
-  const [showBanner, setShowBanner] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const safeElementRef = useRef<HTMLDivElement>(null);
 
@@ -33,23 +35,25 @@ export function CookieConsent() {
   const handleRejectAll = () => {
     stabilizeSelection();
     declineCookies();
-    setShowBanner(false);
   };
 
   const handleAcceptAll = () => {
     acceptCookies();
-    setShowBanner(false);
   };
 
-  const handleSaveSettings = async () => {
+  const handleSaveSettings = () => {
     try {
-      await updateCookiePreferences(cookiePreferences);
+      updateCookiePreferences(cookiePreferences);
       setShowSettings(false);
-      setShowBanner(false);
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
     }
   };
+
+  // Ne pas afficher le composant pendant le chargement
+  if (loading) {
+    return null;
+  }
 
   return (
     <>
