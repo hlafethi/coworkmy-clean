@@ -14,6 +14,7 @@ import {
   SpaceDialog,
   useSpaces
 } from "./spaces";
+import { SpacesFilter } from "./spaces/SpacesFilter";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Grid2X2, List } from "lucide-react";
 import StripeDebugPanel from "./spaces/StripeDebugPanel";
@@ -22,12 +23,15 @@ const AdminSpaces = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const {
     spaces,
+    allSpaces,
     loading,
     addDialogOpen,
     setAddDialogOpen,
     editDialogOpen,
     setEditDialogOpen,
     selectedSpace,
+    filter,
+    setFilter,
     triggerRefresh,
     handleEditClick,
     handleDialogClose
@@ -76,6 +80,12 @@ const AdminSpaces = () => {
           </div>
         </CardHeader>
         <CardContent>
+          <SpacesFilter 
+            filter={filter}
+            setFilter={setFilter}
+            allSpaces={allSpaces}
+          />
+          
           {loading || spaces.length === 0 ? (
             <EmptySpacesState loading={loading} />
           ) : viewMode === "grid" ? (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createStorageClient, supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Upload, Loader2 } from 'lucide-react';
@@ -92,19 +92,16 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
 
       // Log pour vérifier la valeur de userId
       console.log('userId utilisé pour update:', userId);
-      // Mettre à jour le profil dans la base de données avec le client principal (authentifié)
-      const { error: updateError, data: updateData } = await supabase
-        .from('profiles')
-        .update({ 
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId); // clé primaire
+      // Mettre à jour le profil dans la base de données avec l'API client
+      const result = await apiClient.put(`/users/${userId}`, { 
+        avatar_url: publicUrl,
+        updated_at: new Date().toISOString()
+      });
 
-      console.log('Résultat update:', { updateError, updateData });
+      console.log('Résultat update:', result);
 
-      if (updateError) {
-        throw updateError;
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la mise à jour');
       }
 
       // Notifier le parent avec l'URL publique finale

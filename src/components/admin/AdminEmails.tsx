@@ -4,8 +4,11 @@ import { EmailTemplateForm } from "./emails/EmailTemplateForm";
 import { EmailTemplateList } from "./emails/EmailTemplateList";
 import { EmailHistory } from "./emails/EmailHistory";
 import { EmailConfigForm } from "./emails/EmailConfigForm";
+import { usePersistedTab } from "@/hooks/usePersistedTab";
 
 const AdminEmails = () => {
+  const [activeTab, setActiveTab] = usePersistedTab("emails", "templates");
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -17,7 +20,7 @@ const AdminEmails = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="templates" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="templates">Modèles</TabsTrigger>
           <TabsTrigger value="create">Nouveau modèle</TabsTrigger>

@@ -112,4 +112,66 @@ export class AdminSupportService {
       throw error;
     }
   }
+
+  // Récupérer les articles de la base de connaissances
+  static async getKBArticles(): Promise<any[]> {
+    try {
+      console.log('🔍 AdminSupportService: Récupération des articles de la base de connaissances');
+      
+      // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
+      const response = await fetch('http://localhost:5000/api/admin/support/kb-articles', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('📝 Articles KB API admin:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la récupération des articles');
+      }
+      
+      return result.data || [];
+    } catch (error) {
+      console.error('Erreur récupération articles KB admin:', error);
+      throw error;
+    }
+  }
+
+  // Récupérer les FAQ
+  static async getFAQs(): Promise<any[]> {
+    try {
+      console.log('🔍 AdminSupportService: Récupération des FAQ');
+      
+      // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
+      const response = await fetch('http://localhost:5000/api/admin/support/faqs', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('📝 FAQ API admin:', result);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la récupération des FAQ');
+      }
+      
+      return result.data || [];
+    } catch (error) {
+      console.error('Erreur récupération FAQ admin:', error);
+      throw error;
+    }
+  }
 }

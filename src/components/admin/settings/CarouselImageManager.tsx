@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { ImageUploadForm } from "./carousel/ImageUploadForm";
 import { CarouselImageList } from "./carousel/CarouselImageList";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface CarouselImage {
   id: string;
@@ -12,35 +12,25 @@ interface CarouselImage {
 }
 
 export function CarouselImageManager() {
-  const [images, setImages] = useState<CarouselImage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadCarouselImages();
-  }, []);
-
-  const loadCarouselImages = async () => {
-    try {
+  // Utiliser React Query pour gérer les images
+  const { data: images = [], isLoading, refetch } = useQuery({
+    queryKey: ["carousel-images"],
+    queryFn: async () => {
       console.log('🔄 Chargement des images du carrousel...');
-      
       const result = await apiClient.get('/carousel-images');
       
       if (result.success && result.data) {
         console.log('✅ Images chargées:', result.data.length);
-        setImages(result.data);
+        return result.data;
       } else {
         console.log('📝 Aucune image trouvée, utilisation d\'une liste vide');
-        setImages([]);
+        return [];
       }
-    } catch (error) {
-      console.error('❌ Erreur lors du chargement des images:', error);
-      console.log('📝 Erreur API, utilisation d\'une liste vide');
-      setImages([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const handleAddImage = async (imageUrl: string) => {
     try {
@@ -54,15 +44,11 @@ export function CarouselImageManager() {
       if (result.success) {
         console.log('✅ Image ajoutée à la DB');
         
-        // Invalider le cache React Query
-        await queryClient.invalidateQueries({ 
-          queryKey: ["carousel-images"] 
-        });
-        
-        console.log('✅ Cache React Query invalidé');
-        
         toast.success("Image ajoutée avec succès");
-        loadCarouselImages();
+        
+        // Invalider et recharger automatiquement
+        await queryClient.invalidateQueries({ queryKey: ["carousel-images"] });
+        console.log('✅ Cache React Query invalidé');
       } else {
         throw new Error(result.error || 'Erreur lors de l\'ajout');
       }
@@ -81,15 +67,11 @@ export function CarouselImageManager() {
       if (result.success) {
         console.log('✅ Image supprimée de la DB');
         
-        // Invalider le cache React Query
-        await queryClient.invalidateQueries({ 
-          queryKey: ["carousel-images"] 
-        });
-        
-        console.log('✅ Cache React Query invalidé');
-        
         toast.success("Image supprimée avec succès");
-        loadCarouselImages();
+        
+        // Invalider et recharger automatiquement
+        await queryClient.invalidateQueries({ queryKey: ["carousel-images"] });
+        console.log('✅ Cache React Query invalidé');
       } else {
         throw new Error(result.error || 'Erreur lors de la suppression');
       }
@@ -122,22 +104,18 @@ export function CarouselImageManager() {
         image_url: img.image_url // Include image_url in the update
       }));
 
-      const { error } = await supabase
-        .from('carousel_images')
-        .upsert(updates);
-
-      if (error) throw error;
+      // Utiliser l'API client au lieu de Supabase
+      const result = await apiClient.put('/carousel-images/reorder', { images: updates });
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la mise à jour');
+      }
       
       console.log('✅ Ordre mis à jour dans la DB');
       
-      // 🔧 CORRECTION : Invalider le cache React Query
-      await queryClient.invalidateQueries({ 
-        queryKey: ["carousel-images"] 
-      });
-      
+      // Invalider et recharger automatiquement
+      await queryClient.invalidateQueries({ queryKey: ["carousel-images"] });
       console.log('✅ Cache React Query invalidé');
-      
-      loadCarouselImages();
     } catch (error) {
       console.error('❌ Erreur lors de la réorganisation:', error);
       toast.error("Impossible de réorganiser les images");

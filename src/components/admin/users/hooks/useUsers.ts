@@ -61,13 +61,14 @@ export const useUsers = () => {
       return null;
     }
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
+      // Utiliser l'API client au lieu de Supabase
+      const result = await apiClient.get(`/users/${userId}`);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la récupération');
+      }
+      
+      const profile = result.data;
       
       if (!profile) return null;
 
@@ -106,5 +107,45 @@ export const useUsers = () => {
     fetchUsers();
   }, []);
 
-  return { users, loading, fetchUsers, getUserById };
+  const updateUser = async (userId: string, userData: Partial<UserProfile>): Promise<boolean> => {
+    try {
+      const result = await apiClient.updateUser(userId, userData);
+      
+      if (result.success) {
+        toast.success("Utilisateur modifié avec succès");
+        // Rafraîchir la liste des utilisateurs
+        await fetchUsers();
+        return true;
+      } else {
+        toast.error(result.error || "Erreur lors de la modification");
+        return false;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error);
+      toast.error("Erreur lors de la modification de l'utilisateur");
+      return false;
+    }
+  };
+
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    try {
+      const result = await apiClient.deleteUser(userId);
+      
+      if (result.success) {
+        toast.success("Utilisateur supprimé avec succès");
+        // Rafraîchir la liste des utilisateurs
+        await fetchUsers();
+        return true;
+      } else {
+        toast.error(result.error || "Erreur lors de la suppression");
+        return false;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error("Erreur lors de la suppression de l'utilisateur");
+      return false;
+    }
+  };
+
+  return { users, loading, fetchUsers, getUserById, updateUser, deleteUser };
 };

@@ -39,9 +39,9 @@ export const SpaceDialog = ({
     }
   };
 
-  // Fonction pour synchroniser avec Stripe (désactivée - Supabase non configuré)
+  // Fonction pour synchroniser avec Stripe (désactivée temporairement)
   const syncWithStripe = async (spaceId: string) => {
-    console.log("⚠️ Synchronisation Stripe désactivée (Supabase non configuré)");
+    console.log("⚠️ Synchronisation Stripe désactivée - clés non configurées");
     return { success: true, message: "Synchronisation Stripe désactivée" };
   };
 

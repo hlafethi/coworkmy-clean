@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
 const emailConfigSchema = z.object({
@@ -41,32 +41,27 @@ export const useEmailConfig = () => {
     try {
       console.log('🔄 Chargement de la configuration email...');
       
-      const { data, error } = await supabase
-        .from("email_config")
-        .select("*")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
+      const result = await apiClient.get('/email-config');
 
-      if (error) {
-        console.error("❌ Erreur lors de la récupération de la configuration:", error);
+      if (!result.success) {
+        console.error("❌ Erreur lors de la récupération de la configuration:", result.message);
         // En cas d'erreur, garder les valeurs par défaut
         form.reset(defaultValues);
         return;
       }
 
-      if (data) {
-        console.log('✅ Configuration trouvée:', data.id);
+      if (result.data) {
+        console.log('✅ Configuration trouvée:', result.data.id);
         setConfigExists(true);
-        setConfigId(data.id);
+        setConfigId(result.data.id);
         
         // Mapper les colonnes de la DB vers les champs du formulaire
         const formValues: EmailConfigFormValues = {
-          host: data.smtp_host || "",
-          port: data.smtp_port || 587,
-          username: data.smtp_username || "",
-          password: data.smtp_password || "",
-          from_email: data.from_email || "",
+          host: result.data.smtp_host || "",
+          port: result.data.smtp_port || 587,
+          username: result.data.smtp_username || "",
+          password: result.data.smtp_password || "",
+          from_email: result.data.from_email || "",
         };
         
         form.reset(formValues);
@@ -101,31 +96,23 @@ export const useEmailConfig = () => {
         is_active: true
       };
 
-      let error;
+      let result;
       if (configExists && configId) {
         console.log('🔄 Mise à jour de la configuration existante...');
-        const response = await supabase
-          .from("email_config")
-          .update(configData)
-          .eq("id", configId);
-        error = response.error;
+        result = await apiClient.put(`/email-config/${configId}`, configData);
       } else {
         console.log('➕ Création d\'une nouvelle configuration...');
-        const response = await supabase
-          .from("email_config")
-          .insert([configData])
-          .select()
-          .single();
+        result = await apiClient.post('/email-config', configData);
         
-        error = response.error;
-        
-        if (!error && response.data) {
-          setConfigId(response.data.id);
+        if (result.success && result.data) {
+          setConfigId(result.data.id);
           setConfigExists(true);
         }
       }
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.message || 'Erreur lors de la sauvegarde');
+      }
       
       console.log('✅ Configuration sauvegardée avec succès');
       toast.success("Configuration email enregistrée avec succès");

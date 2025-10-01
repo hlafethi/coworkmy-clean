@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/api-client";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,13 +35,10 @@ const Profile = () => {
         // Mise à jour en arrière-plan sans bloquer l'interface
         if (user) {
             try {
-                await supabase
-                    .from('profiles')
-                    .update({ 
-                        avatar_url: newAvatarUrl,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', user.id);
+                await apiClient.put(`/users/${user.id}`, { 
+                    avatar_url: newAvatarUrl,
+                    updated_at: new Date().toISOString()
+                });
             } catch (error) {
                 console.error('Erreur lors de la mise à jour du profil:', error);
             }
@@ -61,13 +58,10 @@ const Profile = () => {
         // Mise à jour en arrière-plan sans bloquer l'interface
         if (user) {
             try {
-                await supabase
-                    .from('profiles')
-                    .update({ 
-                        logo_url: newLogoUrl,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', user.id);
+                await apiClient.put(`/users/${user.id}`, { 
+                    logo_url: newLogoUrl,
+                    updated_at: new Date().toISOString()
+                });
             } catch (error) {
                 console.error('Erreur lors de la mise à jour du profil:', error);
             }

@@ -1,9 +1,9 @@
-import { useAppSettings } from "@/hooks/useAppSettings";
+import { useHomepageSettings } from "@/hooks/useHomepageSettings";
 
 const ContactInfo = () => {
-  const { data: settings, isLoading } = useAppSettings();
+  const { settings, loading } = useHomepageSettings();
 
-  if (isLoading) {
+  if (loading) {
     return <div>Chargement des informations de contact...</div>;
   }
 
@@ -43,10 +43,8 @@ const ContactInfo = () => {
           </div>
           <div>
             <h3 className="text-lg font-medium text-gray-900">Adresse</h3>
-            <p className="text-gray-600 mt-1">
-              10 lieu dit la platiere<br />
-              Parc de la platiere<br />
-              42320 La Grand Croix, France
+            <p className="text-gray-600 mt-1 whitespace-pre-line">
+              {settings?.company_address || "10 lieu dit la platiere\nParc de la platiere\n42320 La Grand Croix, France"}
             </p>
           </div>
         </div>
@@ -71,7 +69,7 @@ const ContactInfo = () => {
           <div>
             <h3 className="text-lg font-medium text-gray-900">Téléphone</h3>
             <p className="text-gray-600 mt-1">
-              {settings?.phoneNumber || "+33 1 23 45 67 89"}
+              {settings?.company_phone || "+33 1 23 45 67 89"}
             </p>
           </div>
         </div>
@@ -96,7 +94,7 @@ const ContactInfo = () => {
           <div>
             <h3 className="text-lg font-medium text-gray-900">Email</h3>
             <p className="text-gray-600 mt-1">
-              {settings?.contactEmail || "contact@placetobe.fr"}
+              {settings?.company_email || "contact@placetobe.fr"}
             </p>
           </div>
         </div>

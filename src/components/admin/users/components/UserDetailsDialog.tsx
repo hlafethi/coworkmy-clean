@@ -12,6 +12,7 @@ import { UserPersonalInfo } from "./UserPersonalInfo";
 import { UserAdditionalInfo } from "./UserAdditionalInfo";
 import { UserDocuments } from "../UserDocuments";
 import { User, FileText, Building2 } from "lucide-react";
+import { usePersistedTab } from "@/hooks/usePersistedTab";
 
 interface UserDetailsDialogProps {
   user: UserProfile | null;
@@ -21,6 +22,8 @@ interface UserDetailsDialogProps {
 }
 
 export const UserDetailsDialog = ({ user, open, onOpenChange, loading = false }: UserDetailsDialogProps) => {
+  const [activeTab, setActiveTab] = usePersistedTab("user-details", "profile");
+  
   if (!user) return null;
 
   return (
@@ -43,7 +46,7 @@ export const UserDetailsDialog = ({ user, open, onOpenChange, loading = false }:
               <p>Chargement des détails...</p>
             </div>
           ) : (
-            <Tabs defaultValue="profile" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />

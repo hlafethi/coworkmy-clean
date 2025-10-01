@@ -27,7 +27,7 @@
   Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
   
   # Content Security Policy
-  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://embed.tawk.to https://app.chatwoot.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://vlboqwnnfatwfprflzsv.supabase.co wss://vlboqwnnfatwfprflzsv.supabase.co https://api.stripe.com https://va.tawk.to; frame-src 'self' https://js.stripe.com https://tawk.to; object-src 'none'"
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://embed.tawk.to https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://vlboqwnnfatwfprflzsv.supabase.co wss://vlboqwnnfatwfprflzsv.supabase.co https://api.stripe.com https://va.tawk.to; frame-src 'self' https://js.stripe.com https://tawk.to; object-src 'none'"
 </IfModule>
 
 # Enable GZIP compression

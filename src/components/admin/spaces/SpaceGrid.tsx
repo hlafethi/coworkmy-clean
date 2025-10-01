@@ -26,12 +26,13 @@ export const SpaceGrid: React.FC<SpaceGridProps> = ({
       // Set processing state to prevent multiple clicks
       setIsProcessing(id);
       
-      const { error } = await supabase
-        .from('spaces')
-        .update({ is_active: !currentStatus })
-        .eq('id', id);
+      const response = await apiClient.put(`/spaces/${id}`, {
+        is_active: !currentStatus
+      });
 
-      if (error) throw error;
+      if (!response.success) {
+        throw new Error(response.error || "Erreur lors de la mise à jour");
+      }
       
       toast.success(`Espace ${currentStatus ? 'désactivé' : 'activé'} avec succès`);
       

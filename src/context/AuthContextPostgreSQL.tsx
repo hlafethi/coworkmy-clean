@@ -8,6 +8,21 @@ interface User {
   id: string;
   email: string;
   full_name?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  phone_number?: string;
+  company?: string;
+  company_name?: string;
+  address?: string;
+  address_street?: string;
+  address_city?: string;
+  address_postal_code?: string;
+  address_country?: string;
+  birth_date?: string;
+  presentation?: string;
+  profile_picture?: string;
+  logo_url?: string;
   avatar_url?: string;
   city?: string;
   is_admin: boolean;
@@ -45,7 +60,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      logger.log('🔐 Tentative de connexion pour:', email);
+      
       const result = await apiClient.signIn(email, password);
+      logger.log('📊 Résultat API:', result);
+      logger.log('📊 result.success:', result.success);
+      logger.log('📊 result.data:', result.data);
+      logger.log('📊 result.data.user:', result.data?.user);
       
       if (result.success && result.data && result.data.user) {
         setUser(result.data.user);
@@ -59,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const errorMessage = result.error || 'Erreur de connexion';
         setProfileError(errorMessage);
         logger.error('❌ Erreur de connexion:', errorMessage);
+        logger.error('❌ Détails du résultat:', result);
         return { user: null, error: errorMessage };
       }
     } catch (error) {

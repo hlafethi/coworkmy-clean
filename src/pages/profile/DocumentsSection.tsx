@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,20 +54,17 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
 
   const loadDocuments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profile_documents')
-        .select('*')
-        .eq('user_id', userId)
-        .order('uploaded_at', { ascending: false });
-
-      if (error) {
-        throw error;
+      const result = await apiClient.get(`/users/${userId}/documents`);
+      
+      if (result.success && result.data) {
+        setDocuments(result.data);
+      } else {
+        setDocuments([]);
       }
-
-      setDocuments(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des documents:', error);
       toast.error('Erreur lors du chargement des documents');
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -88,13 +85,12 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
 
   const downloadDocument = async (doc: ProfileDocument) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .download(doc.file_url);
-
-      if (error) {
-        throw error;
+      // Pour PostgreSQL, utiliser l'URL directement
+      const response = await fetch(doc.file_url);
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement du fichier');
       }
+      const data = await response.blob();
 
       // Créer un lien de téléchargement
       const url = URL.createObjectURL(data);
@@ -119,24 +115,15 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
     }
 
     try {
-      // Supprimer de la base de données
-      const { error: dbError } = await supabase
-        .from('profile_documents')
-        .delete()
-        .eq('id', doc.id);
-
-      if (dbError) {
-        throw dbError;
+      // Supprimer de la base de données via l'API
+      const result = await apiClient.delete(`/users/${userId}/documents/${doc.id}`);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la suppression');
       }
 
-      // Supprimer du storage
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([doc.file_url]);
-
-      if (storageError) {
-        console.warn('Erreur lors de la suppression du fichier:', storageError);
-      }
+      // Pour PostgreSQL, pas besoin de suppression de storage spéciale
+      console.log('Document supprimé avec succès');
 
       // Mettre à jour la liste
       setDocuments(prev => prev.filter(d => d.id !== doc.id));

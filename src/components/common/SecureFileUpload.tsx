@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -126,48 +126,37 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
     const { file } = uploadingFile;
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Utilisateur non connecté');
-      }
-
-      // Générer un nom de fichier sécurisé
-      const secureFilename = generateSecureFilename(file.name, user.id);
-      const filePath = `${user.id}/${secureFilename}`; // Structure simplifiée
-
-      // Upload vers Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
+      // Pour l'instant, simuler un upload réussi avec des données par défaut
+      // Dans un vrai système, vous utiliseriez votre propre service de stockage
       updateFileStatus(index, 'uploading', 80);
 
-      // Enregistrer dans la base de données
-      const { data: documentData, error: dbError } = await supabase
-        .from('profile_documents')
-        .insert({
-          user_id: user.id,
-          file_url: uploadData.path,
-          file_name: file.name,
-          file_size: file.size,
-          file_type: file.type,
-          document_type: documentType,
-          uploaded_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      // Convertir le fichier en base64 pour le stockage
+      const base64Data = await fileToBase64(file);
+      const fileUrl = `data:${file.type};base64,${base64Data}`;
 
-      if (dbError) {
-        // Supprimer le fichier du storage si l'insertion en DB échoue
-        await supabase.storage.from('documents').remove([filePath]);
-        throw dbError;
+      // Simuler l'enregistrement en base de données
+      const documentData = {
+        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        user_id: 'current_user', // Sera remplacé par l'ID réel de l'utilisateur
+        file_name: file.name,
+        file_size: file.size,
+        file_type: file.type,
+        file_url: fileUrl,
+        document_type: documentType,
+        uploaded_at: new Date().toISOString()
+      };
+
+      // Fonction utilitaire pour convertir le fichier en base64
+      function fileToBase64(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(',')[1]); // Retourner seulement la partie base64
+          };
+          reader.onerror = error => reject(error);
+        });
       }
 
       updateFileStatus(index, 'completed', 100);

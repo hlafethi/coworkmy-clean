@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 
 export interface EmailConfig {
   id: string;
@@ -36,10 +36,14 @@ export const useEmailConfig = () => {
 
   const checkAuth = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) throw authError;
-      setIsAuthenticated(!!user);
-      return !!user;
+      // Vérifier si l'utilisateur est connecté via le token JWT
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsAuthenticated(false);
+        return false;
+      }
+      setIsAuthenticated(true);
+      return true;
     } catch (err) {
       console.error('❌ Erreur de vérification d\'authentification:', err);
       setIsAuthenticated(false);
@@ -57,23 +61,15 @@ export const useEmailConfig = () => {
         throw new Error('Utilisateur non authentifié');
       }
 
-      const { data, error } = await supabase
-        .from('email_config')
-        .select('*')
-        .eq('is_active', true)
-        .single();
+      const result = await apiClient.get('/email-config');
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Aucune configuration trouvée, utiliser les valeurs par défaut
-          console.log('📧 Aucune configuration email trouvée, utilisation des valeurs par défaut');
-          setConfig(DEFAULT_CONFIG);
-          return;
-        }
-        throw error;
+      if (result.success && result.data) {
+        setConfig(result.data);
+      } else {
+        // Aucune configuration trouvée, utiliser les valeurs par défaut
+        console.log('📧 Aucune configuration email trouvée, utilisation des valeurs par défaut');
+        setConfig(DEFAULT_CONFIG);
       }
-
-      setConfig(data);
     } catch (err: any) {
       console.error('❌ Erreur lors du chargement de la config email:', err);
       setError(err.message);
@@ -92,20 +88,17 @@ export const useEmailConfig = () => {
         throw new Error('Utilisateur non authentifié');
       }
 
-      const { data, error } = await supabase
-        .from('email_config')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', config.id)
-        .select()
-        .single();
+      const result = await apiClient.put(`/email-config/${config.id}`, {
+        ...updates,
+        updated_at: new Date().toISOString()
+      });
 
-      if (error) throw error;
-
-      setConfig(data);
-      return { success: true, data };
+      if (result.success && result.data) {
+        setConfig(result.data);
+        return { success: true, data: result.data };
+      } else {
+        throw new Error(result.message || 'Erreur lors de la mise à jour');
+      }
     } catch (err: any) {
       console.error('❌ Erreur lors de la mise à jour:', err);
       return { success: false, error: err.message };
@@ -119,20 +112,18 @@ export const useEmailConfig = () => {
         throw new Error('Utilisateur non authentifié');
       }
 
-      const { data, error } = await supabase
-        .from('email_config')
-        .insert({
-          ...newConfig,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      const result = await apiClient.post('/email-config', {
+        ...newConfig,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
 
-      if (error) throw error;
-
-      setConfig(data);
-      return { success: true, data };
+      if (result.success && result.data) {
+        setConfig(result.data);
+        return { success: true, data: result.data };
+      } else {
+        throw new Error(result.message || 'Erreur lors de la création');
+      }
     } catch (err: any) {
       console.error('❌ Erreur lors de la création:', err);
       return { success: false, error: err.message };

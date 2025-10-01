@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 
 interface EmailHistoryItem {
   id: string;
@@ -26,13 +26,13 @@ export const EmailHistory = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const { data, error } = await supabase
-          .from("email_history")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        setHistory(data || []);
+        const result = await apiClient.get("/email-history");
+        
+        if (result.success && Array.isArray(result.data)) {
+          setHistory(result.data);
+        } else {
+          console.error("Erreur lors de la récupération de l'historique:", result.message);
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération de l'historique:", error);
       } finally {

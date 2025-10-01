@@ -8,7 +8,7 @@ import {
   swapTimeSlotOrders,
 } from "./timeSlotService";
 import { type TimeSlotFormValues } from "./timeSlotSchema";
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 
 // Fonction pour calculer la durée en minutes entre deux heures au format HH:MM
 function calculateDuration(startTime: string, endTime: string): number {
@@ -79,13 +79,9 @@ export function useTimeSlots() {
         space_id: '',
       };
 
-      const { data, error } = await supabase
-        .from('time_slots')
-        .insert([timeSlotData])
-        .select()
-        .single();
-
-      if (data) {
+      const result = await apiClient.post('/time-slots', timeSlotData);
+      
+      if (result.success) {
         setDialogOpen(false);
         loadTimeSlots();
       }

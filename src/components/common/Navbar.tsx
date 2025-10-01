@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import { StripeModeIndicator } from "./StripeModeIndicator";
+import { useHomepageSettings } from "@/hooks/useHomepageSettings";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, isAdmin, signOut } = useAuth();
   const { data: settings } = useAppSettings();
+  const { settings: homepageSettings } = useHomepageSettings();
   const location = useLocation();
 
   const toggleMenu = () => {
@@ -38,10 +39,21 @@ const Navbar = () => {
     <header className="bg-white py-4 shadow-sm sticky top-0 z-50">
       <nav className="container-custom flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
+          {console.log("🔍 Navbar - homepageSettings:", homepageSettings)}
+          {homepageSettings?.company_logo_url && (
+            <img 
+              src={homepageSettings.company_logo_url} 
+              alt={homepageSettings.company_name || "Logo"} 
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                console.error("❌ Erreur de chargement du logo dans la navbar");
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          )}
           <span className="text-primary font-bold text-2xl">
-            {settings?.siteName || "CoWorkMy"}
+            {homepageSettings?.company_name || settings?.siteName || "CoWorkMy"}
           </span>
-          <StripeModeIndicator />
         </Link>
 
         {/* Desktop Menu */}

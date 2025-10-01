@@ -46,8 +46,10 @@ export const PaymentConfig = () => {
       const result = await apiClient.get('/admin/settings');
       
       if (result.success && result.data) {
+        // Vérifier si result.data est un tableau
+        const settings = Array.isArray(result.data) ? result.data : [];
         // Chercher la configuration Stripe dans les paramètres
-        const stripeSetting = result.data.find((setting: any) => setting.key === 'stripe');
+        const stripeSetting = settings.find((setting: any) => setting.key === 'stripe');
         if (stripeSetting?.value) {
           // stripeSetting.value est déjà un objet, pas besoin de JSON.parse
           const stripeData = stripeSetting.value as StripeConfig;

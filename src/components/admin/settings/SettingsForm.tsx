@@ -4,6 +4,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
 import { SettingsFormValues } from "@/types/settings";
+import { usePersistedTab } from "@/hooks/usePersistedTab";
 
 import { CarouselImageManager } from "./CarouselImageManager";
 import { GoogleReviewsSettings } from "./google-reviews/GoogleReviewsSettings";
@@ -12,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminWarningMessage } from "./tabs/AdminWarningMessage";
 import { GeneralSettingsTab } from "./tabs/GeneralSettingsTab";
 import { HomepageSettingsTab } from "./tabs/HomepageSettingsTab";
+import { CompanySettingsTab } from "./tabs/CompanySettingsTab";
 
 interface SettingsFormProps {
   form: UseFormReturn<SettingsFormValues>;
@@ -21,11 +23,14 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ form, onSubmit, isSaving, isDisabled = false }: SettingsFormProps) {
+  const [activeTab, setActiveTab] = usePersistedTab("settings", "general");
+  
   return (
-    <Tabs defaultValue="general">
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="mb-6">
         <TabsTrigger value="general">Général</TabsTrigger>
         <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
+        <TabsTrigger value="company">Entreprise</TabsTrigger>
         <TabsTrigger value="carousel">Carrousel</TabsTrigger>
         <TabsTrigger value="google-reviews">Avis Google</TabsTrigger>
         <TabsTrigger value="database">Base de données</TabsTrigger>
@@ -56,6 +61,13 @@ export function SettingsForm({ form, onSubmit, isSaving, isDisabled = false }: S
 
             <TabsContent value="homepage">
               <HomepageSettingsTab
+                form={form}
+                isDisabled={isDisabled}
+              />
+            </TabsContent>
+
+            <TabsContent value="company">
+              <CompanySettingsTab
                 form={form}
                 isDisabled={isDisabled}
               />

@@ -16,8 +16,9 @@ const AdminSettings = () => {
   const { form, isLoading, isSaving, isAdmin, loadSettings, saveSettings } = useAdminSettings();
 
   useEffect(() => {
+    // Charger les paramètres seulement au premier montage
     loadSettings();
-  }, []);
+  }, [loadSettings]);
 
   if (isLoading) {
     return (

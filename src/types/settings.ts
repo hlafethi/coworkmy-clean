@@ -99,6 +99,17 @@ export interface SettingsFormValues {
     cta_secondary_button_text: string;
     is_published: boolean;
   };
+  company: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    website: string;
+    description: string;
+    logo_url: string;
+    siret: string;
+    vat_number: string;
+  };
   stripe?: {
     mode: 'test' | 'live';
     test_publishable_key: string;

@@ -10,7 +10,6 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import Support from "@/pages/support/Support";
-// ChatwootUserSync supprimé
 
 // Lazy load components
 const Index = lazy(() => import("@/pages/Index"));
@@ -33,6 +32,8 @@ const PaymentSuccess = lazy(() => import("@/pages/payment/PaymentSuccess"));
 const PaymentCancel = lazy(() => import("@/pages/payment/PaymentCancel"));
 const StripeSimulator = lazy(() => import("@/pages/payment/StripeSimulator"));
 const Callback = lazy(() => import("@/pages/auth/Callback"));
+const TestHomepage = lazy(() => import("@/pages/TestHomepage"));
+const TestNavigation = lazy(() => import("@/pages/TestNavigation"));
 
 // Create a client
 const queryClient = new QueryClient();
@@ -53,6 +54,8 @@ const AppRoutes = () => {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/payment-cancel" element={<PaymentCancel />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/test-homepage" element={<TestHomepage />} />
+        <Route path="/test" element={<TestNavigation />} />
 
         {/* Legal pages */}
         <Route path="/legal" element={<Legal />} />
@@ -95,7 +98,6 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <BrowserRouter basename="/" >
             <AuthProvider>
-              {/* ChatwootUserSync supprimé */}
               <AppRoutes />
               <Toaster position="top-center" />
               <CookieConsent />

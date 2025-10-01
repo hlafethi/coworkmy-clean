@@ -36,6 +36,8 @@ export const useSpaces = () => {
   const [selectedSpace, setSelectedSpace] = useState<SpaceFormData | null>(null);
   // Add refresh trigger state
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // Add filter state
+  const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('active');
 
   const fetchSpaces = async () => {
     try {
@@ -78,6 +80,19 @@ export const useSpaces = () => {
       setLoading(false);
     }
   };
+
+  // Filter spaces based on current filter
+  const filteredSpaces = spaces.filter(space => {
+    switch (filter) {
+      case 'active':
+        return space.is_active;
+      case 'inactive':
+        return !space.is_active;
+      case 'all':
+      default:
+        return true;
+    }
+  });
 
   // Trigger a refresh
   const triggerRefresh = () => {
@@ -159,7 +174,8 @@ export const useSpaces = () => {
   };
 
   return {
-    spaces,
+    spaces: filteredSpaces,
+    allSpaces: spaces,
     loading,
     addDialogOpen,
     setAddDialogOpen,
@@ -167,6 +183,8 @@ export const useSpaces = () => {
     setEditDialogOpen,
     selectedSpace,
     setSelectedSpace,
+    filter,
+    setFilter,
     handleEditClick,
     handleAddClick,
     handleDeleteClick,

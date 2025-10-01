@@ -66,15 +66,18 @@ export const useReviews = (spaceId?: string) => {
 
   const addReview = async (spaceId: string, rating: number, comment?: string) => {
     try {
-      const { data, error } = await supabase.from('reviews').insert({
+      const result = await apiClient.post('/reviews', {
         space_id: spaceId,
         user_id: user?.id,
         rating,
         comment,
-      }).select().single();
+      });
 
-      if (error) throw error;
-      return data;
+      if (result.success && result.data) {
+        return result.data;
+      } else {
+        throw new Error(result.error || 'Erreur lors de l\'ajout de l\'avis');
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Une erreur est survenue'));
       return null;
@@ -83,15 +86,16 @@ export const useReviews = (spaceId?: string) => {
 
   const updateReview = async (reviewId: string, rating: number, comment?: string) => {
     try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .update({ rating, comment })
-        .eq('id', reviewId)
-        .select()
-        .single();
+      const result = await apiClient.put(`/reviews/${reviewId}`, {
+        rating,
+        comment,
+      });
 
-      if (error) throw error;
-      return data;
+      if (result.success && result.data) {
+        return result.data;
+      } else {
+        throw new Error(result.error || 'Erreur lors de la mise à jour de l\'avis');
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Une erreur est survenue'));
       return null;
@@ -100,9 +104,11 @@ export const useReviews = (spaceId?: string) => {
 
   const deleteReview = async (reviewId: string) => {
     try {
-      const { error } = await supabase.from('reviews').delete().eq('id', reviewId);
+      const result = await apiClient.delete(`/reviews/${reviewId}`);
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la suppression de l\'avis');
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Une erreur est survenue'));
     }

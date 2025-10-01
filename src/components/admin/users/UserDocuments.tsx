@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -73,35 +73,35 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
       console.log('🔍 Chargement des documents pour userId:', userId);
       console.log('userId utilisé pour la requête:', userId, typeof userId);
       
-      // Requête filtrée par user_id
-      const { data, error } = await supabase
-        .from('profile_documents')
-        .select('*')
-        .eq('user_id', userId);
-      console.log('📄 Tous les documents:', data);
+      // Utiliser l'API client au lieu de Supabase
+      const result = await apiClient.get(`/users/${userId}/documents`);
+      
+      if (result.success && result.data) {
+        console.log('📄 Tous les documents:', result.data);
+        
+        // Transformer les données pour correspondre à l'interface UserDocument
+        const transformedData = result.data.map((doc: any) => ({
+          id: doc.id,
+          user_id: doc.user_id,
+          file_url: doc.file_url || doc.document_url || '',
+          file_name: doc.file_name || `Document ${doc.document_type}`,
+          file_size: doc.file_size || 0,
+          file_type: doc.file_type || 'application/octet-stream',
+          document_type: doc.document_type,
+          uploaded_at: doc.uploaded_at,
+          scan_status: 'pending' // Pas de colonne verified dans la structure actuelle
+        }));
 
-      if (error) {
-        throw error;
+        console.log('✅ Documents transformés:', transformedData.length, 'documents');
+        setDocuments(transformedData);
+      } else {
+        console.log('⚠️ Aucun document trouvé ou erreur API');
+        setDocuments([]);
       }
-
-      // Transformer les données pour correspondre à l'interface UserDocument
-      const transformedData = data?.map(doc => ({
-        id: doc.id,
-        user_id: doc.user_id,
-        file_url: doc.file_url || doc.document_url || '',
-        file_name: doc.file_name || `Document ${doc.document_type}`,
-        file_size: doc.file_size || 0,
-        file_type: doc.file_type || 'application/octet-stream',
-        document_type: doc.document_type,
-        uploaded_at: doc.uploaded_at,
-        scan_status: 'pending' // Pas de colonne verified dans la structure actuelle
-      })) || [];
-
-      console.log('✅ Documents transformés:', transformedData.length, 'documents');
-      setDocuments(transformedData);
     } catch (error) {
       console.error('❌ Erreur lors du chargement des documents:', error);
       toast.error('Erreur lors du chargement des documents');
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -127,14 +127,13 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
         window.document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // Si c'est un chemin relatif, utiliser Supabase Storage
-        const { data, error } = await supabase.storage
-          .from('documents')
-          .download(document.file_url);
-
-        if (error) {
-          throw error;
+        // Pour les chemins relatifs, utiliser l'URL directement
+        // (PostgreSQL ne nécessite pas de téléchargement spécial comme Supabase)
+        const response = await fetch(document.file_url);
+        if (!response.ok) {
+          throw new Error('Erreur lors du téléchargement du fichier');
         }
+        const data = await response.blob();
 
         const url = URL.createObjectURL(data);
         const a = window.document.createElement('a');
@@ -166,15 +165,9 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
       if (document.file_url.startsWith('http')) {
         url = document.file_url;
       } else {
-        // Si c'est un chemin relatif, créer une URL signée
-        const { data, error } = await supabase.storage
-          .from('documents')
-          .createSignedUrl(document.file_url, 3600); // 1 heure
-
-        if (error) {
-          throw error;
-        }
-        url = data.signedUrl;
+        // Pour les chemins relatifs, utiliser l'URL directement
+        // (PostgreSQL ne nécessite pas d'URL signée comme Supabase)
+        url = document.file_url;
       }
 
       console.log('🔍 Debug document:', {

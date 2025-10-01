@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createStorageClient, supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -91,16 +91,13 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
         .getPublicUrl(uploadData.path);
 
       // Mettre à jour le profil dans la base de données
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          logo_url: publicUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      const result = await apiClient.put(`/users/${userId}`, { 
+        logo_url: publicUrl,
+        updated_at: new Date().toISOString()
+      });
 
-      if (updateError) {
-        throw updateError;
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la mise à jour');
       }
 
       // Notifier le parent avec l'URL publique finale

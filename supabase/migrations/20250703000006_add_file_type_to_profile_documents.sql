@@ -1,1 +1,0 @@
-ALTER TABLE profile_documents ADD COLUMN IF NOT EXISTS file_type text; 

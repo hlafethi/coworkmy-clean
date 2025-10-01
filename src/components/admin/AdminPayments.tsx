@@ -80,7 +80,9 @@ const AdminPayments = () => {
       const result = await apiClient.get('/payments');
       
       if (result.success && result.data) {
-        setPayments(result.data);
+        // S'assurer que result.data est un tableau
+        const paymentsData = Array.isArray(result.data) ? result.data : [];
+        setPayments(paymentsData);
       } else {
         console.error('Error fetching payments:', result.error);
         toast.error("Impossible de récupérer les paiements");
@@ -121,7 +123,7 @@ const AdminPayments = () => {
   };
 
   // Filtrage avancé
-  const filteredPayments = payments.filter((p) => {
+  const filteredPayments = (Array.isArray(payments) ? payments : []).filter((p) => {
     if (filterMode !== 'all' && p.mode !== filterMode) return false;
     if (filterEmail && !(p.user_email || '').toLowerCase().includes(filterEmail.toLowerCase())) return false;
     if (filterAmountMin && Number(p.amount) < Number(filterAmountMin)) return false;

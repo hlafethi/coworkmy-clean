@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -106,13 +106,10 @@ const EditProfile = () => {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", user.id);
+      const result = await apiClient.put(`/users/${user.id}`, updateData);
 
-      if (error) {
-        console.error("Error updating profile:", error);
+      if (!result.success) {
+        console.error("Error updating profile:", result.error);
         toast.error("Erreur lors de la mise à jour du profil");
         return;
       }
@@ -174,16 +171,36 @@ const EditProfile = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Menu de navigation */}
       <div className="mb-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/profile")}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour au profil
-        </Button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/profile")}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour au profil
+            </Button>
+            <h1 className="text-2xl font-bold">Modifier le profil</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/profile")}
+            >
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={saving}
+            >
+              {saving ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </div>
+        </div>
       </div>
       
       <div className="space-y-6">
@@ -405,23 +422,6 @@ const EditProfile = () => {
           </CardContent>
         </Card>
 
-        {/* Boutons d'action */}
-        <div className="flex justify-end space-x-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/profile")}
-          >
-            Annuler
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={saving}
-            onClick={handleSubmit}
-          >
-            {saving ? "Enregistrement..." : "Enregistrer"}
-          </Button>
-        </div>
       </div>
     </div>
   );

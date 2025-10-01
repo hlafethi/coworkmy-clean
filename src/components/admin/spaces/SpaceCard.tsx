@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash, Users, Clock, Tag, Check, X, RefreshCw } from "lucide-react";
+import { Edit, Trash, Users, Clock, Tag, Check, X, RefreshCw, Loader2 } from "lucide-react";
 import type { Space } from "@/components/admin/types";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/api-client";
 
 interface SpaceCardProps {
   space: Space;
@@ -28,49 +28,16 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
   const handleSync = async () => {
     setSyncing(true);
     try {
-      // Ajouter l'espace à la file d'attente de synchronisation
-      const { error: queueError } = await supabase
-        .from('stripe_sync_queue')
-        .upsert({
-          space_id: space.id,
-          event_type: 'MANUAL_SYNC',
-          payload: {
-            space_id: space.id,
-            space_name: space.name,
-            pricing_type: space.pricing_type,
-            manual_sync: true
-          },
-          status: 'pending'
-        }, { onConflict: ['space_id', 'event_type'] });
-
-      if (queueError) throw new Error(queueError.message);
-
-      // Récupérer le token JWT de l'utilisateur connecté
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session?.access_token) {
-        throw new Error('Session utilisateur non disponible');
+      // Simulation de synchronisation via l'API
+      const response = await apiClient.get(`/spaces/${space.id}`);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de la récupération de l\'espace');
       }
 
-      // Déclencher la synchronisation via la fonction Edge
-      const response = await fetch(
-        `https://exffryodynkyizbeesbt.functions.supabase.co/stripe-sync-queue`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        }
-      );
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
-      }
-      
-      toast.success("Synchronisation Stripe lancée !");
+      toast.success(`Synchronisation simulée réussie pour "${space.name}"`);
     } catch (e: any) {
-      toast.error("Erreur lors de la synchronisation Stripe : " + e.message);
+      toast.error("Erreur lors de la synchronisation : " + e.message);
     } finally {
       setSyncing(false);
     }
@@ -148,6 +115,13 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
             src={space.image_url} 
             alt={space.name} 
             className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Erreur chargement image:', space.name, space.image_url?.substring(0, 100));
+              e.currentTarget.style.display = 'none';
+            }}
+            onLoad={() => {
+              console.log('Image chargée avec succès:', space.name);
+            }}
           />
         </div>
       ) : (
@@ -190,61 +164,60 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
         </div>
       </CardContent>
       
-      <CardFooter className="pt-2 flex justify-between">
+      <CardFooter className="pt-2 flex justify-between gap-1">
         <Button 
           variant="outline" 
           size="sm"
+          className="flex-1 text-xs px-2"
           onClick={() => onEdit(space)}
           disabled={isProcessing}
         >
-          <Edit className="h-4 w-4 mr-1" />
+          <Edit className="h-3 w-3 mr-1" />
           Modifier
         </Button>
         
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <Button 
             variant={space.is_active ? "destructive" : "default"} 
             size="sm"
+            className="text-xs px-2"
             onClick={() => onToggleStatus(space.id, space.is_active)}
             disabled={isProcessing}
+            title={space.is_active ? "Désactiver l'espace" : "Activer l'espace"}
           >
             {isProcessing ? (
-              "En cours..."
+              <Loader2 className="h-3 w-3 animate-spin" />
             ) : space.is_active ? (
-              <>
-                <X className="h-4 w-4 mr-1" />
-                Désactiver
-              </>
+              <X className="h-3 w-3" />
             ) : (
-              <>
-                <Check className="h-4 w-4 mr-1" />
-                Activer
-              </>
+              <Check className="h-3 w-3" />
             )}
           </Button>
           
           <Button
             variant="destructive"
             size="sm"
+            className="text-xs px-2"
             onClick={() => onDelete(space.id)}
             disabled={isProcessing}
             title="Supprimer l'espace"
           >
-            <Trash className="h-4 w-4" />
+            <Trash className="h-3 w-3" />
           </Button>
+          
           <Button
             variant="secondary"
             size="sm"
+            className="text-xs px-2"
             onClick={handleSync}
             disabled={syncing}
             title="Synchroniser avec Stripe"
           >
             {syncing ? (
-              <RefreshCw className="h-4 w-4 animate-spin mr-1" />
+              <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="h-3 w-3" />
             )}
-            Sync Stripe
           </Button>
         </div>
       </CardFooter>

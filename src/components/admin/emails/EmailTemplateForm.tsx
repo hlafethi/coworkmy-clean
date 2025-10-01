@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 
 // Définition du schéma du formulaire avec des champs requis
 const templateSchema = z.object({
@@ -75,45 +75,38 @@ export const EmailTemplateForm = ({
     try {
       if (mode === "edit" && initialValues?.id) {
         // Mode édition - update
-        const { error } = await supabase
-          .from("email_templates")
-          .update({
-            type: values.type,
-            name: values.name,
-            subject: values.subject,
-            content: values.content,
-          })
-          .eq("id", initialValues.id);
+        const result = await apiClient.put(`/email-templates/${initialValues.id}`, {
+          type: values.type,
+          name: values.name,
+          subject: values.subject,
+          content: values.content,
+        });
         
-        if (error) throw error;
+        if (!result.success) throw new Error(result.message || "Erreur lors de la modification");
         toast.success("Modèle d'email modifié avec succès");
       } else {
         // Mode création ou duplication - insert
         // Vérification d'unicité sur le type seulement en mode création
         if (mode === "create") {
-          const { data: existing, error: fetchError } = await supabase
-            .from("email_templates")
-            .select("id")
-            .eq("type", values.type)
-            .maybeSingle();
-          if (fetchError) throw fetchError;
-          if (existing) {
-            toast.error("Un modèle avec ce type existe déjà. Modifiez-le ou choisissez un autre type.");
-            setIsSubmitting(false);
-            return;
+          const existingResult = await apiClient.get("/email-templates");
+          if (existingResult.success && Array.isArray(existingResult.data)) {
+            const existing = existingResult.data.find((template: any) => template.type === values.type);
+            if (existing) {
+              toast.error("Un modèle avec ce type existe déjà. Modifiez-le ou choisissez un autre type.");
+              setIsSubmitting(false);
+              return;
+            }
           }
         }
 
-        const { error } = await supabase
-          .from("email_templates")
-          .insert({
-            type: values.type,
-            name: values.name,
-            subject: values.subject,
-            content: values.content,
-          });
+        const result = await apiClient.post("/email-templates", {
+          type: values.type,
+          name: values.name,
+          subject: values.subject,
+          content: values.content,
+        });
         
-        if (error) throw error;
+        if (!result.success) throw new Error(result.message || "Erreur lors de la création");
         toast.success(mode === "duplicate" ? "Modèle d'email dupliqué avec succès" : "Modèle d'email créé avec succès");
       }
       

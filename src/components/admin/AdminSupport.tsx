@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { usePersistedTab } from '@/hooks/usePersistedTab';
 import { 
   LifeBuoy, 
   FileQuestion, 
@@ -51,6 +52,7 @@ export const AdminSupport = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
   const [isLoadingResponses, setIsLoadingResponses] = useState(false);
+  const [activeTab, setActiveTab] = usePersistedTab("support", "tickets");
 
   // Charger les tickets
   const loadTickets = async () => {
@@ -190,7 +192,7 @@ export const AdminSupport = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="tickets" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="tickets" className="flex items-center gap-2">
               <LifeBuoy className="h-4 w-4" />

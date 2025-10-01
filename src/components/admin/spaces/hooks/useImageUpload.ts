@@ -25,7 +25,10 @@ export const useImageUpload = (initialImageUrl: string | null = null) => {
     try {
       setIsUploading(true);
       
-      // Convertir l'image en base64 pour le stockage
+      // Compresser l'image avant de la convertir en base64
+      const compressedFile = await compressImage(file);
+      
+      // Convertir l'image compressée en base64 pour le stockage
       const base64String = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -36,8 +39,11 @@ export const useImageUpload = (initialImageUrl: string | null = null) => {
           }
         };
         reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier'));
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(compressedFile);
       });
+      
+      // Mettre à jour l'aperçu avec l'image base64
+      setImagePreview(base64String);
       
       return base64String;
     } catch (error) {
@@ -47,6 +53,57 @@ export const useImageUpload = (initialImageUrl: string | null = null) => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  // Fonction pour compresser l'image
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Définir les dimensions maximales
+        const maxWidth = 800;
+        const maxHeight = 600;
+        
+        let { width, height } = img;
+        
+        // Calculer les nouvelles dimensions en gardant le ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Dessiner l'image redimensionnée
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Convertir en blob avec compression
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', 0.8); // Qualité 80%
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
   };
 
   return {

@@ -63,12 +63,9 @@ export const EmailTemplateList = () => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer ce modèle ?")) return;
 
     try {
-      const { error } = await supabase
-        .from("email_templates")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      const result = await apiClient.delete(`/email-templates/${id}`);
+      
+      if (!result.success) throw new Error(result.message || "Erreur lors de la suppression");
 
       toast.success("Modèle supprimé avec succès");
       fetchTemplates();

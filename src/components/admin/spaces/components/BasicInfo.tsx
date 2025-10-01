@@ -27,8 +27,6 @@ export const BasicInfo = ({ form }: BasicInfoProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Créer un aperçu immédiat
-    handleImageChange(e);
     setIsUploading(true);
 
     try {

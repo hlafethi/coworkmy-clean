@@ -3,6 +3,7 @@ import { ReviewsSettingsForm } from "./components/ReviewsSettingsForm";
 import { GoogleApiKeysForm } from "./components/GoogleApiKeysForm";
 import { useGoogleReviewsForm } from "./hooks/useGoogleReviewsForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePersistedTab } from "@/hooks/usePersistedTab";
 
 interface GoogleReviewsSettingsProps {
   isDisabled?: boolean;
@@ -10,6 +11,7 @@ interface GoogleReviewsSettingsProps {
 
 export function GoogleReviewsSettings({ isDisabled }: GoogleReviewsSettingsProps) {
   const { form } = useGoogleReviewsForm();
+  const [activeTab, setActiveTab] = usePersistedTab("google-reviews", "keys");
 
   return (
     <Card>
@@ -20,7 +22,7 @@ export function GoogleReviewsSettings({ isDisabled }: GoogleReviewsSettingsProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="keys" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="keys">Clés API</TabsTrigger>
             <TabsTrigger value="settings">Paramètres</TabsTrigger>

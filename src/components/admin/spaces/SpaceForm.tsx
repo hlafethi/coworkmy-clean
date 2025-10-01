@@ -28,6 +28,8 @@ export function SpaceForm({ defaultValues, onSubmit, onCancel, isSubmitting }: S
 
   const handlePricingTypeChange = (value: PricingType) => {
     setPricingType(value);
+    // Mettre à jour le champ pricing_type du formulaire
+    form.setValue('pricing_type', value);
   };
 
   const handleTimeSlotsChange = (slots: Array<{id: string; startTime: string; endTime: string; label: string}>) => {

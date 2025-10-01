@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowDown, ArrowUp, Edit, Plus, Trash } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TimeSlotForm } from "./time-slots/TimeSlotForm";
 import { TimeSlotFormValues } from "./time-slots/timeSlotSchema";
 
@@ -387,6 +387,9 @@ export const TimeSlots = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{isEditing ? "Modifier le créneau horaire" : "Ajouter un créneau horaire"}</DialogTitle>
+            <DialogDescription>
+              {isEditing ? "Modifiez les informations du créneau horaire." : "Ajoutez un nouveau créneau horaire pour la réservation d'espaces."}
+            </DialogDescription>
           </DialogHeader>
           <TimeSlotForm
             timeSlot={fullCurrentTimeSlot}

@@ -1,128 +1,100 @@
-import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
-import { useAppSettings } from "@/hooks/useAppSettings";
+import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 
-const Footer = () => {
-  const currentYear = new Date().getFullYear();
-  const { data: settings, isLoading } = useAppSettings();
+export default function Footer() {
+  const { settings, loading } = useHomepageSettings();
 
-  if (isLoading) {
-    return <footer className="bg-gray-50 pt-16 pb-8">Chargement...</footer>;
+  if (loading) {
+    return (
+      <footer className="bg-gray-900 text-white py-8">
+        <div className="container mx-auto px-4">
+          <div className="text-center">Chargement...</div>
+        </div>
+      </footer>
+    );
   }
 
   return (
-    <footer className="bg-gray-50 pt-16 pb-8">
-      <div className="container-custom">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="bg-gray-900 text-white py-8">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Logo et description de l'entreprise */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-900">
-              {settings?.siteName || "CoWorkMy"}
-            </h2>
-            <p className="text-gray-700">
-              Votre espace de coworking moderne et convivial pour les professionnels qui cherchent à innover et collaborer.
+            {settings?.company_logo_url && (
+              <img 
+                src={settings.company_logo_url} 
+                alt={settings.company_name || 'Logo'} 
+                className="h-12 w-auto object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
+            <h3 className="text-xl font-bold">
+              {settings?.company_name || 'Votre Entreprise'}
+            </h3>
+            <p className="text-gray-300">
+              {settings?.company_description || 'Description de votre entreprise'}
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-gray-600 hover:text-primary transition-colors" aria-label="Facebook">
-                <Facebook size={20} />
-              </a>
-              <a href="#" className="text-gray-600 hover:text-primary transition-colors" aria-label="Instagram">
-                <Instagram size={20} />
-              </a>
-              <a href="#" className="text-gray-600 hover:text-primary transition-colors" aria-label="Twitter">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="text-gray-600 hover:text-primary transition-colors" aria-label="LinkedIn">
-                <Linkedin size={20} />
-              </a>
+          </div>
+
+          {/* Informations de contact */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold">Contact</h4>
+            <div className="space-y-2 text-gray-300">
+              {settings?.company_email && (
+                <p>
+                  <span className="font-medium">Email:</span> {settings.company_email}
+                </p>
+              )}
+              {settings?.company_phone && (
+                <p>
+                  <span className="font-medium">Téléphone:</span> {settings.company_phone}
+                </p>
+              )}
+              {settings?.company_address && (
+                <p>
+                  <span className="font-medium">Adresse:</span>
+                  <br />
+                  <span className="whitespace-pre-line">{settings.company_address}</span>
+                </p>
+              )}
             </div>
           </div>
 
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Liens rapides</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/" className="text-gray-700 hover:text-primary transition-colors">
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link to="/#about" className="text-gray-700 hover:text-primary transition-colors">
-                  À propos
-                </Link>
-              </li>
-              <li>
-                <Link to="/#services" className="text-gray-700 hover:text-primary transition-colors">
-                  Services
-                </Link>
-              </li>
-              <li>
-                <Link to="/#pricing" className="text-gray-700 hover:text-primary transition-colors">
-                  Tarifs
-                </Link>
-              </li>
-              <li>
-                <Link to="/#contact" className="text-gray-700 hover:text-primary transition-colors">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Informations légales</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/legal/terms" className="text-gray-700 hover:text-primary transition-colors">
-                  Conditions générales
-                </Link>
-              </li>
-              <li>
-                <Link to="/legal/privacy" className="text-gray-700 hover:text-primary transition-colors">
-                  Politique de confidentialité
-                </Link>
-              </li>
-              <li>
-                <Link to="/legal" className="text-gray-700 hover:text-primary transition-colors">
-                  Mentions légales
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Contact</h3>
-            <address className="not-italic text-gray-700 space-y-2">
-              <p>10 lieu dit la platiere</p>
-              <p>Parc de la platiere</p>
-              <p>42320 La Grand Croix, France</p>
-              <p className="pt-2">
-                <a 
-                  href={`tel:${settings?.phoneNumber || "+33123456789"}`} 
-                  className="hover:text-primary transition-colors"
-                >
-                  {settings?.phoneNumber || "+33 1 23 45 67 89"}
-                </a>
-              </p>
-              <p>
-                <a 
-                  href={`mailto:${settings?.contactEmail || "contact@placetobe.fr"}`} 
-                  className="hover:text-primary transition-colors"
-                >
-                  {settings?.contactEmail || "contact@placetobe.fr"}
-                </a>
-              </p>
-            </address>
+          {/* Liens et informations légales */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold">Informations</h4>
+            <div className="space-y-2 text-gray-300">
+              {settings?.company_website && (
+                <p>
+                  <a 
+                    href={settings.company_website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300"
+                  >
+                    {settings.company_website}
+                  </a>
+                </p>
+              )}
+              {settings?.company_siret && (
+                <p>
+                  <span className="font-medium">SIRET:</span> {settings.company_siret}
+                </p>
+              )}
+              {settings?.company_vat_number && (
+                <p>
+                  <span className="font-medium">TVA:</span> {settings.company_vat_number}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-gray-600 text-center">
-            &copy; {currentYear} {settings?.siteName || "CoWorkMy"}. Tous droits réservés.
-          </p>
+        <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+          <p>&copy; 2024 {settings?.company_name || 'Votre Entreprise'}. Tous droits réservés.</p>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

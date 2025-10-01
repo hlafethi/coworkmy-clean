@@ -1,6 +1,7 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
 interface ApiResponse<T = any> {
+  success?: boolean;
   data?: T;
   error?: string;
   user?: any;
@@ -57,7 +58,7 @@ class ApiClient {
         return { success: false, error: data.error || 'Erreur serveur' };
       }
 
-      return { success: true, data: data.data };
+      return { success: true, data: data.data || data };
     } catch (error) {
       console.error('Erreur API:', error);
       return { success: false, error: 'Erreur de connexion' };
@@ -166,6 +167,130 @@ class ApiClient {
   // Santé de l'API
   async healthCheck() {
     return this.request('/health');
+  }
+
+  // Utilisateurs
+  async getUsers() {
+    return this.request('/users');
+  }
+
+  async getUserById(id: string) {
+    return this.request(`/users/${id}`);
+  }
+
+  async updateUser(id: string, userData: any) {
+    return this.request(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async deleteUser(id: string) {
+    return this.request(`/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getUserDocuments(id: string) {
+    return this.request(`/users/${id}/documents`);
+  }
+
+  // Réservations admin
+  async getAdminBookings() {
+    return this.request('/admin/bookings');
+  }
+
+  async updateBookingStatus(id: string, status: string) {
+    return this.request(`/admin/bookings/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async deleteBooking(id: string) {
+    return this.request(`/admin/bookings/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Paiements
+  async getPayments() {
+    return this.request('/payments');
+  }
+
+  // Créneaux horaires
+  async getTimeSlots() {
+    return this.request('/time-slots');
+  }
+
+  async createTimeSlot(timeSlotData: any) {
+    return this.request('/time-slots', {
+      method: 'POST',
+      body: JSON.stringify(timeSlotData),
+    });
+  }
+
+  async updateTimeSlot(id: string, timeSlotData: any) {
+    return this.request(`/time-slots/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(timeSlotData),
+    });
+  }
+
+  async deleteTimeSlot(id: string) {
+    return this.request(`/time-slots/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Modèles d'email
+  async getEmailTemplates() {
+    return this.request('/email-templates');
+  }
+
+  async createEmailTemplate(templateData: any) {
+    return this.request('/email-templates', {
+      method: 'POST',
+      body: JSON.stringify(templateData),
+    });
+  }
+
+  async updateEmailTemplate(id: string, templateData: any) {
+    return this.request(`/email-templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(templateData),
+    });
+  }
+
+  async deleteEmailTemplate(id: string) {
+    return this.request(`/email-templates/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Pages légales
+  async getLegalPages() {
+    return this.request('/legal-pages');
+  }
+
+  async createLegalPage(pageData: any) {
+    return this.request('/legal-pages', {
+      method: 'POST',
+      body: JSON.stringify(pageData),
+    });
+  }
+
+  async updateLegalPage(id: string, pageData: any) {
+    return this.request(`/legal-pages/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(pageData),
+    });
+  }
+
+  async deleteLegalPage(id: string) {
+    return this.request(`/legal-pages/${id}`, {
+      method: 'DELETE',
+    });
   }
 }
 

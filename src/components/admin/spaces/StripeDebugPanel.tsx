@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, XCircle, AlertCircle, RefreshCw, Zap } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { apiClient } from '@/lib/api-client';
 
 interface StripeDebugPanelProps {
   className?: string;
@@ -29,40 +29,32 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
   const testStripeConnection = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        addResult({
-          success: false,
-          message: 'Aucune session active',
-          timestamp: new Date().toLocaleString('fr-FR')
-        });
-        return;
-      }
-
-      const response = await fetch(`https://exffryodynkyizbeesbt.supabase.co/functions/v1/stripe-sync-queue`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-          'x-verify-key': 'true'
-        }
-      });
-
-      const data = await response.json();
+      // Test de connexion Stripe réelle
+      const response = await apiClient.get('/stripe/test-connection');
       
-      if (response.ok) {
-        setStripeConnection(data.stripeConnection);
+      if (response.success) {
+        setStripeConnection({ 
+          success: true, 
+          message: 'Connexion Stripe OK',
+          account: response.account,
+          mode: response.mode
+        });
         addResult({
           success: true,
-          message: `Connexion Stripe: ${data.stripeConnection.success ? 'OK' : 'ÉCHEC'}`,
-          details: data,
+          message: `Connexion Stripe: OK (Mode: ${response.mode})`,
+          details: {
+            account_id: response.account.id,
+            country: response.account.country,
+            charges_enabled: response.account.charges_enabled,
+            mode: response.mode
+          },
           timestamp: new Date().toLocaleString('fr-FR')
         });
       } else {
         addResult({
           success: false,
-          message: `Erreur ${response.status}: ${data.error || data.message}`,
-          details: data,
+          message: `Erreur Stripe: ${response.error || 'Inconnue'}`,
+          details: response,
           timestamp: new Date().toLocaleString('fr-FR')
         });
       }
@@ -80,80 +72,27 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
   const syncAllSpaces = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        addResult({
-          success: false,
-          message: 'Aucune session active',
-          timestamp: new Date().toLocaleString('fr-FR')
-        });
-        return;
-      }
-
-      // Récupérer tous les espaces
-      const { data: spaces, error: spacesError } = await supabase
-        .from('spaces')
-        .select('id, name, pricing_type, hourly_price, daily_price, monthly_price')
-        .eq('is_active', true);
-
-      if (spacesError) {
-        addResult({
-          success: false,
-          message: `Erreur récupération espaces: ${spacesError.message}`,
-          timestamp: new Date().toLocaleString('fr-FR')
-        });
-        return;
-      }
-
-      // Créer des jobs pour tous les espaces
-      const jobs = spaces.map(space => ({
-        space_id: space.id,
-        event_type: 'MANUAL_SYNC_ALL',
-        payload: {
-          space_id: space.id,
-          space_name: space.name,
-          pricing_type: space.pricing_type,
-          timestamp: new Date().toISOString()
-        },
-        status: 'pending'
-      }));
-
-      const { error: insertError } = await supabase
-        .from('stripe_sync_queue')
-        .upsert(jobs, { onConflict: ['space_id', 'event_type'] });
-
-      if (insertError) {
-        addResult({
-          success: false,
-          message: `Erreur création jobs: ${insertError.message}`,
-          timestamp: new Date().toLocaleString('fr-FR')
-        });
-        return;
-      }
-
-      // Déclencher la synchronisation
-      const response = await fetch(`https://exffryodynkyizbeesbt.supabase.co/functions/v1/stripe-sync-queue`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
+      // Synchronisation réelle avec Stripe
+      const response = await apiClient.post('/stripe/sync-all');
       
-      if (response.ok) {
+      if (response.success) {
         addResult({
           success: true,
-          message: `Synchronisation déclenchée: ${data.message}`,
-          details: data,
+          message: `Synchronisation Stripe: ${response.data.success}/${response.data.total} espaces synchronisés`,
+          details: {
+            total: response.data.total,
+            success: response.data.success,
+            errors: response.data.errors,
+            mode: response.data.mode,
+            results: response.data.results.slice(0, 5) // Afficher les 5 premiers résultats
+          },
           timestamp: new Date().toLocaleString('fr-FR')
         });
       } else {
         addResult({
           success: false,
-          message: `Erreur synchronisation: ${data.error || data.message}`,
-          details: data,
+          message: `Erreur synchronisation: ${response.error || 'Inconnue'}`,
+          details: response,
           timestamp: new Date().toLocaleString('fr-FR')
         });
       }
@@ -171,81 +110,51 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
   const syncSingleSpace = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        addResult({
-          success: false,
-          message: 'Aucune session active',
-          timestamp: new Date().toLocaleString('fr-FR')
-        });
-        return;
-      }
-
-      // Récupérer tous les espaces actifs et filtrer côté JS
-      const { data: spaces, error: spacesError } = await supabase
-        .from('spaces')
-        .select('id, name, pricing_type, hourly_price, daily_price, monthly_price')
-        .eq('is_active', true);
-
-      if (spacesError || !spaces || spaces.length === 0) {
-        addResult({
-          success: false,
-          message: `Erreur récupération espaces: ${spacesError?.message || 'Aucun espace trouvé'}`,
-          timestamp: new Date().toLocaleString('fr-FR')
-        });
-        return;
-      }
-
-      // Chercher explicitement l'espace 'test1234567'
-      const space = spaces.find(s => s.name === 'test1234567') || spaces[0];
-
-      // Créer un job pour cet espace
-      const { error: insertError } = await supabase
-        .from('stripe_sync_queue')
-        .upsert({
-          space_id: space.id,
-          event_type: 'MANUAL_SYNC_SINGLE',
-          payload: {
-            space_id: space.id,
-            space_name: space.name,
-            pricing_type: space.pricing_type,
-            timestamp: new Date().toISOString()
-          },
-          status: 'pending'
-        }, { onConflict: ['space_id', 'event_type'] });
-
-      if (insertError) {
-        addResult({
-          success: false,
-          message: `Erreur création job: ${insertError.message}`,
-          timestamp: new Date().toLocaleString('fr-FR')
-        });
-        return;
-      }
-
-      // Déclencher la synchronisation
-      const response = await fetch(`https://exffryodynkyizbeesbt.supabase.co/functions/v1/stripe-sync-queue`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
+      // Récupérer tous les espaces pour trouver le premier actif
+      const spacesResponse = await apiClient.get('/spaces');
       
-      if (response.ok) {
+      if (!spacesResponse.success) {
+        addResult({
+          success: false,
+          message: `Erreur récupération espaces: ${spacesResponse.error}`,
+          timestamp: new Date().toLocaleString('fr-FR')
+        });
+        return;
+      }
+
+      const spaces = spacesResponse.data;
+      const activeSpaces = spaces.filter(space => space.is_active);
+
+      if (activeSpaces.length === 0) {
+        addResult({
+          success: false,
+          message: 'Aucun espace actif trouvé',
+          timestamp: new Date().toLocaleString('fr-FR')
+        });
+        return;
+      }
+
+      // Synchroniser le premier espace actif
+      const space = activeSpaces[0];
+      const response = await apiClient.post(`/stripe/sync-space/${space.id}`);
+      
+      if (response.success) {
         addResult({
           success: true,
-          message: `Synchronisation espace "${space.name}": ${data.message}`,
-          details: data,
+          message: `Synchronisation Stripe espace "${space.name}": OK`,
+          details: {
+            space_id: response.data.space_id,
+            stripe_product_id: response.data.stripe_product_id,
+            prices: response.data.prices,
+            mode: response.data.mode
+          },
           timestamp: new Date().toLocaleString('fr-FR')
         });
       } else {
         addResult({
           success: false,
-          message: `Erreur synchronisation: ${data.error || data.message}`,
-          details: data,
+          message: `Erreur synchronisation: ${response.error || 'Inconnue'}`,
+          details: response,
           timestamp: new Date().toLocaleString('fr-FR')
         });
       }
@@ -263,50 +172,31 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
   const checkSyncStatus = async () => {
     setIsLoading(true);
     try {
-      // Vérifier les jobs récents
-      const { data: jobs, error: jobsError } = await supabase
-        .from('stripe_sync_queue')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (jobsError) {
+      // Vérifier le statut de synchronisation Stripe
+      const response = await apiClient.get('/stripe/sync-status');
+      
+      if (response.success) {
         addResult({
-          success: false,
-          message: `Erreur récupération jobs: ${jobsError.message}`,
+          success: true,
+          message: `Statut Stripe: ${response.data.synced}/${response.data.total} espaces synchronisés (Mode: ${response.data.mode})`,
+          details: {
+            total: response.data.total,
+            active: response.data.active,
+            synced: response.data.synced,
+            unsynced: response.data.unsynced,
+            mode: response.data.mode,
+            spaces: response.data.spaces.slice(0, 5) // Afficher les 5 premiers espaces
+          },
           timestamp: new Date().toLocaleString('fr-FR')
         });
-        return;
-      }
-
-      // Vérifier les espaces avec/sans IDs Stripe
-      const { data: spaces, error: spacesError } = await supabase
-        .from('spaces')
-        .select('id, name, stripe_product_id, stripe_price_id, last_stripe_sync');
-
-      if (spacesError) {
+      } else {
         addResult({
           success: false,
-          message: `Erreur récupération espaces: ${spacesError.message}`,
+          message: `Erreur vérification statut: ${response.error || 'Inconnue'}`,
+          details: response,
           timestamp: new Date().toLocaleString('fr-FR')
         });
-        return;
       }
-
-      const syncedSpaces = spaces.filter(s => s.stripe_product_id && s.stripe_price_id);
-      const unsyncedSpaces = spaces.filter(s => !s.stripe_product_id || !s.stripe_price_id);
-
-      addResult({
-        success: true,
-        message: `Statut: ${syncedSpaces.length}/${spaces.length} espaces synchronisés`,
-        details: {
-          total: spaces.length,
-          synced: syncedSpaces.length,
-          unsynced: unsyncedSpaces.length,
-          recentJobs: jobs.slice(0, 3)
-        },
-        timestamp: new Date().toLocaleString('fr-FR')
-      });
     } catch (error) {
       addResult({
         success: false,

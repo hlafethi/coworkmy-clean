@@ -12,9 +12,11 @@ import { UserTableRow } from "./UserTableRow";
 interface UserTableProps {
   users: UserProfile[];
   onViewDetails: (user: UserProfile) => void;
+  onEdit?: (user: UserProfile) => void;
+  onDelete?: (user: UserProfile) => void;
 }
 
-export const UserTable = ({ users, onViewDetails }: UserTableProps) => {
+export const UserTable = ({ users, onViewDetails, onEdit, onDelete }: UserTableProps) => {
   return (
     <Table>
       <TableHeader>
@@ -31,6 +33,8 @@ export const UserTable = ({ users, onViewDetails }: UserTableProps) => {
             key={user.id}
             user={user}
             onViewDetails={onViewDetails}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         ))}
       </TableBody>

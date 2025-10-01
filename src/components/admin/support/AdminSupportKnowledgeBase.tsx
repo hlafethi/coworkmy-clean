@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { AdminSupportService } from '@/services/adminSupportService';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,17 +102,15 @@ export const AdminSupportKnowledgeBase = () => {
     setIsLoading(true);
     try {
       console.log('[AdminSupportKnowledgeBase] Création article:', newArticle);
-      const { error } = await supabase.from('support_kb_articles').insert([
-        { 
-          ...newArticle, 
-          title: newArticle.title.trim(), 
-          content: newArticle.content.trim() 
-        },
-      ]);
+      const result = await apiClient.post('/admin/support/kb-articles', {
+        ...newArticle, 
+        title: newArticle.title.trim(), 
+        content: newArticle.content.trim() 
+      });
       
-      if (error) {
-        console.error('[AdminSupportKnowledgeBase] Erreur création:', error);
-        setError(error.message);
+      if (!result.success) {
+        console.error('[AdminSupportKnowledgeBase] Erreur création:', result.error);
+        setError(result.error || 'Erreur lors de la création');
         toast.error('Erreur lors de la création');
         return;
       }
@@ -140,19 +139,17 @@ export const AdminSupportKnowledgeBase = () => {
     setIsLoading(true);
     try {
       console.log('[AdminSupportKnowledgeBase] Mise à jour article:', editing.id);
-      const { error } = await supabase.from('support_kb_articles')
-        .update({
-          title: editing.title.trim(),
-          content: editing.content.trim(),
-          category: editing.category,
-          order_index: editing.order_index,
-          is_active: editing.is_active,
-        })
-        .eq('id', editing.id);
+      const result = await apiClient.put(`/admin/support/kb-articles/${editing.id}`, {
+        title: editing.title.trim(),
+        content: editing.content.trim(),
+        category: editing.category,
+        order_index: editing.order_index,
+        is_active: editing.is_active,
+      });
       
-      if (error) {
-        console.error('[AdminSupportKnowledgeBase] Erreur mise à jour:', error);
-        setError(error.message);
+      if (!result.success) {
+        console.error('[AdminSupportKnowledgeBase] Erreur mise à jour:', result.error);
+        setError(result.error || 'Erreur lors de la mise à jour');
         toast.error('Erreur lors de la mise à jour');
         return;
       }
@@ -176,11 +173,11 @@ export const AdminSupportKnowledgeBase = () => {
     setIsLoading(true);
     try {
       console.log('[AdminSupportKnowledgeBase] Suppression article:', id);
-      const { error } = await supabase.from('support_kb_articles').delete().eq('id', id);
+      const result = await apiClient.delete(`/admin/support/kb-articles/${id}`);
       
-      if (error) {
-        console.error('[AdminSupportKnowledgeBase] Erreur suppression:', error);
-        setError(error.message);
+      if (!result.success) {
+        console.error('[AdminSupportKnowledgeBase] Erreur suppression:', result.error);
+        setError(result.error || 'Erreur lors de la suppression');
         toast.error('Erreur lors de la suppression');
         return;
       }
@@ -201,13 +198,13 @@ export const AdminSupportKnowledgeBase = () => {
     setIsLoading(true);
     try {
       console.log('[AdminSupportKnowledgeBase] Changement statut article:', article.id);
-      const { error } = await supabase.from('support_kb_articles')
-        .update({ is_active: !article.is_active })
-        .eq('id', article.id);
+      const result = await apiClient.put(`/admin/support/kb-articles/${article.id}`, {
+        is_active: !article.is_active
+      });
       
-      if (error) {
-        console.error('[AdminSupportKnowledgeBase] Erreur changement statut:', error);
-        setError(error.message);
+      if (!result.success) {
+        console.error('[AdminSupportKnowledgeBase] Erreur changement statut:', result.error);
+        setError(result.error || 'Erreur lors du changement de statut');
         toast.error('Erreur lors du changement de statut');
         return;
       }

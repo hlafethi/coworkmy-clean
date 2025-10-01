@@ -44,16 +44,19 @@ export function useLegalPages() {
 
       console.log('✅ Pages légales chargées:', data?.length || 0);
       
-      if (!data || data.length === 0) {
+      // 🔧 CORRECTION : Vérifier que data est un tableau
+      const pagesArray = Array.isArray(data) ? data : [];
+      
+      if (pagesArray.length === 0) {
         console.log('📝 Aucune page trouvée, création des pages par défaut');
         await createDefaultPages();
         return;
       }
       
-      setPages(data);
+      setPages(pagesArray);
       
       // 🔧 CORRECTION : Vérification du type avant l'assignation
-      data.forEach((page: any) => {
+      pagesArray.forEach((page: any) => {
         if (page.type && ['terms', 'privacy', 'legal'].includes(page.type)) {
           cacheRef.current[page.type as LegalPageType] = page;
         }
@@ -99,27 +102,22 @@ export function useLegalPages() {
       loadingRef.current[type] = true;
       console.log(`🔍 Recherche de la page ${type}...`);
       
-      const { data, error } = await withRetry(async () => {
-        return await supabase
-          .from('legal_pages')
-          .select('*')
-          .eq('type', type)
-          .single();
-      });
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          console.log(`📝 Page ${type} non trouvée, création...`);
-          const newPage = await createDefaultPage(type);
-          cacheRef.current[type] = newPage;
-          return newPage;
-        }
-        throw error;
+      // Utiliser l'API client au lieu de Supabase
+      const result = await apiClient.get('/legal-pages');
+      const pages = result.success && Array.isArray(result.data) ? result.data : [];
+      
+      const page = pages.find((p: any) => p.type === type);
+      
+      if (!page) {
+        console.log(`📝 Page ${type} non trouvée, création...`);
+        const newPage = getDefaultPage(type);
+        cacheRef.current[type] = newPage;
+        return newPage;
       }
 
       console.log(`✅ Page ${type} trouvée`);
-      cacheRef.current[type] = data;
-      return data;
+      cacheRef.current[type] = page;
+      return page;
     } catch (error) {
       console.error(`❌ Erreur lors du chargement de la page ${type}:`, error);
       const defaultPage = getDefaultPage(type);
@@ -141,14 +139,12 @@ export function useLegalPages() {
         last_updated: new Date().toISOString()
       };
 
-      const { error } = await withRetry(async () => {
-        return await supabase
-          .from('legal_pages')
-          .update(updateData)
-          .eq('type', page.type);
-      });
+      // Utiliser l'API client au lieu de Supabase
+      const result = await apiClient.put(`/legal-pages/${page.type}`, updateData);
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la mise à jour');
+      }
       
       console.log('✅ Page sauvegardée avec succès');
       
@@ -200,18 +196,19 @@ export function useLegalPages() {
         }
       ];
 
-      const { data, error } = await supabase
-        .from('legal_pages')
-        .insert(defaultPagesData)
-        .select();
+      // Utiliser l'API client au lieu de Supabase
+      const result = await apiClient.post('/legal-pages', defaultPagesData);
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la création');
+      }
       
       console.log('✅ Pages par défaut créées');
-      setPages(data);
+      const pagesData = Array.isArray(result.data) ? result.data : [];
+      setPages(pagesData);
       
       // 🔧 CORRECTION : Vérification du type avant l'assignation
-      data.forEach((page: any) => {
+      pagesData.forEach((page: any) => {
         if (page.type && ['terms', 'privacy', 'legal'].includes(page.type)) {
           cacheRef.current[page.type as LegalPageType] = page;
         }
@@ -230,21 +227,21 @@ export function useLegalPages() {
     try {
       const defaultPage = getDefaultPage(type);
       
-      const { data, error } = await supabase
-        .from('legal_pages')
-        .insert({
-          type: defaultPage.type,
-          title: defaultPage.title,
-          content: defaultPage.content,
-          last_updated: new Date().toISOString()
-        })
-        .select()
-        .single();
+      // Utiliser l'API client au lieu de Supabase
+      const result = await apiClient.post('/legal-pages', [{
+        type: defaultPage.type,
+        title: defaultPage.title,
+        content: defaultPage.content,
+        last_updated: new Date().toISOString()
+      }]);
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la création');
+      }
       
       console.log(`✅ Page ${type} créée`);
-      return data;
+      const pagesData = Array.isArray(result.data) ? result.data : [];
+      return pagesData[0] || defaultPage;
     } catch (error) {
       console.error(`❌ Erreur création page ${type}:`, error);
       return getDefaultPage(type);
