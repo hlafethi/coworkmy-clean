@@ -15,7 +15,7 @@ import { StripeCustomerPortal } from "@/components/common/StripeCustomerPortal";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { loading, stats, userProfile, isAdmin, handleLogout } = useDashboard();
+  const { loading, stats, userProfile, isAdmin, handleLogout, refreshStats } = useDashboard();
 
   // Tawk.to a été désactivé
 
@@ -77,7 +77,7 @@ const Dashboard = () => {
             <h2 className="text-2xl font-bold text-gray-900">Mes réservations</h2>
             <p className="text-gray-600">Gérez toutes vos réservations d'espaces de coworking</p>
           </div>
-          <AllBookings />
+          <AllBookings onBookingChange={refreshStats} />
         </div>
 
         <div className="mt-8">

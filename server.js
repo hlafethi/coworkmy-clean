@@ -9,10 +9,49 @@ import Stripe from 'stripe';
 
 dotenv.config();
 
-// Configuration Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_...', {
-  apiVersion: '2023-10-16',
-});
+// Configuration Stripe - sera initialisée dynamiquement
+let stripe = null;
+
+// Fonction pour récupérer la configuration Stripe depuis la base de données
+const getStripeConfig = async () => {
+  try {
+    const result = await pool.query(`
+      SELECT value FROM admin_settings 
+      WHERE key = 'stripe' 
+      ORDER BY updated_at DESC 
+      LIMIT 1
+    `);
+    
+    if (result.rows.length === 0) {
+      throw new Error('Configuration Stripe non trouvée');
+    }
+    
+    const config = result.rows[0].value;
+    console.log('🔧 Configuration Stripe récupérée:', {
+      mode: config.mode,
+      hasTestSecret: !!config.test_secret_key,
+      hasLiveSecret: !!config.live_secret_key
+    });
+    
+    const secretKey = config.mode === 'live' ? config.live_secret_key : config.test_secret_key;
+    const publishableKey = config.mode === 'live' ? config.live_publishable_key : config.test_publishable_key;
+    const webhookSecret = config.mode === 'live' ? config.live_webhook_secret : config.webhook_secret;
+    
+    if (!secretKey) {
+      throw new Error(`Clé secrète Stripe manquante pour le mode ${config.mode}`);
+    }
+    
+    return {
+      secretKey,
+      publishableKey,
+      webhookSecret,
+      mode: config.mode || 'test'
+    };
+  } catch (error) {
+    console.error('Erreur récupération config Stripe:', error);
+    throw error;
+  }
+};
 
 const app = express();
 app.use(cors());
@@ -320,6 +359,62 @@ app.get('/api/spaces/active', async (req, res) => {
     sendResponse(res, true, result.rows);
   } catch (error) {
     console.error('Erreur spaces actifs:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// GET /api/spaces/:id - Récupérer un espace spécifique par ID
+app.get('/api/spaces/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('🔍 Récupération de l\'espace:', id);
+    
+    const result = await pool.query(
+      'SELECT * FROM spaces WHERE id = $1 AND is_active = true',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return sendResponse(res, false, null, 'Espace non trouvé');
+    }
+
+    sendResponse(res, true, result.rows[0]);
+  } catch (error) {
+    console.error('Erreur récupération espace:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// GET /api/spaces/:id/availability
+app.get('/api/spaces/:id/availability', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { start, end } = req.query;
+    
+    console.log('🔍 Vérification disponibilité espace:', { id, start, end });
+    
+    if (!start || !end) {
+      return sendResponse(res, false, null, 'Dates de début et fin requises');
+    }
+
+    // Vérifier s'il existe des réservations qui se chevauchent
+    const overlapCheck = await pool.query(`
+      SELECT id FROM bookings 
+      WHERE space_id = $1 
+      AND status IN ('pending', 'confirmed')
+      AND (
+        (start_date <= $2 AND end_date >= $2) OR
+        (start_date <= $3 AND end_date >= $3) OR
+        (start_date >= $2 AND end_date <= $3)
+      )
+    `, [id, start, end]);
+
+    const isAvailable = overlapCheck.rows.length === 0;
+    
+    console.log(`✅ Espace ${id} disponible: ${isAvailable}`);
+    sendResponse(res, true, { available: isAvailable });
+  } catch (error) {
+    console.error('Erreur vérification disponibilité:', error);
     sendResponse(res, false, null, 'Erreur serveur');
   }
 });
@@ -852,6 +947,86 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
 
 // ===== ENDPOINTS POUR LES RÉSERVATIONS ADMIN =====
 
+// GET /api/stripe/payments - Récupérer les paiements Stripe
+app.get('/api/stripe/payments', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    console.log('💳 Récupération des paiements Stripe...');
+    
+    // Récupérer la configuration Stripe depuis la base de données
+    const config = await getStripeConfig();
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Récupérer les paiements récents
+    const payments = await stripeInstance.paymentIntents.list({
+      limit: 50,
+      expand: ['data.customer', 'data.charges.data.balance_transaction']
+    });
+
+    console.log(`✅ ${payments.data.length} paiements récupérés`);
+    sendResponse(res, true, payments.data);
+  } catch (error) {
+    console.error('❌ Erreur récupération paiements Stripe:', error);
+    sendResponse(res, false, null, `Erreur: ${error.message}`);
+  }
+});
+
+// POST /api/stripe/payments/:id/refund - Rembourser un paiement Stripe
+app.post('/api/stripe/payments/:id/refund', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    const { id } = req.params;
+    const { amount, reason } = req.body;
+
+    console.log(`💰 Remboursement du paiement Stripe: ${id}`);
+    
+    // Récupérer la configuration Stripe depuis la base de données
+    const config = await getStripeConfig();
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Récupérer le payment intent pour vérifier qu'il existe
+    const paymentIntent = await stripeInstance.paymentIntents.retrieve(id);
+    
+    if (paymentIntent.status !== 'succeeded') {
+      return sendResponse(res, false, null, 'Ce paiement ne peut pas être remboursé');
+    }
+
+    // Créer le remboursement
+    const refundData = {
+      payment_intent: id,
+      reason: reason || 'requested_by_customer',
+    };
+
+    // Si un montant spécifique est fourni, l'ajouter
+    if (amount && amount > 0) {
+      refundData.amount = Math.round(amount * 100); // Convertir en centimes
+    }
+
+    const refund = await stripeInstance.refunds.create(refundData);
+
+    console.log(`✅ Remboursement créé: ${refund.id} (Mode: ${config.mode})`);
+    sendResponse(res, true, {
+      refund_id: refund.id,
+      amount: refund.amount / 100,
+      status: refund.status,
+      mode: config.mode
+    });
+  } catch (error) {
+    console.error('❌ Erreur remboursement Stripe:', error);
+    sendResponse(res, false, null, `Erreur remboursement: ${error.message}`);
+  }
+});
+
 // GET /api/admin/bookings
 app.get('/api/admin/bookings', authenticateToken, async (req, res) => {
   try {
@@ -862,19 +1037,80 @@ app.get('/api/admin/bookings', authenticateToken, async (req, res) => {
 
     console.log('📅 Récupération des réservations admin...');
     
+    // Ajouter les champs manquants à la table profiles si nécessaire
+    try {
+      await pool.query(`
+        ALTER TABLE profiles 
+        ADD COLUMN IF NOT EXISTS first_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)
+      `);
+      
+      // Mettre à jour les données existantes - version plus robuste
+      await pool.query(`
+        UPDATE profiles 
+        SET 
+          first_name = CASE 
+            WHEN full_name IS NOT NULL AND full_name != '' AND full_name != 'NULL'
+            THEN SPLIT_PART(full_name, ' ', 1)
+            ELSE COALESCE(first_name, 'Utilisateur')
+          END,
+          last_name = CASE 
+            WHEN full_name IS NOT NULL AND full_name != '' AND full_name != 'NULL'
+            THEN CASE 
+              WHEN POSITION(' ' IN full_name) > 0 
+              THEN SPLIT_PART(full_name, ' ', 2)
+              ELSE ''
+            END
+            ELSE COALESCE(last_name, '')
+          END
+        WHERE id IS NOT NULL
+      `);
+      
+    } catch (alterError) {
+      console.log('⚠️ Erreur lors de l\'ajout des champs profiles:', alterError.message);
+    }
+    
     // Récupérer toutes les réservations avec les informations utilisateur et espace
     const result = await pool.query(`
       SELECT 
         b.*,
         p.email as user_email,
         p.full_name as user_name,
+        p.first_name,
+        p.last_name,
         s.name as space_name,
-        s.description as space_description
+        s.description as space_description,
+        s.pricing_type as space_pricing_type,
+        -- Convertir les dates en format ISO pour le frontend
+        b.start_date as start_time,
+        b.end_date as end_time
       FROM bookings b
       LEFT JOIN profiles p ON b.user_id = p.id
       LEFT JOIN spaces s ON b.space_id = s.id
       ORDER BY b.created_at DESC
     `);
+    
+    // Forcer l'affichage du nom utilisateur si manquant
+    result.rows.forEach(booking => {
+      // Construire le nom complet
+      let displayName = '';
+      
+      if (booking.user_name && booking.user_name !== 'NULL') {
+        displayName = booking.user_name;
+      } else if (booking.first_name && booking.last_name) {
+        displayName = `${booking.first_name} ${booking.last_name}`;
+      } else if (booking.first_name) {
+        displayName = booking.first_name;
+      } else if (booking.user_email) {
+        displayName = booking.user_email;
+      } else {
+        displayName = `Utilisateur #${booking.user_id}`;
+      }
+      
+      // Forcer l'affichage
+      booking.user_name = displayName;
+      booking.display_name = displayName;
+    });
     
     console.log(`✅ ${result.rows.length} réservations trouvées pour l'admin`);
     sendResponse(res, true, result.rows);
@@ -1970,8 +2206,12 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
         s.description as space_description,
         s.price_per_hour,
         s.capacity,
+        s.pricing_type,
         p.full_name as user_name,
-        p.email as user_email
+        p.email as user_email,
+        -- Convertir les dates en format ISO pour le frontend
+        b.start_date as start_time,
+        b.end_date as end_time
       FROM bookings b
       LEFT JOIN spaces s ON b.space_id = s.id
       LEFT JOIN profiles p ON b.user_id = p.id
@@ -1990,17 +2230,90 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
 // POST /api/bookings
 app.post('/api/bookings', authenticateToken, async (req, res) => {
   try {
-    const { space_id, start_date, end_date, notes } = req.body;
+    console.log('🔍 Données de réservation reçues:', req.body);
+    
+    const { 
+      space_id, 
+      start_date, 
+      end_date, 
+      start_time, 
+      end_time, 
+      notes,
+      user_id,
+      total_price_ht,
+      total_price_ttc,
+      description,
+      attendees
+    } = req.body;
 
-    if (!space_id || !start_date || !end_date) {
+    // Utiliser start_time/end_time si disponibles, sinon start_date/end_date
+    const startDate = start_time || start_date;
+    const endDate = end_time || end_date;
+    const userId = user_id || req.user.id;
+
+    console.log('🔍 Données traitées:', {
+      space_id,
+      startDate,
+      endDate,
+      userId,
+      total_price_ht,
+      total_price_ttc,
+      description,
+      attendees
+    });
+
+    if (!space_id || !startDate || !endDate) {
+      console.log('❌ Données manquantes:', { space_id, startDate, endDate });
       return sendResponse(res, false, null, 'Données de réservation incomplètes');
     }
 
+    // Vérifier s'il existe déjà une réservation qui se chevauche
+    const overlapCheck = await pool.query(`
+      SELECT id FROM bookings 
+      WHERE space_id = $1 
+      AND status IN ('pending', 'confirmed')
+      AND (
+        (start_date <= $2 AND end_date >= $2) OR
+        (start_date <= $3 AND end_date >= $3) OR
+        (start_date >= $2 AND end_date <= $3)
+      )
+    `, [space_id, startDate, endDate]);
+
+    if (overlapCheck.rows.length > 0) {
+      console.log('❌ Réservation en conflit détectée');
+      return sendResponse(res, false, null, 'Cet espace est déjà réservé pour cette période');
+    }
+
     const result = await pool.query(`
-      INSERT INTO bookings (user_id, space_id, start_date, end_date, notes, status, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, 'pending', NOW(), NOW())
+      INSERT INTO bookings (
+        user_id, 
+        space_id, 
+        start_date, 
+        end_date, 
+        notes, 
+        status, 
+        total_price,
+        total_price_ht,
+        total_price_ttc,
+        description,
+        attendees,
+        created_at, 
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9, $10, NOW(), NOW())
       RETURNING *
-    `, [req.user.id, space_id, start_date, end_date, notes || null]);
+    `, [
+      userId, 
+      space_id, 
+      startDate, 
+      endDate, 
+      notes || null,
+      total_price_ht || 0, // Utiliser total_price_ht pour total_price
+      total_price_ht || null,
+      total_price_ttc || null,
+      description || null,
+      attendees || 1
+    ]);
 
     if (result.rows.length === 0) {
       return sendResponse(res, false, null, 'Erreur lors de la création de la réservation');
@@ -2011,6 +2324,245 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Erreur create booking:', error);
     sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// DELETE /api/bookings/:id
+app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const isAdmin = req.user.is_admin;
+
+    console.log('🗑️ Suppression de réservation:', { id, userId, isAdmin });
+
+    // Vérifier que la réservation existe et appartient à l'utilisateur (ou admin)
+    const checkResult = await pool.query(
+      'SELECT * FROM bookings WHERE id = $1',
+      [id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return sendResponse(res, false, null, 'Réservation non trouvée');
+    }
+
+    const booking = checkResult.rows[0];
+
+    // Vérifier les permissions
+    if (!isAdmin && booking.user_id !== userId) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    // Supprimer la réservation
+    const deleteResult = await pool.query(
+      'DELETE FROM bookings WHERE id = $1 RETURNING *',
+      [id]
+    );
+
+    if (deleteResult.rows.length === 0) {
+      return sendResponse(res, false, null, 'Erreur lors de la suppression');
+    }
+
+    console.log('✅ Réservation supprimée:', id);
+    sendResponse(res, true, { message: 'Réservation supprimée avec succès' });
+
+  } catch (error) {
+    console.error('❌ Erreur suppression booking:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// GET /api/bookings/:id
+app.get('/api/bookings/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const isAdmin = req.user.is_admin;
+
+    console.log('🔍 Récupération de réservation:', { id, userId, isAdmin });
+
+    // Récupérer la réservation avec les détails de l'espace
+    const result = await pool.query(`
+      SELECT 
+        b.*,
+        s.name as space_name,
+        s.description as space_description,
+        -- Convertir les dates en format ISO pour le frontend
+        b.start_date as start_time,
+        b.end_date as end_time
+      FROM bookings b
+      LEFT JOIN spaces s ON b.space_id = s.id
+      WHERE b.id = $1
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return sendResponse(res, false, null, 'Réservation non trouvée');
+    }
+
+    const booking = result.rows[0];
+
+    // Vérifier les permissions
+    if (!isAdmin && booking.user_id !== userId) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    // Formater la réponse avec les données de l'espace
+    const formattedBooking = {
+      ...booking,
+      space: {
+        name: booking.space_name,
+        description: booking.space_description
+      }
+    };
+
+    console.log('✅ Réservation récupérée:', id);
+    sendResponse(res, true, formattedBooking);
+
+  } catch (error) {
+    console.error('❌ Erreur récupération booking:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// PUT /api/bookings/:id/status
+app.put('/api/bookings/:id/status', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user.id;
+    const isAdmin = req.user.is_admin;
+
+    console.log('🔄 Mise à jour du statut de réservation:', { id, status, userId, isAdmin });
+
+    if (!status) {
+      return sendResponse(res, false, null, 'Statut requis');
+    }
+
+    // Vérifier que la réservation existe et appartient à l'utilisateur (ou admin)
+    const checkResult = await pool.query(
+      'SELECT * FROM bookings WHERE id = $1',
+      [id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return sendResponse(res, false, null, 'Réservation non trouvée');
+    }
+
+    const booking = checkResult.rows[0];
+
+    // Vérifier les permissions
+    if (!isAdmin && booking.user_id !== userId) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    // Mettre à jour le statut
+    const updateResult = await pool.query(
+      'UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return sendResponse(res, false, null, 'Erreur lors de la mise à jour');
+    }
+
+    console.log('✅ Statut de réservation mis à jour:', { id, status });
+    sendResponse(res, true, updateResult.rows[0]);
+
+  } catch (error) {
+    console.error('❌ Erreur mise à jour statut booking:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// ===== ENDPOINTS PAIEMENT STRIPE =====
+
+// Créer une session de paiement Stripe
+app.post('/api/stripe/create-checkout-session', authenticateToken, async (req, res) => {
+  try {
+    const { 
+      booking_id, 
+      amount, 
+      customer_email, 
+      metadata = {} 
+    } = req.body;
+
+    if (!booking_id || !amount || !customer_email) {
+      return sendResponse(res, false, null, 'Données de paiement incomplètes');
+    }
+
+    console.log('💳 Création session de paiement Stripe:', {
+      booking_id,
+      amount,
+      customer_email
+    });
+
+    // Récupérer la configuration Stripe depuis la base de données
+    const config = await getStripeConfig();
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Créer ou récupérer le client Stripe
+    let customer;
+    try {
+      const existingCustomers = await stripeInstance.customers.list({
+        email: customer_email,
+        limit: 1
+      });
+
+      if (existingCustomers.data.length > 0) {
+        customer = existingCustomers.data[0];
+        console.log('✅ Client existant trouvé:', customer.id);
+      } else {
+        customer = await stripeInstance.customers.create({
+          email: customer_email,
+          name: req.user.full_name || customer_email
+        });
+        console.log('✅ Nouveau client créé:', customer.id);
+      }
+    } catch (customerError) {
+      console.error('❌ Erreur client Stripe:', customerError);
+      return sendResponse(res, false, null, `Erreur client: ${customerError.message}`);
+    }
+
+    // Créer la session de checkout
+    const session = await stripeInstance.checkout.sessions.create({
+      customer: customer.id,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: `Réservation - ${metadata.space_name || 'Espace'}`,
+              description: `Réservation du ${new Date(metadata.start_time).toLocaleDateString('fr-FR')} au ${new Date(metadata.end_time).toLocaleDateString('fr-FR')}`,
+            },
+            unit_amount: amount, // Montant en centimes
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/success?booking_id=${booking_id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/cancel?booking_id=${booking_id}`,
+      metadata: {
+        booking_id,
+        user_id: req.user.id,
+        ...metadata
+      }
+    });
+
+    console.log('✅ Session de paiement créée:', session.id);
+
+    sendResponse(res, true, {
+      url: session.url,
+      session_id: session.id,
+      mode: config.mode
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur création session Stripe:', error);
+    sendResponse(res, false, null, `Erreur paiement: ${error.message}`);
   }
 });
 
@@ -2505,6 +3057,225 @@ app.put('/api/email-config/:id', authenticateToken, async (req, res) => {
 
 // ===== ENDPOINTS STRIPE =====
 
+// Test de connexion Stripe
+app.get('/api/stripe/test-connection', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    console.log('🔍 Test de connexion Stripe...');
+    
+    // Récupérer la configuration Stripe depuis la base de données
+    const config = await getStripeConfig();
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Tester la connexion en récupérant les produits
+    const products = await stripeInstance.products.list({ limit: 1 });
+    
+    sendResponse(res, true, {
+      connected: true,
+      products_count: products.data.length,
+      message: `Connexion Stripe réussie (Mode: ${config.mode})`,
+      mode: config.mode
+    });
+  } catch (error) {
+    console.error('❌ Erreur test Stripe:', error);
+    sendResponse(res, false, null, `Erreur Stripe: ${error.message}`);
+  }
+});
+
+// Synchronisation de tous les espaces avec Stripe
+app.post('/api/stripe/sync-all', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    console.log('🔄 Synchronisation de tous les espaces avec Stripe...');
+    
+    // Récupérer la configuration Stripe depuis la base de données
+    const config = await getStripeConfig();
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Récupérer tous les espaces actifs
+    const spacesResult = await pool.query(
+      'SELECT * FROM spaces WHERE is_active = true ORDER BY created_at DESC'
+    );
+    
+    const spaces = spacesResult.rows;
+    console.log(`📊 ${spaces.length} espaces à synchroniser`);
+
+    const syncResults = [];
+    
+    for (const space of spaces) {
+      try {
+        console.log(`🔄 Synchronisation de l'espace: ${space.name}`);
+        
+        // Déterminer le prix selon le pricing_type
+        let price = 0;
+        let currency = 'eur';
+        
+        switch (space.pricing_type) {
+          case 'hourly':
+            price = Math.round((space.hourly_price || 0) * 100); // Convertir en centimes
+            break;
+          case 'daily':
+            price = Math.round((space.daily_price || 0) * 100);
+            break;
+          case 'monthly':
+            price = Math.round((space.monthly_price || 0) * 100);
+            break;
+          default:
+            price = Math.round((space.hourly_price || 0) * 100);
+        }
+
+        if (price <= 0) {
+          console.log(`⚠️ Prix invalide pour ${space.name}, ignoré`);
+          syncResults.push({
+            space_id: space.id,
+            space_name: space.name,
+            status: 'skipped',
+            reason: 'Prix invalide'
+          });
+          continue;
+        }
+
+        // Créer ou mettre à jour le produit Stripe
+        const productData = {
+          name: space.name,
+          description: space.description || '',
+          metadata: {
+            space_id: space.id,
+            pricing_type: space.pricing_type
+          }
+        };
+
+        let product;
+        try {
+          // Chercher un produit existant
+          const existingProducts = await stripeInstance.products.list({
+            limit: 100
+          });
+          
+          const existingProduct = existingProducts.data.find(p => 
+            p.metadata.space_id === space.id
+          );
+
+          if (existingProduct) {
+            // Mettre à jour le produit existant
+            product = await stripeInstance.products.update(existingProduct.id, productData);
+            console.log(`✅ Produit mis à jour: ${product.id}`);
+          } else {
+            // Créer un nouveau produit
+            product = await stripeInstance.products.create(productData);
+            console.log(`✅ Nouveau produit créé: ${product.id}`);
+          }
+        } catch (productError) {
+          console.error(`❌ Erreur produit pour ${space.name}:`, productError);
+          syncResults.push({
+            space_id: space.id,
+            space_name: space.name,
+            status: 'error',
+            error: productError.message
+          });
+          continue;
+        }
+
+        // Créer ou mettre à jour le prix
+        try {
+          const priceData = {
+            product: product.id,
+            unit_amount: price,
+            currency: currency,
+            metadata: {
+              space_id: space.id,
+              pricing_type: space.pricing_type
+            }
+          };
+
+          // Chercher un prix existant
+          const existingPrices = await stripeInstance.prices.list({
+            product: product.id,
+            limit: 100
+          });
+          
+          const existingPrice = existingPrices.data.find(p => 
+            p.metadata.space_id === space.id && 
+            p.metadata.pricing_type === space.pricing_type
+          );
+
+          let stripePrice;
+          if (existingPrice) {
+            // Le prix existe déjà, on peut le réactiver s'il est archivé
+            if (existingPrice.active) {
+              stripePrice = existingPrice;
+              console.log(`✅ Prix existant trouvé: ${stripePrice.id}`);
+            } else {
+              // Créer un nouveau prix si l'ancien est archivé
+              stripePrice = await stripeInstance.prices.create(priceData);
+              console.log(`✅ Nouveau prix créé: ${stripePrice.id}`);
+            }
+          } else {
+            // Créer un nouveau prix
+            stripePrice = await stripeInstance.prices.create(priceData);
+            console.log(`✅ Nouveau prix créé: ${stripePrice.id}`);
+          }
+
+          syncResults.push({
+            space_id: space.id,
+            space_name: space.name,
+            status: 'success',
+            product_id: product.id,
+            price_id: stripePrice.id,
+            amount: price / 100
+          });
+
+        } catch (priceError) {
+          console.error(`❌ Erreur prix pour ${space.name}:`, priceError);
+          syncResults.push({
+            space_id: space.id,
+            space_name: space.name,
+            status: 'error',
+            error: priceError.message
+          });
+        }
+
+      } catch (spaceError) {
+        console.error(`❌ Erreur générale pour ${space.name}:`, spaceError);
+        syncResults.push({
+          space_id: space.id,
+          space_name: space.name,
+          status: 'error',
+          error: spaceError.message
+        });
+      }
+    }
+
+    const successCount = syncResults.filter(r => r.status === 'success').length;
+    const errorCount = syncResults.filter(r => r.status === 'error').length;
+    const skippedCount = syncResults.filter(r => r.status === 'skipped').length;
+
+    console.log(`✅ Synchronisation terminée: ${successCount} succès, ${errorCount} erreurs, ${skippedCount} ignorés`);
+
+    sendResponse(res, true, {
+      total_spaces: spaces.length,
+      success_count: successCount,
+      error_count: errorCount,
+      skipped_count: skippedCount,
+      results: syncResults
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur synchronisation Stripe:', error);
+    sendResponse(res, false, null, `Erreur synchronisation: ${error.message}`);
+  }
+});
+
 // Endpoint pour créer un portail client Stripe
 app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, res) => {
   try {
@@ -2516,20 +3287,17 @@ app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, re
 
     console.log('🔗 Création du portail client Stripe pour:', customerEmail);
 
-    // Vérifier si Stripe est configuré
-    if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_...') {
-      console.log('⚠️ Stripe non configuré, redirection vers une page de test');
-      return sendResponse(res, true, { 
-        url: 'https://stripe.com/docs/billing/quickstart',
-        message: 'Stripe non configuré - redirection vers la documentation'
-      });
-    }
+    // Récupérer la configuration Stripe depuis la base de données
+    const config = await getStripeConfig();
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
 
     // Créer ou récupérer le client Stripe
     let customer;
     try {
       // Chercher un client existant par email
-      const existingCustomers = await stripe.customers.list({
+      const existingCustomers = await stripeInstance.customers.list({
         email: customerEmail,
         limit: 1
       });
@@ -2539,7 +3307,7 @@ app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, re
         console.log('✅ Client existant trouvé:', customer.id);
       } else {
         // Créer un nouveau client
-        customer = await stripe.customers.create({
+        customer = await stripeInstance.customers.create({
           email: customerEmail,
           name: req.user.full_name || customerEmail
         });
@@ -2551,7 +3319,7 @@ app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, re
     }
 
     // Créer une session de portail client
-    const portalSession = await stripe.billingPortal.sessions.create({
+    const portalSession = await stripeInstance.billingPortal.sessions.create({
       customer: customer.id,
       return_url: returnUrl,
     });
@@ -2583,6 +3351,7 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/auth/me`);
   console.log(`   - GET  /api/spaces`);
   console.log(`   - GET  /api/spaces/active`);
+  console.log(`   - GET  /api/spaces/:id`);
   console.log(`   - POST /api/spaces`);
   console.log(`   - PUT  /api/spaces/:id`);
   console.log(`   - DELETE /api/spaces/:id`);
@@ -2594,6 +3363,8 @@ app.listen(PORT, () => {
   console.log(`   - GET  /api/admin/bookings`);
   console.log(`   - PUT  /api/admin/bookings/:id/status`);
   console.log(`   - DELETE /api/admin/bookings/:id`);
+  console.log(`   - GET  /api/stripe/payments`);
+  console.log(`   - POST /api/stripe/payments/:id/refund`);
   console.log(`   - GET  /api/payments`);
   console.log(`   - GET  /api/time-slots`);
   console.log(`   - POST /api/time-slots`);
@@ -2645,6 +3416,8 @@ app.listen(PORT, () => {
   console.log(`   - POST /api/admin/support/tickets/:id/responses-no-auth`);
   console.log(`   - GET  /api/health`);
   console.log(`   - POST /api/send-email`);
+  console.log(`   - GET  /api/stripe/test-connection`);
+  console.log(`   - POST /api/stripe/sync-all`);
   console.log(`   - POST /api/stripe/create-customer-portal`);
   console.log(`   - POST /api/users/:id/documents`);
   console.log(`   - DELETE /api/users/:id/documents/:documentId`);

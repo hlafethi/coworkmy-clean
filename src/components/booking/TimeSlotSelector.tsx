@@ -43,7 +43,7 @@ export function TimeSlotSelector({ timeSlots, selectedSlot, onSlotSelect, space 
       </CardHeader>
       <CardContent>
         <RadioGroup
-          value={selectedSlot?.id}
+          value={selectedSlot?.id || ""}
           onValueChange={(value) => {
             const slot = timeSlots.find((s) => s.id === value);
             if (slot) onSlotSelect(slot);
@@ -51,8 +51,8 @@ export function TimeSlotSelector({ timeSlots, selectedSlot, onSlotSelect, space 
           className="space-y-4"
         >
           {timeSlots.map((slot) => {
-            const priceHT = slot.price ?? 0;
-            const priceTTC = Math.round(priceHT * 1.2 * 100) / 100;
+            const priceTTC = slot.price ?? 0;
+            const priceHT = Math.round(priceTTC / 1.2 * 100) / 100;
             return (
               <div key={slot.id} className="flex flex-col space-y-1">
                 <div className="flex items-center space-x-3">

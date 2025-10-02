@@ -7,13 +7,64 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useSpaces } from '@/hooks/useSpacesAPI';
 
 const displayPrice = (space: any) => {
-  // Prix simplifié pour l'API - utiliser les nouveaux noms de champs
-  const price = space.hourly_price || space.daily_price || 0;
+
+  // Logique de prix améliorée - vérifier le pricing_type d'abord
+  let price = 0;
+  let label = "Prix";
+  let unit = "€ TTC";
+
+  if (space.pricing_type) {
+    switch (space.pricing_type) {
+      case 'hourly':
+        price = parseFloat(space.hourly_price) || 0;
+        label = "Prix horaire";
+        break;
+      case 'daily':
+        price = parseFloat(space.daily_price) || 0;
+        label = "Prix journalier";
+        break;
+      case 'monthly':
+        price = parseFloat(space.monthly_price) || 0;
+        label = "Prix mensuel";
+        break;
+      case 'yearly':
+        price = parseFloat(space.yearly_price) || 0;
+        label = "Prix annuel";
+        break;
+      case 'half_day':
+        price = parseFloat(space.half_day_price) || 0;
+        label = "Prix demi-journée";
+        break;
+      case 'quarter':
+        price = parseFloat(space.quarter_price) || 0;
+        label = "Prix quart de journée";
+        break;
+      case 'custom':
+        price = parseFloat(space.custom_price) || 0;
+        label = space.custom_label || "Prix personnalisé";
+        break;
+      default:
+        // Fallback: essayer de trouver le premier prix disponible
+        price = parseFloat(space.monthly_price) || parseFloat(space.daily_price) || parseFloat(space.hourly_price) || 0;
+        label = space.monthly_price ? "Prix mensuel" : 
+                space.daily_price ? "Prix journalier" : 
+                space.hourly_price ? "Prix horaire" : "Prix";
+    }
+  } else {
+    // Fallback si pas de pricing_type
+    price = parseFloat(space.monthly_price) || parseFloat(space.daily_price) || parseFloat(space.hourly_price) || 0;
+    label = space.monthly_price ? "Prix mensuel" : 
+            space.daily_price ? "Prix journalier" : 
+            space.hourly_price ? "Prix horaire" : "Prix";
+  }
+  
+  // Calculer le prix TTC (les prix en base sont HT, donc on multiplie par 1.2)
+  const priceTTC = typeof price === 'number' ? price * 1.2 : 0;
   
   return {
-    label: space.hourly_price ? "Prix horaire" : "Prix journalier",
-    price: typeof price === 'number' ? price.toFixed(2) : '0.00',
-    unit: "€"
+    label,
+    price: priceTTC.toFixed(2),
+    unit
   };
 };
 
@@ -97,9 +148,9 @@ const SpacesPage = () => {
                     {(() => {
                       const priceInfo = displayPrice(space);
                       return (
-                        <div className="text-center">
+                        <div className="text-center bg-gray-50 p-4 rounded-lg border border-gray-200">
                           <p className="text-sm font-medium text-gray-500 mb-2">{priceInfo.label}</p>
-                          <p className="text-base text-gray-900">{priceInfo.price} {priceInfo.unit}</p>
+                          <p className="text-xl font-semibold text-gray-900">{priceInfo.price} {priceInfo.unit}</p>
                         </div>
                       );
                     })()}

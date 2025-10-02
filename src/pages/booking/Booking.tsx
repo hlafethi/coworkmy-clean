@@ -11,10 +11,11 @@ import type { TimeSlotOption } from "@/types/booking";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { logger } from '@/utils/logger';
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useStripePayment } from "@/hooks/useStripePayment";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { apiClient } from "@/lib/api-client";
+import { updateBookingStatus } from '@/utils/stripeUtils';
 
 export default function Booking() {
   const { spaceId } = useParams<{ spaceId: string }>();
@@ -26,7 +27,6 @@ export default function Booking() {
   const [selectedDays, setSelectedDays] = useState<Date[]>([]);
   const [selectedDateRange, setSelectedDateRange] = useState<{ from: Date; to: Date } | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const { toast } = useToast();
   const { createPaymentSession } = useStripePayment();
 
   logger.log("📍 Page Booking - spaceId:", spaceId);
@@ -35,9 +35,11 @@ export default function Booking() {
   useEffect(() => {
     if (spaceId) {
       if (space) {
-        setSelectedDays([space.created_at ? new Date(space.created_at) : new Date()]);
-        setSelectedDateRange({ from: space.created_at ? new Date(space.created_at) : new Date(), to: space.created_at ? new Date(space.created_at) : new Date() });
-        setSelectedSlot(space.pricing_type === 'hourly' ? space.hourly_price : space.daily_price);
+        // Initialiser avec la date d'aujourd'hui pour les réservations
+        const today = new Date();
+        setSelectedDays([today]);
+        setSelectedDateRange({ from: today, to: today });
+        // setSelectedSlot est géré par le hook useBooking
       } else {
         setErrorDetails("Impossible de charger les informations de l'espace. Veuillez réessayer.");
       }
@@ -90,33 +92,18 @@ export default function Booking() {
 
   const handleSubmit = async () => {
     if (!space || !selectedSlot || selectedDays.length === 0) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un créneau et une date",
-        variant: "destructive",
-        duration: 5000,
-      });
+      toast.error("Veuillez sélectionner un créneau et une date");
       return;
     }
 
     if (!termsAccepted) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez accepter les conditions générales",
-        variant: "destructive",
-        duration: 5000,
-      });
+      toast.error("Veuillez accepter les conditions générales");
       return;
     }
 
     try {
       if (!user) {
-        toast({
-          title: "Erreur",
-          description: "Vous devez être connecté pour effectuer une réservation",
-          variant: "destructive",
-          duration: 5000,
-        });
+        toast.error("Vous devez être connecté pour effectuer une réservation");
         navigate("/auth/login");
         return;
       }
@@ -125,13 +112,48 @@ export default function Booking() {
       startTime.setHours(parseInt(selectedSlot.startTime.split(':')[0]));
       startTime.setMinutes(parseInt(selectedSlot.startTime.split(':')[1]));
 
-      const endTime = new Date(selectedDays[0]);
-      endTime.setHours(parseInt(selectedSlot.endTime.split(':')[0]));
-      endTime.setMinutes(parseInt(selectedSlot.endTime.split(':')[1]));
+      // Calculer la date de fin selon le type de tarification
+      let endTime: Date;
+      if (space.pricing_type === 'monthly') {
+        // Pour les réservations mensuelles : ajouter un mois moins un jour
+        endTime = new Date(selectedDays[0]);
+        endTime.setMonth(endTime.getMonth() + 1);
+        endTime.setDate(endTime.getDate() - 1);
+        endTime.setHours(23, 59, 59, 999); // Fin de journée
+      } else if (space.pricing_type === 'quarter') {
+        // Pour les réservations trimestrielles : ajouter 3 mois moins un jour
+        endTime = new Date(selectedDays[0]);
+        endTime.setMonth(endTime.getMonth() + 3);
+        endTime.setDate(endTime.getDate() - 1);
+        endTime.setHours(23, 59, 59, 999);
+      } else if (space.pricing_type === 'yearly') {
+        // Pour les réservations annuelles : ajouter un an moins un jour
+        endTime = new Date(selectedDays[0]);
+        endTime.setFullYear(endTime.getFullYear() + 1);
+        endTime.setDate(endTime.getDate() - 1);
+        endTime.setHours(23, 59, 59, 999);
+      } else {
+        // Pour les autres types (horaire, journalier, demi-journée) : même jour
+        endTime = new Date(selectedDays[0]);
+        endTime.setHours(parseInt(selectedSlot.endTime.split(':')[0]));
+        endTime.setMinutes(parseInt(selectedSlot.endTime.split(':')[1]));
+      }
+
+      // Vérifier la disponibilité de l'espace avant de créer la réservation
+      const availabilityCheck = await apiClient.get(`/spaces/${space.id}/availability?start=${startTime.toISOString()}&end=${endTime.toISOString()}`);
+      
+      if (!availabilityCheck.success || !availabilityCheck.data.available) {
+        toast.error("Cet espace est déjà réservé pour cette période");
+        return;
+      }
 
       // 1. Créer la réservation en pending via l'API
       // Utiliser le prix de l'espace si le slot n'a pas de prix défini
       const slotPrice = selectedSlot.price || space.price_per_hour || 0;
+      
+      // Le prix du slot est maintenant TTC (après multiplication par 1.2 dans useBooking)
+      const priceTTC = slotPrice;
+      const priceHT = Math.round(slotPrice / 1.2 * 100) / 100;
       
       const bookingData = {
         user_id: user.id,
@@ -139,21 +161,12 @@ export default function Booking() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         status: 'pending',
-        total_price_ht: slotPrice,
-        total_price_ttc: slotPrice * 1.2, // TVA 20%
+        total_price_ht: priceHT,
+        total_price_ttc: priceTTC,
         description: `Réservation pour ${space.name}`,
         attendees: 1
       };
 
-      console.log('🔍 Données de réservation envoyées:', JSON.stringify(bookingData, null, 2));
-      console.log('🔍 User ID:', user.id);
-      console.log('🔍 Space ID:', space.id);
-      console.log('🔍 Start Time:', startTime.toISOString());
-      console.log('🔍 End Time:', endTime.toISOString());
-      console.log('🔍 Selected Slot:', selectedSlot);
-      console.log('🔍 Slot Price:', selectedSlot.price);
-      console.log('🔍 Space Price:', space.price_per_hour);
-      console.log('🔍 Calculated Price:', slotPrice);
 
       const bookingResponse = await apiClient.post('/bookings', bookingData);
 
@@ -163,24 +176,78 @@ export default function Booking() {
 
       const booking = bookingResponse.data;
 
-      // 2. Pour l'instant, créer la réservation sans paiement Stripe
       console.log('✅ Réservation créée avec succès:', booking);
       
-      toast({
-        title: "Réservation créée !",
-        description: `Votre réservation pour ${space.name} a été créée avec succès.`,
-        variant: "default"
-      });
-
-      // Rediriger vers le dashboard
-      navigate('/dashboard');
+      // Vérifier si l'utilisateur est admin
+      const isAdmin = user?.is_admin;
+      
+      if (isAdmin) {
+        // Pour les admins, créer une session de paiement Stripe
+        try {
+          const userEmail = user.email || 'admin@coworkmy.fr';
+          
+          // Créer une session de paiement Stripe
+          const { url, mode } = await createPaymentSession(
+            booking.id,
+            Math.round(bookingData.total_price_ttc * 100), // Convertir en centimes
+            userEmail,
+            {
+              booking_id: booking.id,
+              space_name: space.name,
+              start_time: bookingData.start_time,
+              end_time: bookingData.end_time
+            }
+          );
+          
+          // Rediriger vers la page de paiement Stripe
+          toast.info("Redirection vers la page de paiement...");
+          window.location.href = url;
+          return; // Arrêter l'exécution ici
+        } catch (paymentError) {
+          console.error("Erreur lors de la création de la session de paiement:", paymentError);
+          toast.error("Impossible de créer la session de paiement. Réservation créée sans paiement.");
+          
+          // Rediriger vers le dashboard admin
+          navigate('/admin');
+          return;
+        }
+      } else {
+        // Pour les utilisateurs normaux, créer une session de paiement Stripe
+        try {
+          const userEmail = user.email || 'client@example.com';
+          
+          const { url, mode } = await createPaymentSession(
+            booking.id,
+            Math.round(bookingData.total_price_ttc * 100), // Convertir en centimes
+            userEmail,
+            {
+              booking_id: booking.id,
+              space_name: space.name,
+              start_time: bookingData.start_time,
+              end_time: bookingData.end_time
+            }
+          );
+          
+          // Rediriger vers la page de paiement Stripe
+          toast.info("Redirection vers la page de paiement...");
+          window.location.href = url;
+          return; // Arrêter l'exécution ici
+        } catch (paymentError) {
+          console.error("Erreur lors de la création de la session de paiement:", paymentError);
+          toast.error("Impossible de créer la session de paiement. Veuillez réessayer.");
+          
+          // En cas d'erreur, mettre à jour le statut de la réservation à "cancelled"
+          try {
+            await updateBookingStatus(booking.id, 'cancelled');
+          } catch (updateError) {
+            console.warn("Erreur lors de l'annulation de la réservation:", updateError);
+          }
+          
+          return;
+        }
+      }
     } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la réservation ou du paiement.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      toast.error("Une erreur est survenue lors de la réservation ou du paiement.");
       console.error("Erreur lors de la création de la réservation ou du paiement:", error);
     }
   };

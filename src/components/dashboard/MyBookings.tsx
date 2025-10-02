@@ -152,15 +152,15 @@ export function MyBookings() {
             <div className="border-t pt-3 mb-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Prix HT:</span>
-                <span className="text-sm">{formatPrice(parseFloat(booking.total_price))} €</span>
+                <span className="text-sm">{formatPrice(parseFloat(booking.total_price_ht || booking.total_price))} €</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">TVA (20%):</span>
-                <span className="text-sm">{formatPrice(parseFloat(booking.total_price) * 0.2)} €</span>
+                <span className="text-sm">{formatPrice(parseFloat(booking.total_price_ttc || booking.total_price * 1.2) - parseFloat(booking.total_price_ht || booking.total_price))} €</span>
               </div>
               <div className="flex justify-between items-center font-medium">
                 <span>Total TTC:</span>
-                <span>{formatPrice(parseFloat(booking.total_price) * 1.2)} €</span>
+                <span>{formatPrice(parseFloat(booking.total_price_ttc || booking.total_price * 1.2))} €</span>
               </div>
             </div>
             {/* Actions */}

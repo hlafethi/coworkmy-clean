@@ -35,18 +35,17 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
       if (response.success) {
         setStripeConnection({ 
           success: true, 
-          message: 'Connexion Stripe OK',
-          account: response.account,
-          mode: response.mode
+          message: response.data.message,
+          connected: response.data.connected,
+          products_count: response.data.products_count
         });
         addResult({
           success: true,
-          message: `Connexion Stripe: OK (Mode: ${response.mode})`,
+          message: `Connexion Stripe: ${response.data.message}`,
           details: {
-            account_id: response.account.id,
-            country: response.account.country,
-            charges_enabled: response.account.charges_enabled,
-            mode: response.mode
+            connected: response.data.connected,
+            products_count: response.data.products_count,
+            message: response.data.message
           },
           timestamp: new Date().toLocaleString('fr-FR')
         });
@@ -78,12 +77,12 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
       if (response.success) {
         addResult({
           success: true,
-          message: `Synchronisation Stripe: ${response.data.success}/${response.data.total} espaces synchronisés`,
+          message: `Synchronisation Stripe: ${response.data.success_count}/${response.data.total_spaces} espaces synchronisés`,
           details: {
-            total: response.data.total,
-            success: response.data.success,
-            errors: response.data.errors,
-            mode: response.data.mode,
+            total_spaces: response.data.total_spaces,
+            success_count: response.data.success_count,
+            error_count: response.data.error_count,
+            skipped_count: response.data.skipped_count,
             results: response.data.results.slice(0, 5) // Afficher les 5 premiers résultats
           },
           timestamp: new Date().toLocaleString('fr-FR')

@@ -29,6 +29,7 @@ export function BookingSummary({
 }: BookingSummaryProps) {
   const calculateTotal = () => {
     if (!selectedTimeSlot) return 0;
+    // Le prix du slot est maintenant TTC (après multiplication par 1.2 dans useBooking)
     return selectedDays.length * selectedTimeSlot.price;
   };
 

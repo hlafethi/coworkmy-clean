@@ -49,38 +49,38 @@ export function useBooking(spaceId: string | undefined) {
     switch (pricingType) {
       case "hourly":
         slots = [
-          { id: "1", label: "09:00 - 10:00", startTime: "09:00", endTime: "10:00", price: space.hourly_price, isAvailable: true },
-          { id: "2", label: "10:00 - 11:00", startTime: "10:00", endTime: "11:00", price: space.hourly_price, isAvailable: true },
-          { id: "3", label: "11:00 - 12:00", startTime: "11:00", endTime: "12:00", price: space.hourly_price, isAvailable: true },
-          { id: "4", label: "14:00 - 15:00", startTime: "14:00", endTime: "15:00", price: space.hourly_price, isAvailable: true },
-          { id: "5", label: "15:00 - 16:00", startTime: "15:00", endTime: "16:00", price: space.hourly_price, isAvailable: true },
-          { id: "6", label: "16:00 - 17:00", startTime: "16:00", endTime: "17:00", price: space.hourly_price, isAvailable: true },
+          { id: "1", label: "09:00 - 10:00", startTime: "09:00", endTime: "10:00", price: space.hourly_price * 1.2, isAvailable: true },
+          { id: "2", label: "10:00 - 11:00", startTime: "10:00", endTime: "11:00", price: space.hourly_price * 1.2, isAvailable: true },
+          { id: "3", label: "11:00 - 12:00", startTime: "11:00", endTime: "12:00", price: space.hourly_price * 1.2, isAvailable: true },
+          { id: "4", label: "14:00 - 15:00", startTime: "14:00", endTime: "15:00", price: space.hourly_price * 1.2, isAvailable: true },
+          { id: "5", label: "15:00 - 16:00", startTime: "15:00", endTime: "16:00", price: space.hourly_price * 1.2, isAvailable: true },
+          { id: "6", label: "16:00 - 17:00", startTime: "16:00", endTime: "17:00", price: space.hourly_price * 1.2, isAvailable: true },
         ];
         break;
       case "half_day":
         slots = [
-          { id: "morning", label: "Matin (9h-13h)", startTime: "09:00", endTime: "13:00", price: space.half_day_price, isAvailable: true },
-          { id: "afternoon", label: "Après-midi (14h-18h)", startTime: "14:00", endTime: "18:00", price: space.half_day_price, isAvailable: true },
+          { id: "morning", label: "Matin (9h-13h)", startTime: "09:00", endTime: "13:00", price: space.half_day_price * 1.2, isAvailable: true },
+          { id: "afternoon", label: "Après-midi (14h-18h)", startTime: "14:00", endTime: "18:00", price: space.half_day_price * 1.2, isAvailable: true },
         ];
         break;
       case "daily":
         slots = [
-          { id: "full-day", label: "Journée complète (9h-18h)", startTime: "09:00", endTime: "18:00", price: space.daily_price, isAvailable: true },
+          { id: "full-day", label: "Journée complète (9h-18h)", startTime: "09:00", endTime: "18:00", price: space.daily_price * 1.2, isAvailable: true },
         ];
         break;
       case "monthly":
         slots = [
-          { id: "monthly", label: "Mois complet", startTime: "00:00", endTime: "23:59", price: space.monthly_price, isAvailable: true },
+          { id: "monthly", label: "Mois complet", startTime: "00:00", endTime: "23:59", price: space.monthly_price * 1.2, isAvailable: true },
         ];
         break;
       case "quarter":
         slots = [
-          { id: "quarter", label: "Trimestre", startTime: "00:00", endTime: "23:59", price: space.quarter_price, isAvailable: true },
+          { id: "quarter", label: "Trimestre", startTime: "00:00", endTime: "23:59", price: space.quarter_price * 1.2, isAvailable: true },
         ];
         break;
       case "yearly":
         slots = [
-          { id: "yearly", label: "Année", startTime: "00:00", endTime: "23:59", price: space.yearly_price, isAvailable: true },
+          { id: "yearly", label: "Année", startTime: "00:00", endTime: "23:59", price: space.yearly_price * 1.2, isAvailable: true },
         ];
         break;
       case "custom":
@@ -104,6 +104,7 @@ export function useBooking(spaceId: string | undefined) {
         }
         break;
     }
+    
     setTimeSlots(slots);
   }, [space]);
 

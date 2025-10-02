@@ -25,7 +25,11 @@ const CardTitleH2 = ({ children, className = "" }: CardTitleH2Props) => (
   <h2 className={`text-2xl ${className}`}>{children}</h2>
 );
 
-export function AllBookings() {
+interface AllBookingsProps {
+  onBookingChange?: () => void;
+}
+
+export function AllBookings({ onBookingChange }: AllBookingsProps) {
   // Utilisation du hook temps réel pour les réservations utilisateur
   const { bookings, loading, error, refetch } = useUserBookings();
   const navigate = useNavigate();
@@ -72,8 +76,9 @@ export function AllBookings() {
       if (success) {
         // La mise à jour sera gérée automatiquement par le hook temps réel
         console.log("✅ Annulation demandée, mise à jour automatique via WebSocket");
-        toast.success("Réservation annulée avec succès");
-        refetch();
+      toast.success("Réservation annulée avec succès");
+      refetch();
+      onBookingChange?.();
       } else {
         toast.error("Impossible d'annuler la réservation");
       }
@@ -94,6 +99,7 @@ export function AllBookings() {
       
       toast.success("Réservation supprimée avec succès");
       refetch();
+      onBookingChange?.();
     } catch (error) {
       console.error("❌ Erreur lors de la suppression:", error);
       toast.error("Impossible de supprimer la réservation");
@@ -102,6 +108,66 @@ export function AllBookings() {
 
   const canModifyBooking = (status: string) => {
     return status.toLowerCase() !== "cancelled" && status.toLowerCase() !== "completed";
+  };
+
+  const getPricingTypeLabel = (pricingType?: string) => {
+    switch (pricingType) {
+      case 'hourly':
+        return 'Tarification horaire';
+      case 'daily':
+        return 'Tarification journalière';
+      case 'monthly':
+        return 'Tarification mensuelle';
+      case 'yearly':
+        return 'Tarification annuelle';
+      case 'half_day':
+        return 'Demi-journée';
+      case 'quarter':
+        return 'Trimestrielle';
+      case 'custom':
+        return 'Tarification personnalisée';
+      default:
+        return 'Tarification horaire';
+    }
+  };
+
+  const calculateDuration = (startDate: string, endDate: string, pricingType?: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffMs = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+    
+    // Selon le type de tarification
+    switch (pricingType) {
+      case 'hourly':
+        if (diffHours < 24) return `${diffHours} heure(s)`;
+        return `${diffDays} jour(s)`;
+      case 'daily':
+        return `${diffDays} jour(s)`;
+      case 'monthly':
+        // Pour les réservations mensuelles, calculer précisément les mois
+        const startYear = start.getFullYear();
+        const startMonth = start.getMonth();
+        const endYear = end.getFullYear();
+        const endMonth = end.getMonth();
+        
+        const monthsDiff = (endYear - startYear) * 12 + (endMonth - startMonth);
+        return `${monthsDiff} mois`;
+      case 'quarter':
+        // Pour les réservations trimestrielles
+        const quarterMonths = Math.floor(diffDays / 30);
+        return `${Math.ceil(quarterMonths / 3)} trimestre(s)`;
+      case 'yearly':
+        // Pour les réservations annuelles
+        const years = Math.floor(diffDays / 365);
+        return `${years} an(s)`;
+      default:
+        if (diffDays === 1) return '1 jour';
+        if (diffDays < 30) return `${diffDays} jours`;
+        if (diffDays < 365) return `${Math.ceil(diffDays / 30)} mois`;
+        return `${Math.ceil(diffDays / 365)} an(s)`;
+    }
   };
 
   // S'assurer que bookings est un tableau et le trier
@@ -144,7 +210,12 @@ export function AllBookings() {
                 <div>
                   <CardTitleH2>{booking.space_name}</CardTitleH2>
                   <CardDescription>
-                    {formatDateTime(booking.start_date)}
+                    {formatDateTime(booking.start_time || booking.start_date)}
+                    {booking.end_time && (
+                      <span className="text-gray-500 ml-2">
+                        au {formatDateTime(booking.end_time)}
+                      </span>
+                    )}
                     {isPast && <span className="text-gray-500 ml-2">(Terminée)</span>}
                   </CardDescription>
                 </div>
@@ -154,19 +225,31 @@ export function AllBookings() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Informations sur le type de tarification et la durée */}
+              <div className="mb-3">
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Type:</span>
+                  <span className="font-medium">{getPricingTypeLabel(booking.pricing_type)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Durée:</span>
+                  <span className="font-medium">{calculateDuration(booking.start_time || booking.start_date, booking.end_time || booking.end_date, booking.pricing_type)}</span>
+                </div>
+              </div>
+              
               {/* Affichage dynamique du prix selon le type de tarification */}
               <div className="border-t pt-3 mb-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Prix HT:</span>
-                  <span className="text-sm">{formatPrice(parseFloat(booking.total_price || 0))} €</span>
+                  <span className="text-sm">{formatPrice(parseFloat(booking.total_price_ht || booking.total_price || 0))}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">TVA (20%):</span>
-                  <span className="text-sm">{formatPrice(parseFloat(booking.total_price || 0) * 0.2)} €</span>
+                  <span className="text-sm">{formatPrice(parseFloat(booking.total_price_ht || booking.total_price || 0) * 0.2)}</span>
                 </div>
                 <div className="flex justify-between items-center font-medium">
                   <span>Total TTC:</span>
-                  <span>{formatPrice(parseFloat(booking.total_price || 0) * 1.2)} €</span>
+                  <span>{formatPrice(parseFloat(booking.total_price_ttc || booking.total_price || 0))}</span>
                 </div>
               </div>
               {/* Actions */}

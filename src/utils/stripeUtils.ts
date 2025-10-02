@@ -1,20 +1,15 @@
-import { withRetry } from "./supabaseUtils";
-import { loadStripe } from "@stripe/stripe-js";
 import { apiClient } from "@/lib/api-client";
 
 /**
  * Crée une session de paiement Stripe et retourne l'URL de redirection
  * @param bookingId ID de la réservation
  * @param amount Montant du paiement en centimes
- * @param currency Devise (par défaut EUR)
  * @param customerEmail Email du client
  * @param metadata Métadonnées supplémentaires
+ * @param currency Devise (par défaut EUR)
  * @param isAdmin Si l'utilisateur est admin (optionnel)
  * @returns URL de redirection vers la page de paiement Stripe
  */
-// Récupérer la clé publique Stripe depuis les variables d'environnement
-const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-
 export const createStripeCheckoutSession = async (
   bookingId: string,
   amount: number,
@@ -24,61 +19,25 @@ export const createStripeCheckoutSession = async (
   isAdmin: boolean = false
 ): Promise<{ url: string, mode: string }> => {
   try {
-    // Vérifier que la clé publique Stripe est définie
-    if (!STRIPE_PUBLISHABLE_KEY) {
-      console.warn("Clé publique Stripe non définie dans les variables d'environnement");
-      throw new Error("Configuration Stripe incomplète");
-    }
-
-    // LOG: Afficher les paramètres envoyés
-    console.log("[Stripe] Appel create-payment-session avec :", {
-      bookingId, amount, customerEmail, metadata, currency
+    console.log("[Stripe] Création de session via backend API");
+    
+    // Utiliser l'API client qui gère automatiquement l'URL et l'authentification
+    const response = await apiClient.post('/stripe/create-checkout-session', {
+      booking_id: bookingId,
+      amount: amount,
+      customer_email: customerEmail,
+      metadata: metadata
     });
 
-    // LOG: Afficher l'URL utilisée
-    const edgeUrl = import.meta.env.PROD
-      ? '/functions/v1/create-payment-session'
-      : 'https://exffryodynkyizbeesbt.functions.supabase.co/create-payment-session';
-    console.log("[Stripe] URL Edge utilisée :", edgeUrl);
-
-    // Appeler la fonction serverless Supabase pour créer une session de paiement Stripe
-    const response = await fetch(edgeUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        bookingId,
-        amount,
-        customerEmail,
-        metadata,
-        currency,
-        isAdmin,
-      }),
-    });
-
-    // LOG: Afficher le statut de la réponse
-    console.log("[Stripe] Statut HTTP de la réponse :", response.status);
-
-    // LOG: Afficher les headers de la réponse
-    console.log("[Stripe] Headers de la réponse :", Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("[Stripe] Erreur lors de la création de la session :", errorData);
-      throw new Error(errorData.error || "Erreur lors de la création de la session de paiement");
+    if (!response.success) {
+      throw new Error(response.error || 'Erreur lors de la création de la session');
     }
 
-    const data = await response.json();
-    console.log("[Stripe] Réponse JSON reçue :", data);
-    const { url, mode } = data;
-    
-    if (!url) {
-      console.error("[Stripe] URL de redirection Stripe non trouvée dans la réponse !", data);
-      throw new Error("URL de redirection Stripe non trouvée");
-    }
-    
-    return { url, mode };
+    return {
+      url: response.data.url,
+      mode: response.data.mode || 'test'
+    };
+
   } catch (error) {
     console.error("[Stripe] Erreur dans createStripeCheckoutSession:", error);
     throw error;
@@ -183,53 +142,6 @@ export const createStripeCustomerPortal = async (
   }
 };
 
-/**
- * Vérifie le statut d'un paiement
- * @param paymentId ID du paiement
- * @returns Statut du paiement
- */
-export const checkPaymentStatus = async (paymentId: string): Promise<string> => {
-  try {
-    const { data, error } = await withRetry(async () => {
-      return await supabase
-        .from('payments')
-        .select('status')
-        .eq('id', paymentId)
-        .single();
-    });
-    
-    if (error) throw error;
-    
-    return data.status;
-  } catch (error) {
-    console.error("Erreur lors de la vérification du statut du paiement:", error);
-    throw error;
-  }
-};
-
-/**
- * Met à jour le statut d'un paiement
- * @param paymentId ID du paiement
- * @param status Nouveau statut
- */
-export const updatePaymentStatus = async (paymentId: string, status: string): Promise<void> => {
-  try {
-    const { error } = await withRetry(async () => {
-      return await supabase
-        .from('payments')
-        .update({ 
-          status: status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', paymentId);
-    });
-    
-    if (error) throw error;
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour du statut du paiement:", error);
-    throw error;
-  }
-};
 
 /**
  * Met à jour le statut d'une réservation
@@ -238,16 +150,13 @@ export const updatePaymentStatus = async (paymentId: string, status: string): Pr
  */
 export const updateBookingStatus = async (bookingId: string, status: string): Promise<void> => {
   try {
-    const { error } = await withRetry(async () => {
-      return await supabase
-        .from('bookings')
-        .update({ status: status })
-        .eq('id', bookingId);
-    });
-    
-    if (error) throw error;
+    const response = await apiClient.put(`/bookings/${bookingId}/status`, { status });
+    if (!response.success) {
+      throw new Error(response.error || "Failed to update booking status");
+    }
+    console.log(`✅ Statut de la réservation ${bookingId} mis à jour à ${status}`);
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du statut de la réservation:", error);
+    console.error(`❌ Erreur lors de la mise à jour du statut de la réservation ${bookingId}:`, error);
     throw error;
   }
 };

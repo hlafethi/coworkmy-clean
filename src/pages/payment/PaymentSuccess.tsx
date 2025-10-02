@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Calendar, MapPin } from "lucide-react";
 import { updateBookingStatus } from "@/utils/stripeUtils";
-import { supabase } from "@/integrations/supabase/client";
-import { withRetry } from "@/utils/supabaseUtils";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
 const PaymentSuccess = () => {
@@ -32,26 +31,16 @@ const PaymentSuccess = () => {
         await updateBookingStatus(bookingId, "confirmed");
 
         // Récupérer les détails de la réservation pour affichage
-        const { data: booking, error: bookingError } = await withRetry(async () => {
-          return await supabase
-            .from('bookings')
-            .select(`
-              *,
-              space:space_id (
-                name,
-                description
-              )
-            `)
-            .eq('id', bookingId)
-            .single();
-        });
+        const bookingResponse = await apiClient.get(`/bookings/${bookingId}`);
 
-        if (bookingError) {
+        if (!bookingResponse.success) {
           // Si la réservation n'est pas trouvée, afficher un message générique
           toast.error("Réservation non trouvée");
           navigate("/dashboard");
           return;
         }
+
+        const booking = bookingResponse.data;
         
         // Note: L'enregistrement du paiement dans la base de données est désactivé
         // pour éviter les problèmes d'ambiguïté de colonne

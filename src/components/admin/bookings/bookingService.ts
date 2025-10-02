@@ -16,6 +16,7 @@ export async function fetchBookings(): Promise<Booking[]> {
 
     const bookingsData = response.data || [];
     console.log(`📊 Réservations récupérées depuis l'API admin: ${bookingsData.length}`);
+    
 
     // Vérifier que bookingsData est un tableau
     if (!Array.isArray(bookingsData)) {
@@ -28,16 +29,16 @@ export async function fetchBookings(): Promise<Booking[]> {
       id: booking.id,
       user_id: booking.user_id,
       space_id: booking.space_id,
-      start_time: booking.start_date, // Mapping start_date -> start_time
-      end_time: booking.end_date,     // Mapping end_date -> end_time
-      total_price_ht: Number(booking.total_price || 0) / 1.2, // Calcul HT
-      total_price_ttc: Number(booking.total_price || 0),       // TTC direct
+      start_time: booking.start_time || booking.start_date,
+      end_time: booking.end_time || booking.end_date,
+      total_price_ht: booking.total_price_ht || (Number(booking.total_price || 0) / 1.2),
+      total_price_ttc: booking.total_price_ttc || Number(booking.total_price || 0),
       status: booking.status,
       created_at: booking.created_at,
       updated_at: booking.updated_at,
-      user_name: booking.user_name || `Utilisateur #${booking.user_id?.slice(0, 8) || 'Unknown'}`,
+      user_name: booking.user_name || booking.display_name || booking.user_email || `Utilisateur #${booking.user_id?.slice(0, 8) || 'Unknown'}`,
       space_name: booking.space_name || "Espace inconnu",
-      space_pricing_type: "hourly"
+      space_pricing_type: booking.space_pricing_type || "hourly"
     }));
     
     console.log(`✅ Récupération terminée: ${bookings.length} réservations formatées`);

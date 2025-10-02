@@ -31,6 +31,8 @@ const Terms = lazy(() => import("@/pages/legal/Terms"));
 const PaymentSuccess = lazy(() => import("@/pages/payment/PaymentSuccess"));
 const PaymentCancel = lazy(() => import("@/pages/payment/PaymentCancel"));
 const StripeSimulator = lazy(() => import("@/pages/payment/StripeSimulator"));
+const Invoices = lazy(() => import("@/pages/payment/Invoices"));
+const Subscriptions = lazy(() => import("@/pages/payment/Subscriptions"));
 const Callback = lazy(() => import("@/pages/auth/Callback"));
 const TestHomepage = lazy(() => import("@/pages/TestHomepage"));
 const TestNavigation = lazy(() => import("@/pages/TestNavigation"));
@@ -73,6 +75,8 @@ const AppRoutes = () => {
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
           <Route path="/payment/simulator" element={<StripeSimulator />} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/subscriptions" element={<Subscriptions />} />
         </Route>
 
         {/* Admin routes */}

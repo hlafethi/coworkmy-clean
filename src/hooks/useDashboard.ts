@@ -30,6 +30,7 @@ export function useDashboard() {
     upcomingBookings: 0,
     recentActivities: [],
   });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const checkAuthAndFetch = async () => {
@@ -97,7 +98,7 @@ export function useDashboard() {
     };
     
     checkAuthAndFetch();
-  }, [navigate, user, contextIsAdmin, authLoading, profileLoaded]);
+  }, [navigate, user, contextIsAdmin, authLoading, profileLoaded, refreshKey]);
 
   const handleLogout = async () => {
     try {
@@ -110,11 +111,16 @@ export function useDashboard() {
     }
   };
 
+  const refreshStats = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   return {
     loading: loading || authLoading || !profileLoaded,
     isAdmin: contextIsAdmin,
     stats,
     userProfile: profile,
     handleLogout,
+    refreshStats,
   };
 }

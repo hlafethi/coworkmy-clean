@@ -17,11 +17,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Calendar, DollarSign, CreditCard, User } from "lucide-react";
+import { ExternalLink, Calendar, DollarSign, CreditCard, User, Eye, Trash2 } from "lucide-react";
 import type { Space } from "@/components/admin/types";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { saveAs } from "file-saver";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { refundStripePayment } from "@/services/paymentService";
 
 type Profile = {
   id: string;
@@ -67,6 +76,12 @@ const AdminPayments = () => {
   const [filterAmountMax, setFilterAmountMax] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
+  
+  // États pour les modales
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
 
   useEffect(() => {
     fetchPayments();
@@ -76,13 +91,29 @@ const AdminPayments = () => {
     try {
       setLoading(true);
       
-      // Get payments from API
-      const result = await apiClient.get('/payments');
+      // Get payments from Stripe API
+      const result = await apiClient.get('/stripe/payments');
       
       if (result.success && result.data) {
-        // S'assurer que result.data est un tableau
-        const paymentsData = Array.isArray(result.data) ? result.data : [];
+        // Convertir les données Stripe vers notre format
+        const paymentsData = Array.isArray(result.data) ? result.data.map((stripePayment: any) => ({
+          id: stripePayment.id,
+          booking_id: stripePayment.metadata?.booking_id || '',
+          amount: stripePayment.amount / 100, // Convertir de centimes en euros
+          status: stripePayment.status,
+          payment_method: stripePayment.payment_method_types?.[0] || 'card',
+          payment_intent_id: stripePayment.id,
+          invoice_url: stripePayment.charges?.data?.[0]?.receipt_url || null,
+          created_at: new Date(stripePayment.created * 1000).toISOString(),
+          updated_at: new Date(stripePayment.created * 1000).toISOString(),
+          currency: stripePayment.currency,
+          mode: 'test', // Pour l'instant, on assume que c'est en mode test
+          user_email: stripePayment.customer?.email || '',
+          description: stripePayment.description || '',
+          metadata: stripePayment.metadata
+        })) : [];
         setPayments(paymentsData);
+        console.log(`✅ ${paymentsData.length} paiements Stripe récupérés`);
       } else {
         console.error('Error fetching payments:', result.error);
         toast.error("Impossible de récupérer les paiements");
@@ -133,6 +164,36 @@ const AdminPayments = () => {
     return true;
   });
 
+  // Fonctions pour les actions
+  const handleViewPayment = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDeletePayment = (payment: Payment) => {
+    setPaymentToDelete(payment);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePayment = async () => {
+    if (!paymentToDelete) return;
+
+    try {
+      // Pour les paiements Stripe, on ne peut pas "supprimer" mais on peut rembourser
+      if (paymentToDelete.status === 'succeeded') {
+        await refundStripePayment(paymentToDelete.payment_intent_id || paymentToDelete.id);
+        toast.success('Paiement remboursé avec succès !');
+        fetchPayments(); // Recharger la liste
+      } else {
+        toast.info('Ce paiement ne peut pas être remboursé (statut: ' + paymentToDelete.status + ')');
+      }
+      setIsDeleteDialogOpen(false);
+      setPaymentToDelete(null);
+    } catch (error) {
+      toast.error('Erreur lors du remboursement: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+
   // Export CSV
   const exportCSV = () => {
     const headers = [
@@ -172,6 +233,9 @@ const AdminPayments = () => {
           <Input type="number" placeholder="Montant max" value={filterAmountMax} onChange={e => setFilterAmountMax(e.target.value)} className="w-28" />
           <Input type="date" placeholder="Date de début" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="w-36" />
           <Input type="date" placeholder="Date de fin" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="w-36" />
+          <Button variant="outline" onClick={fetchPayments} disabled={loading}>
+            {loading ? 'Chargement...' : 'Actualiser'}
+          </Button>
           <Button variant="secondary" onClick={exportCSV}>Exporter CSV</Button>
         </div>
       </div>
@@ -236,11 +300,33 @@ const AdminPayments = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {payment.invoice_url ? (
-                        <a href={payment.invoice_url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      ) : null}
+                      <div className="flex items-center gap-2 justify-end">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleViewPayment(payment)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Voir
+                        </Button>
+                        {payment.status === 'succeeded' && (
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => handleDeletePayment(payment)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Rembourser
+                          </Button>
+                        )}
+                        {payment.invoice_url && (
+                          <a href={payment.invoice_url} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </a>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -249,6 +335,105 @@ const AdminPayments = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de visualisation des détails */}
+      {selectedPayment && (
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Détails du paiement</DialogTitle>
+              <DialogDescription>
+                Informations complètes sur le paiement #{selectedPayment.id?.slice(0, 8)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">ID:</span>
+                <span className="col-span-3 text-sm font-mono">{selectedPayment.id}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Date:</span>
+                <span className="col-span-3 text-sm">{formatDate(selectedPayment.created_at)}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Client:</span>
+                <span className="col-span-3 text-sm">{selectedPayment.booking?.user_name || 'Inconnu'}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Email:</span>
+                <span className="col-span-3 text-sm">{selectedPayment.user_email || 'N/A'}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Montant:</span>
+                <span className="col-span-3 text-sm font-semibold">{selectedPayment.amount} €</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Devise:</span>
+                <span className="col-span-3 text-sm">{selectedPayment.currency || 'EUR'}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Méthode:</span>
+                <span className="col-span-3 text-sm">{selectedPayment.payment_method || 'Carte'}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Statut:</span>
+                <span className="col-span-3 text-sm">
+                  {getPaymentStatusBadge(selectedPayment.status)}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-sm font-medium">Mode:</span>
+                <span className="col-span-3 text-sm">
+                  <Badge color={selectedPayment.mode === 'live' ? 'green' : 'yellow'}>
+                    {selectedPayment.mode === 'live' ? 'Production' : 'Test'}
+                  </Badge>
+                </span>
+              </div>
+              {selectedPayment.booking && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-sm font-medium">Réservation:</span>
+                  <span className="col-span-3 text-sm">{selectedPayment.booking.space_name}</span>
+                </div>
+              )}
+              {selectedPayment.description && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-sm font-medium">Description:</span>
+                  <span className="col-span-3 text-sm">{selectedPayment.description}</span>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setIsViewDialogOpen(false)}>Fermer</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal de confirmation de suppression */}
+      {paymentToDelete && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmer le remboursement</DialogTitle>
+              <DialogDescription>
+                Êtes-vous sûr de vouloir rembourser le paiement #{paymentToDelete.id?.slice(0, 8)} ?
+                <br />
+                <strong>Montant :</strong> {paymentToDelete.amount} €
+                <br />
+                <strong>Attention :</strong> Cette action est irréversible et remboursera le client.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button variant="destructive" onClick={confirmDeletePayment}>
+                Confirmer le remboursement
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
