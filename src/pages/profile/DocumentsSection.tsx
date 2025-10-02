@@ -21,12 +21,14 @@ import { toast } from 'sonner';
 interface ProfileDocument {
   id: string;
   user_id: string;
-  file_url: string;
+  file_url?: string;
+  file_path?: string;
   file_name: string;
   file_size: number;
   file_type: string;
   document_type: string;
-  uploaded_at: string;
+  uploaded_at?: string;
+  upload_date?: string;
 }
 
 interface DocumentsSectionProps {
@@ -47,18 +49,44 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('other');
+  
+  // Debug log pour voir les changements de selectedDocumentType
+  useEffect(() => {
+    console.log('🔍 DocumentsSection - selectedDocumentType changé:', selectedDocumentType);
+  }, [selectedDocumentType]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [forceRender, setForceRender] = useState(0);
 
   useEffect(() => {
     loadDocuments();
-  }, [userId]);
+  }, [userId, refreshKey]);
 
   const loadDocuments = async () => {
     try {
+      console.log('🔄 Chargement des documents pour userId:', userId);
       const result = await apiClient.get(`/users/${userId}/documents`);
       
       if (result.success && result.data) {
-        setDocuments(result.data);
+        // S'assurer que result.data est un tableau
+        const documentsArray = Array.isArray(result.data) ? result.data : [];
+        console.log('✅ Documents chargés:', documentsArray.length);
+        
+        // Ajouter des logs de debug pour voir les données
+        documentsArray.forEach((doc, index) => {
+          console.log(`🔍 Document ${index}:`, {
+            id: doc.id,
+            file_name: doc.file_name,
+            document_type: doc.document_type,
+            upload_date: doc.upload_date,
+            uploaded_at: doc.uploaded_at,
+            file_path: doc.file_path,
+            file_url: doc.file_url
+          });
+        });
+        
+        setDocuments(documentsArray);
       } else {
+        console.log('⚠️ Aucun document trouvé');
         setDocuments([]);
       }
     } catch (error) {
@@ -70,39 +98,70 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
     }
   };
 
+  const handleRefresh = () => {
+    console.log('🔄 Rafraîchissement manuel des documents...');
+    setRefreshKey(prev => prev + 1);
+    setForceRender(prev => prev + 1);
+  };
+
   const handleFileUploaded = (fileData: any) => {
-    // Ajouter le nouveau document à la liste
-    const newDocument: ProfileDocument = {
-      ...fileData,
-      user_id: userId,
-      document_type: selectedDocumentType,
-      uploaded_at: new Date().toISOString()
-    };
-    
-    setDocuments(prev => [newDocument, ...prev]);
+    console.log('✅ Document uploadé, rafraîchissement de la liste...');
+    // Déclencher un rafraîchissement complet
+    setRefreshKey(prev => prev + 1);
+    setForceRender(prev => prev + 1);
     setShowUpload(false);
+    toast.success('Document uploadé avec succès');
   };
 
   const downloadDocument = async (doc: ProfileDocument) => {
     try {
-      // Pour PostgreSQL, utiliser l'URL directement
-      const response = await fetch(doc.file_url);
-      if (!response.ok) {
-        throw new Error('Erreur lors du téléchargement du fichier');
+      // Vérifier si on a des données base64 (stockage PostgreSQL)
+      if (doc.file_path && !doc.file_path.startsWith('http')) {
+        // Document stocké en base64 dans PostgreSQL
+        const base64Data = doc.file_path;
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: doc.file_type });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.file_name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast.success('Document téléchargé');
+        return;
       }
-      const data = await response.blob();
+      
+      // Fallback pour les URLs (ancien système)
+      if (doc.file_url) {
+        const response = await fetch(doc.file_url);
+        if (!response.ok) {
+          throw new Error('Erreur lors du téléchargement du fichier');
+        }
+        const data = await response.blob();
 
-      // Créer un lien de téléchargement
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = doc.file_name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+        // Créer un lien de téléchargement
+        const url = URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.file_name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-      toast.success('Document téléchargé');
+        toast.success('Document téléchargé');
+      } else {
+        toast.error('Document non disponible');
+      }
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast.error('Erreur lors du téléchargement');
@@ -125,8 +184,10 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
       // Pour PostgreSQL, pas besoin de suppression de storage spéciale
       console.log('Document supprimé avec succès');
 
-      // Mettre à jour la liste
-      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+      // Déclencher un rafraîchissement complet
+      console.log('✅ Document supprimé, rafraîchissement de la liste...');
+      setRefreshKey(prev => prev + 1);
+      setForceRender(prev => prev + 1);
       toast.success('Document supprimé');
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
@@ -186,18 +247,32 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
             <FolderOpen className="h-5 w-5 text-blue-600" />
             <CardTitle>Documents</CardTitle>
           </div>
-          <Button
-            onClick={() => setShowUpload(!showUpload)}
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Ajouter un document
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              🔄 Actualiser
+            </Button>
+            <Button
+              onClick={() => {
+                setShowUpload(!showUpload);
+                // Ne plus réinitialiser automatiquement le type de document
+                // L'utilisateur peut garder son choix précédent
+              }}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter un document
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6" key={`documents-content-${forceRender}`}>
         {/* Informations de sécurité */}
         <Alert className="border-green-200 bg-green-50">
           <Shield className="h-4 w-4 text-green-600" />
@@ -216,7 +291,10 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
               </label>
               <select
                 value={selectedDocumentType}
-                onChange={(e) => setSelectedDocumentType(e.target.value)}
+                onChange={(e) => {
+                  console.log('🔍 DocumentsSection - Changement de type sélectionné:', e.target.value);
+                  setSelectedDocumentType(e.target.value);
+                }}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {Object.entries(DOCUMENT_TYPES).map(([value, label]) => (
@@ -228,26 +306,28 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
             </div>
 
             <SecureFileUpload
+              key={`upload-${selectedDocumentType}`} // Force le re-render quand le type change
               onFileUploaded={handleFileUploaded}
               documentType={selectedDocumentType}
               acceptedTypes={['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx']}
               maxSize={10 * 1024 * 1024} // 10MB
+              userId={userId}
             />
           </div>
         )}
 
         {/* Liste des documents */}
-        {documents.length === 0 ? (
+        {!Array.isArray(documents) || documents.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <FolderOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p className="text-lg font-medium">Aucun document</p>
             <p className="text-sm">Ajoutez vos premiers documents sécurisés</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3" key={`documents-list-${forceRender}`}>
             {documents.map((doc) => (
               <div
-                key={doc.id}
+                key={`${doc.id}-${forceRender}`}
                 className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
               >
                 {getFileIcon(doc.file_type)}
@@ -262,7 +342,14 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span>{formatFileSize(doc.file_size)}</span>
                     <span>
-                      Ajouté le {new Date(doc.uploaded_at).toLocaleDateString('fr-FR')}
+                      Ajouté le {new Date(doc.upload_date || doc.uploaded_at).toLocaleDateString('fr-FR', {
+                        timeZone: 'Europe/Paris',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </span>
                   </div>
                 </div>

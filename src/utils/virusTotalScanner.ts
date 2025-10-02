@@ -51,7 +51,7 @@ class VirusTotalScanner {
 
   constructor() {
     // Clé API VirusTotal (à configurer dans les variables d'environnement)
-    this.apiKey = process.env.NEXT_PUBLIC_VIRUSTOTAL_API_KEY || '';
+    this.apiKey = import.meta.env.VITE_VIRUSTOTAL_API_KEY || '';
     
     if (!this.apiKey) {
       console.warn('⚠️ Clé API VirusTotal non configurée. Utilisation du scanner basique.');

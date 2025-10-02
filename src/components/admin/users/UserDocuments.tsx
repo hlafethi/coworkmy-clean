@@ -28,12 +28,14 @@ import { toast } from 'sonner';
 interface UserDocument {
   id: string;
   user_id: string;
-  file_url: string;
+  file_url?: string;
+  file_path?: string;
   file_name: string;
   file_size: number;
   file_type: string;
   document_type: string;
-  uploaded_at: string;
+  uploaded_at?: string;
+  upload_date?: string;
   scan_status?: 'pending' | 'clean' | 'infected' | 'error';
   scan_details?: any;
 }
@@ -63,10 +65,11 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
   const [selectedDocument, setSelectedDocument] = useState<UserDocument | null>(null);
   const [documentUrl, setDocumentUrl] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadDocuments();
-  }, [userId]);
+  }, [userId, refreshKey]);
 
   const loadDocuments = async () => {
     try {
@@ -80,17 +83,34 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
         console.log('📄 Tous les documents:', result.data);
         
         // Transformer les données pour correspondre à l'interface UserDocument
-        const transformedData = result.data.map((doc: any) => ({
-          id: doc.id,
-          user_id: doc.user_id,
-          file_url: doc.file_url || doc.document_url || '',
-          file_name: doc.file_name || `Document ${doc.document_type}`,
-          file_size: doc.file_size || 0,
-          file_type: doc.file_type || 'application/octet-stream',
-          document_type: doc.document_type,
-          uploaded_at: doc.uploaded_at,
-          scan_status: 'pending' // Pas de colonne verified dans la structure actuelle
-        }));
+        const transformedData = result.data.map((doc: any) => {
+          const transformed = {
+            id: doc.id,
+            user_id: doc.user_id,
+            file_url: doc.file_url || doc.document_url || '',
+            file_path: doc.file_path, // Ajouter file_path
+            file_name: doc.file_name || `Document ${doc.document_type}`,
+            file_size: doc.file_size || 0,
+            file_type: doc.file_type || 'application/octet-stream',
+            document_type: doc.document_type,
+            uploaded_at: doc.uploaded_at,
+            upload_date: doc.upload_date, // Ajouter upload_date
+            scan_status: 'pending' // Pas de colonne verified dans la structure actuelle
+          };
+          
+          console.log('🔍 Document transformé:', {
+            id: transformed.id,
+            file_name: transformed.file_name,
+            file_path_exists: !!transformed.file_path,
+            file_path_length: transformed.file_path ? transformed.file_path.length : 0,
+            file_url_exists: !!transformed.file_url,
+            upload_date: transformed.upload_date,
+            document_type: transformed.document_type,
+            buttons_enabled: !!(transformed.file_path || transformed.file_url)
+          });
+          
+          return transformed;
+        });
 
         console.log('✅ Documents transformés:', transformedData.length, 'documents');
         setDocuments(transformedData);
@@ -109,6 +129,32 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
 
   const downloadDocument = async (document: UserDocument) => {
     try {
+      // Vérifier si on a des données base64 (stockage PostgreSQL)
+      if (document.file_path && !document.file_path.startsWith('http')) {
+        // Document stocké en base64 dans PostgreSQL
+        const base64Data = document.file_path;
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: document.file_type });
+        
+        const url = URL.createObjectURL(blob);
+        const a = window.document.createElement('a');
+        a.href = url;
+        a.download = document.file_name;
+        window.document.body.appendChild(a);
+        a.click();
+        window.document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast.success('Document téléchargé');
+        return;
+      }
+
+      // Fallback pour les URLs (ancien système)
       if (!document.file_url) {
         toast.error('URL du document non disponible');
         return;
@@ -128,7 +174,6 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
         URL.revokeObjectURL(url);
       } else {
         // Pour les chemins relatifs, utiliser l'URL directement
-        // (PostgreSQL ne nécessite pas de téléchargement spécial comme Supabase)
         const response = await fetch(document.file_url);
         if (!response.ok) {
           throw new Error('Erreur lors du téléchargement du fichier');
@@ -154,26 +199,31 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
 
   const viewDocument = async (document: UserDocument) => {
     try {
-      if (!document.file_url) {
-        toast.error('URL du document non disponible');
-        return;
-      }
-
       let url = '';
       
-      // Si c'est une URL complète, utiliser directement
-      if (document.file_url.startsWith('http')) {
-        url = document.file_url;
+      // Vérifier si on a des données base64 (stockage PostgreSQL)
+      if (document.file_path && !document.file_path.startsWith('http')) {
+        // Document stocké en base64 dans PostgreSQL
+        const base64Data = document.file_path;
+        const mimeType = document.file_type || 'application/octet-stream';
+        url = `data:${mimeType};base64,${base64Data}`;
+      } else if (document.file_url) {
+        // Fallback pour les URLs (ancien système)
+        if (document.file_url.startsWith('http')) {
+          url = document.file_url;
+        } else {
+          url = document.file_url;
+        }
       } else {
-        // Pour les chemins relatifs, utiliser l'URL directement
-        // (PostgreSQL ne nécessite pas d'URL signée comme Supabase)
-        url = document.file_url;
+        toast.error('URL du document non disponible');
+        return;
       }
 
       console.log('🔍 Debug document:', {
         fileName: document.file_name,
         fileType: document.file_type,
         fileUrl: document.file_url,
+        filePath: document.file_path,
         signedUrl: url,
         isPdf: document.file_type.includes('pdf'),
         isImage: document.file_type.includes('image'),
@@ -193,6 +243,11 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
     setIsModalOpen(false);
     setSelectedDocument(null);
     setDocumentUrl('');
+  };
+
+  const handleRefresh = () => {
+    console.log('🔄 Rafraîchissement forcé des documents...');
+    setRefreshKey(prev => prev + 1);
   };
 
   const getFileIcon = (fileType: string) => {
@@ -283,14 +338,15 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
     const extension = fileName.split('.').pop()?.toLowerCase();
     
     // Vérifier aussi l'extension dans l'URL si disponible
-    const urlExtension = document.file_url.split('.').pop()?.toLowerCase();
+    const urlExtension = document.file_url ? document.file_url.split('.').pop()?.toLowerCase() : null;
     
     console.log('🔍 Analyse type fichier:', {
       fileName,
       fileType: document.file_type,
       extension,
       urlExtension,
-      fileUrl: document.file_url
+      fileUrl: document.file_url,
+      filePath: document.file_path ? 'Présent' : 'Absent'
     });
     
     // Détecter le type depuis l'extension
@@ -305,11 +361,11 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
     }
     
     // Si on a une URL qui contient des indices d'image
-    if (document.file_url.includes('.png') || 
+    if (document.file_url && (document.file_url.includes('.png') || 
         document.file_url.includes('.jpg') || 
         document.file_url.includes('.jpeg') || 
         document.file_url.includes('.gif') ||
-        document.file_url.includes('.webp')) {
+        document.file_url.includes('.webp'))) {
       return 'image';
     }
     
@@ -337,16 +393,26 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
 
   return (
     <>
-      <Card>
+      <Card key={`documents-${refreshKey}`}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Documents de {userName}
-            {userCompany && (
-              <span className="text-sm text-gray-500 font-normal">
-                ({userCompany})
-              </span>
-            )}
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Documents de {userName}
+              {userCompany && (
+                <span className="text-sm text-gray-500 font-normal">
+                  ({userCompany})
+                </span>
+              )}
+            </div>
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              🔄 Actualiser
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -357,10 +423,10 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
               </AlertDescription>
             </Alert>
           ) : (
-            <div className="space-y-4">
-              {documents.map((document) => (
+            <div className="space-y-4" key={`documents-list-${refreshKey}`}>
+              {documents.map((document, index) => (
                 <div
-                  key={document.id}
+                  key={`${document.id}-${index}`}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-4 flex-1">
@@ -379,7 +445,14 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
                         <span>{formatFileSize(document.file_size)}</span>
                         <span>•</span>
                         <span>
-                          Uploadé le {new Date(document.uploaded_at).toLocaleDateString('fr-FR')}
+                          Uploadé le {new Date(document.upload_date || document.uploaded_at).toLocaleDateString('fr-FR', {
+                            timeZone: 'Europe/Paris',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </span>
                       </div>
                     </div>
@@ -391,7 +464,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
                       size="sm"
                       onClick={() => viewDocument(document)}
                       className="flex items-center gap-1"
-                      disabled={!document.file_url}
+                      disabled={!document.file_path && !document.file_url}
                     >
                       <Eye className="h-4 w-4" />
                       Voir
@@ -402,7 +475,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
                       size="sm"
                       onClick={() => downloadDocument(document)}
                       className="flex items-center gap-1"
-                      disabled={!document.file_url}
+                      disabled={!document.file_path && !document.file_url}
                     >
                       <Download className="h-4 w-4" />
                       Télécharger

@@ -96,9 +96,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
       setLoading(true);
-      const result = await apiClient.signUp(email, password, fullName);
+      logger.log('📝 Tentative d\'inscription pour:', email);
       
-      if (result.data && result.data.user) {
+      const result = await apiClient.signUp(email, password, fullName);
+      logger.log('📊 Résultat inscription API:', result);
+      
+      if (result.success && result.data && result.data.user) {
         setUser(result.data.user);
         setProfile(result.data.user);
         setIsAdmin(result.data.user.is_admin);
@@ -107,14 +110,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logger.log('✅ Inscription réussie:', { userId: result.data.user.id });
         return { user: result.data.user, error: null };
       } else {
-        setProfileError(result.error);
-        logger.error('❌ Erreur d\'inscription:', result.error);
-        return { user: null, error: result.error };
+        const errorMessage = result.error || 'Erreur d\'inscription';
+        setProfileError(errorMessage);
+        logger.error('❌ Erreur d\'inscription:', errorMessage);
+        logger.error('❌ Détails du résultat:', result);
+        return { user: null, error: errorMessage };
       }
     } catch (error) {
-      setProfileError('Erreur d\'inscription');
+      const errorMessage = 'Erreur d\'inscription';
+      setProfileError(errorMessage);
       logger.error('❌ Erreur d\'inscription:', error);
-      return { user: null, error: 'Erreur d\'inscription' };
+      return { user: null, error: errorMessage };
     } finally {
       setLoading(false);
     }

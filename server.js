@@ -5,8 +5,14 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import Stripe from 'stripe';
 
 dotenv.config();
+
+// Configuration Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_...', {
+  apiVersion: '2023-10-16',
+});
 
 const app = express();
 app.use(cors());
@@ -36,17 +42,23 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware d'authentification
 const authenticateToken = (req, res, next) => {
+  console.log('🔍 authenticateToken appelé pour:', req.method, req.path);
+  console.log('🔍 Headers authorization:', req.headers['authorization']);
+  
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    console.log('❌ Pas de token trouvé');
     return res.status(401).json({ error: 'Token d\'accès requis' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      console.log('❌ Token invalide:', err.message);
       return res.status(403).json({ error: 'Token invalide' });
     }
+    console.log('🔑 Token décodé:', { id: user.id, email: user.email, is_admin: user.is_admin });
     req.user = user;
     next();
   });
@@ -72,37 +84,62 @@ app.post('/api/auth/signin', async (req, res) => {
       return sendResponse(res, false, null, 'Email et mot de passe requis');
     }
 
-    // Compte de test pour le développement
-    const testUser = {
-      id: 1,
-      email: 'admin@coworkmy.fr',
-      password: 'Project@2025*',
-      full_name: 'Administrateur',
-      is_admin: true
+    // Comptes de test pour le développement - utiliser les vrais IDs de la base
+    const testUsers = {
+      'admin@coworkmy.fr': {
+        email: 'admin@coworkmy.fr',
+        password: 'Project@2025*',
+        full_name: 'Administrateur',
+        is_admin: true
+      },
+      'user@heleam.com': {
+        email: 'user@heleam.com',
+        password: 'user123',
+        full_name: 'Utilisateur Test',
+        is_admin: false
+      }
     };
 
     // Vérification des identifiants de test
-    if (email === testUser.email && password === testUser.password) {
-      // Génération du token JWT
-      const token = jwt.sign(
-        { 
-          id: testUser.id, 
-          email: testUser.email,
-          is_admin: testUser.is_admin
-        },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
+    const testUser = testUsers[email];
+    if (testUser && password === testUser.password) {
+      // Récupérer l'ID réel de la base de données
+      try {
+        const dbResult = await pool.query(
+          'SELECT id, email, full_name, first_name, last_name, is_admin FROM profiles WHERE email = $1',
+          [email]
+        );
+        
+        if (dbResult.rows.length === 0) {
+          return sendResponse(res, false, null, 'Utilisateur non trouvé en base de données');
+        }
+        
+        const dbUser = dbResult.rows[0];
+        
+        // Génération du token JWT avec l'ID réel de la base
+        const token = jwt.sign(
+          { 
+            id: dbUser.id, 
+            email: dbUser.email,
+            is_admin: dbUser.is_admin || testUser.is_admin
+          },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+        );
 
-      return sendResponse(res, true, {
-        user: {
-          id: testUser.id,
-          email: testUser.email,
-          full_name: testUser.full_name,
-          is_admin: testUser.is_admin
-        },
-        token
-      });
+        return sendResponse(res, true, {
+          user: {
+            id: dbUser.id,
+            email: dbUser.email,
+            full_name: dbUser.full_name || testUser.full_name,
+            is_admin: dbUser.is_admin || testUser.is_admin
+          },
+          token
+        });
+      } catch (dbError) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', dbError);
+        return sendResponse(res, false, null, 'Erreur de base de données');
+      }
     }
 
     // Recherche de l'utilisateur dans PostgreSQL
@@ -485,17 +522,89 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/users/:id/documents
+app.get('/api/users/:id/documents', authenticateToken, async (req, res) => {
+  try {
+    console.log('🔍 GET /api/users/:id/documents appelé');
+    console.log('🔍 Headers:', req.headers);
+    console.log('🔍 User:', req.user);
+    
+    const userId = req.params.id;
+    const requestingUserId = req.user.id;
+    
+    // Vérifier que l'utilisateur peut accéder aux documents (admin ou son propre profil)
+    if (String(requestingUserId) !== String(userId) && !req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+    
+    // Vérifier d'abord si l'utilisateur existe
+    const userCheck = await pool.query('SELECT id FROM profiles WHERE id = $1', [userId]);
+    if (userCheck.rows.length === 0) {
+      return sendResponse(res, false, null, 'Utilisateur non trouvé');
+    }
+
+    // Récupérer les documents de l'utilisateur
+    // Note: Si la table profile_documents n'existe pas, on retourne une liste vide
+    try {
+      const result = await pool.query(
+        'SELECT id, file_name, file_type, file_size, upload_date, file_path, document_type FROM profile_documents WHERE user_id = $1 ORDER BY upload_date DESC',
+        [userId]
+      );
+      
+      console.log('📄 Documents récupérés pour userId:', userId);
+      console.log('📊 Nombre de documents:', result.rows.length);
+      result.rows.forEach((doc, index) => {
+        console.log(`🔍 Document ${index}:`, {
+          id: doc.id,
+          file_name: doc.file_name,
+          document_type: doc.document_type,
+          upload_date: doc.upload_date
+        });
+      });
+      
+      sendResponse(res, true, result.rows);
+    } catch (docError) {
+      // Si la table n'existe pas ou erreur, retourner une liste vide
+      console.log('Table profile_documents non trouvée ou erreur:', docError.message);
+      sendResponse(res, true, []);
+    }
+  } catch (error) {
+    console.error('Erreur user documents:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
 // GET /api/users/:id
 app.get('/api/users/:id', authenticateToken, async (req, res) => {
   try {
-    // Vérifier que l'utilisateur est admin
-    if (!req.user.is_admin) {
+    const userId = req.params.id;
+    const requestingUserId = req.user.id;
+    
+    console.log('🔍 Debug /api/users/:id:');
+    console.log('  - userId (param):', userId, typeof userId);
+    console.log('  - requestingUserId (req.user.id):', requestingUserId, typeof requestingUserId);
+    console.log('  - req.user.is_admin:', req.user.is_admin);
+    console.log('  - String(requestingUserId):', String(requestingUserId));
+    console.log('  - String(userId):', String(userId));
+    console.log('  - Comparaison:', String(requestingUserId) !== String(userId));
+    console.log('  - req.user complet:', JSON.stringify(req.user, null, 2));
+    
+    // Vérifier que l'utilisateur peut accéder à ce profil
+    // Soit il est admin, soit il demande son propre profil
+    if (!req.user.is_admin && String(requestingUserId) !== String(userId)) {
+      console.log('❌ Accès refusé - utilisateur non-admin demandant un autre profil');
       return sendResponse(res, false, null, 'Accès non autorisé');
     }
+    
+    console.log('✅ Accès autorisé');
 
-    const userId = req.params.id;
     const result = await pool.query(
-      'SELECT id, email, full_name, first_name, last_name, phone, company, city, is_admin, created_at, updated_at FROM profiles WHERE id = $1',
+      `SELECT id, email, full_name, first_name, last_name, phone, phone_number,
+              company, company_name, city, address, address_street,
+              address_city, address_postal_code, address_country,
+              birth_date, presentation, profile_picture,
+              avatar_url, logo_url, is_admin, created_at, updated_at 
+       FROM profiles WHERE id = $1`,
       [userId]
     );
 
@@ -510,52 +619,27 @@ app.get('/api/users/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/users/:id/documents
-app.get('/api/users/:id/documents', authenticateToken, async (req, res) => {
+// POST /api/users/:id/documents
+app.post('/api/users/:id/documents', authenticateToken, async (req, res) => {
   try {
-    // Vérifier que l'utilisateur est admin
-    if (!req.user.is_admin) {
-      return sendResponse(res, false, null, 'Accès non autorisé');
-    }
-
     const userId = req.params.id;
+    const requestingUserId = req.user.id;
     
-    // Vérifier d'abord si l'utilisateur existe
-    const userCheck = await pool.query('SELECT id FROM profiles WHERE id = $1', [userId]);
-    if (userCheck.rows.length === 0) {
-      return sendResponse(res, false, null, 'Utilisateur non trouvé');
-    }
-
-    // Récupérer les documents de l'utilisateur
-    // Note: Si la table profile_documents n'existe pas, on retourne une liste vide
-    try {
-      const result = await pool.query(
-        'SELECT id, file_name, file_type, file_size, upload_date, file_path FROM profile_documents WHERE user_id = $1 ORDER BY upload_date DESC',
-        [userId]
-      );
-      
-      sendResponse(res, true, result.rows);
-    } catch (docError) {
-      // Si la table n'existe pas ou erreur, retourner une liste vide
-      console.log('Table profile_documents non trouvée ou erreur:', docError.message);
-      sendResponse(res, true, []);
-    }
-  } catch (error) {
-    console.error('Erreur user documents:', error);
-    sendResponse(res, false, null, 'Erreur serveur');
-  }
-});
-
-// PUT /api/users/:id
-app.put('/api/users/:id', authenticateToken, async (req, res) => {
-  try {
-    // Vérifier que l'utilisateur est admin
-    if (!req.user.is_admin) {
+    // Vérifier que l'utilisateur peut uploader des documents (admin ou son propre profil)
+    if (String(requestingUserId) !== String(userId) && !req.user.is_admin) {
       return sendResponse(res, false, null, 'Accès non autorisé');
     }
 
-    const userId = req.params.id;
-    const { email, full_name, first_name, last_name, phone, company, city, is_admin } = req.body;
+    const { file_name, file_type, file_size, file_content, document_type } = req.body;
+    
+    if (!file_name || !file_type || !file_content) {
+      return sendResponse(res, false, null, 'Nom de fichier, type et contenu requis');
+    }
+
+    console.log('📄 Upload de document pour utilisateur:', userId);
+    console.log('📊 Détails:', { file_name, file_type, file_size, document_type });
+    console.log('🔍 Document type reçu:', document_type, 'Type:', typeof document_type);
+    console.log('🔍 Body complet:', JSON.stringify(req.body, null, 2));
 
     // Vérifier que l'utilisateur existe
     const userCheck = await pool.query('SELECT id FROM profiles WHERE id = $1', [userId]);
@@ -563,19 +647,174 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
       return sendResponse(res, false, null, 'Utilisateur non trouvé');
     }
 
-    // Mettre à jour l'utilisateur
+    // Créer la table profile_documents si elle n'existe pas
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS profile_documents (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL,
+          file_name VARCHAR(255) NOT NULL,
+          file_type VARCHAR(100) NOT NULL,
+          file_size INTEGER NOT NULL,
+          file_path TEXT NOT NULL,
+          document_type VARCHAR(50) DEFAULT 'other',
+          upload_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          scan_status VARCHAR(20) DEFAULT 'pending',
+          scan_details JSONB,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+      `);
+      console.log('✅ Table profile_documents créée/vérifiée');
+      
+      // Ajouter la colonne document_type si elle n'existe pas (pour les tables existantes)
+      try {
+        await pool.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns 
+              WHERE table_name = 'profile_documents' AND column_name = 'document_type'
+            ) THEN
+              ALTER TABLE profile_documents ADD COLUMN document_type VARCHAR(50) DEFAULT 'other';
+            END IF;
+          END $$;
+        `);
+        console.log('✅ Colonne document_type ajoutée si nécessaire');
+        
+        // Mettre à jour les documents existants
+        await pool.query(`
+          UPDATE profile_documents 
+          SET document_type = 'other' 
+          WHERE document_type IS NULL;
+        `);
+        console.log('✅ Documents existants mis à jour');
+      } catch (columnError) {
+        console.log('⚠️ Erreur ajout colonne:', columnError.message);
+      }
+    } catch (tableError) {
+      console.error('❌ Erreur création table:', tableError);
+    }
+
+    // Simuler un scan VirusTotal (en mode développement)
+    const scanStatus = 'clean'; // En production, ceci serait déterminé par VirusTotal
+    const scanDetails = {
+      scanner: 'VirusTotal',
+      status: 'clean',
+      scanned_at: new Date().toISOString(),
+      engines_checked: 70,
+      threats_found: 0
+    };
+
+    // Insérer le document dans la base de données
+    const result = await pool.query(
+      `INSERT INTO profile_documents 
+       (user_id, file_name, file_type, file_size, file_path, document_type, scan_status, scan_details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, file_name, file_type, file_size, document_type, upload_date, scan_status`,
+      [userId, file_name, file_type, file_size, file_content, document_type || 'other', scanStatus, JSON.stringify(scanDetails)]
+    );
+
+    console.log('✅ Document sauvegardé:', result.rows[0].id);
+    sendResponse(res, true, result.rows[0]);
+
+  } catch (error) {
+    console.error('❌ Erreur upload document:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// DELETE /api/users/:id/documents/:documentId
+app.delete('/api/users/:id/documents/:documentId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const documentId = req.params.documentId;
+    const requestingUserId = req.user.id;
+    
+    // Vérifier que l'utilisateur peut supprimer le document (admin ou son propre profil)
+    if (String(requestingUserId) !== String(userId) && !req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    console.log('🗑️ Suppression de document:', { userId, documentId });
+
+    // Vérifier que le document existe et appartient à l'utilisateur
+    const documentCheck = await pool.query(
+      'SELECT id, user_id, file_name FROM profile_documents WHERE id = $1 AND user_id = $2',
+      [documentId, userId]
+    );
+
+    if (documentCheck.rows.length === 0) {
+      return sendResponse(res, false, null, 'Document non trouvé ou accès non autorisé');
+    }
+
+    // Supprimer le document
+    await pool.query('DELETE FROM profile_documents WHERE id = $1', [documentId]);
+
+    console.log('✅ Document supprimé:', documentCheck.rows[0].file_name);
+    sendResponse(res, true, { message: 'Document supprimé avec succès' });
+
+  } catch (error) {
+    console.error('❌ Erreur suppression document:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// PUT /api/users/:id - Endpoint pour les utilisateurs normaux (modification de leur propre profil)
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    
+    const userId = req.params.id;
+    const requestingUserId = req.user.id;
+    
+    // Vérifier que l'utilisateur modifie son propre profil OU qu'il est admin
+    if (String(requestingUserId) !== String(userId) && !req.user.is_admin) {
+      console.log('❌ Accès non autorisé - utilisateur ne peut pas modifier ce profil');
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+    
+
+    const { 
+      email, full_name, first_name, last_name, phone, phone_number,
+      company, company_name, city, address, address_street, 
+      address_city, address_postal_code, address_country,
+      birth_date, presentation, profile_picture,
+      logo_url, avatar_url, is_admin 
+    } = req.body;
+
+    // Vérifier que l'utilisateur existe
+    const userCheck = await pool.query('SELECT id FROM profiles WHERE id = $1', [userId]);
+    if (userCheck.rows.length === 0) {
+      return sendResponse(res, false, null, 'Utilisateur non trouvé');
+    }
+
+    // Mettre à jour l'utilisateur avec tous les champs
     const result = await pool.query(
       `UPDATE profiles 
        SET email = $1, full_name = $2, first_name = $3, last_name = $4, 
-           phone = $5, company = $6, city = $7, is_admin = $8, updated_at = NOW()
-       WHERE id = $9 
-       RETURNING id, email, full_name, first_name, last_name, phone, company, city, is_admin, created_at, updated_at`,
-      [email, full_name, first_name, last_name, phone, company, city, is_admin, userId]
+           phone = $5, phone_number = $6, company = $7, company_name = $8,
+           city = $9, address = $10, address_street = $11, 
+           address_city = $12, address_postal_code = $13, address_country = $14,
+           birth_date = $15, presentation = $16, profile_picture = $17,
+           logo_url = $18, avatar_url = $19, is_admin = $20, updated_at = NOW()
+       WHERE id = $21 
+       RETURNING id, email, full_name, first_name, last_name, phone, phone_number,
+                 company, company_name, city, address, address_street,
+                 address_city, address_postal_code, address_country,
+                 birth_date, presentation, profile_picture,
+                 logo_url, avatar_url, is_admin, created_at, updated_at`,
+      [email, full_name, first_name, last_name, phone, phone_number,
+       company, company_name, city, address, address_street,
+       address_city, address_postal_code, address_country,
+       birth_date, presentation, profile_picture,
+       logo_url, avatar_url, is_admin, userId]
     );
 
     sendResponse(res, true, result.rows[0]);
   } catch (error) {
-    console.error('Erreur update user:', error);
+    console.error('❌ Erreur update user:', error);
+    console.error('❌ Détails de l\'erreur:', error.message);
+    console.error('❌ Stack trace:', error.stack);
     sendResponse(res, false, null, 'Erreur serveur');
   }
 });
@@ -974,15 +1213,15 @@ app.delete('/api/email-templates/:id', authenticateToken, async (req, res) => {
 // GET /api/admin/support/faqs
 app.get('/api/admin/support/faqs', async (req, res) => {
   try {
-    console.log('❓ Récupération des FAQ...');
+    console.log('❓ Récupération des FAQ admin...');
     
-    // Récupérer les FAQ
+    // Récupérer les FAQ depuis support_faqs
     const result = await pool.query(`
       SELECT 
         f.*,
         u.email as author_email,
         u.full_name as author_name
-      FROM faqs f
+      FROM support_faqs f
       LEFT JOIN profiles u ON f.author_id = u.id
       ORDER BY f.order_index ASC, f.created_at DESC
     `);
@@ -1008,7 +1247,7 @@ app.post('/api/admin/support/faqs', authenticateToken, async (req, res) => {
     console.log('❓ Création d\'une nouvelle FAQ...');
     
     const result = await pool.query(
-      `INSERT INTO faqs (question, answer, category, order_index, is_active, author_id, created_at, updated_at)
+      `INSERT INTO support_faqs (question, answer, category, order_index, is_active, author_id, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
        RETURNING *`,
       [question, answer, category, order_index, is_active, req.user.id]
@@ -1036,7 +1275,7 @@ app.put('/api/admin/support/faqs/:id', authenticateToken, async (req, res) => {
     console.log(`❓ Mise à jour de la FAQ ${id}...`);
     
     const result = await pool.query(
-      `UPDATE faqs 
+      `UPDATE support_faqs 
        SET question = $1, answer = $2, category = $3, order_index = $4, is_active = $5, updated_at = NOW()
        WHERE id = $6
        RETURNING *`,
@@ -1067,7 +1306,7 @@ app.delete('/api/admin/support/faqs/:id', authenticateToken, async (req, res) =>
     
     console.log(`🗑️ Suppression de la FAQ ${id}...`);
     
-    const result = await pool.query('DELETE FROM faqs WHERE id = $1 RETURNING *', [id]);
+    const result = await pool.query('DELETE FROM support_faqs WHERE id = $1 RETURNING *', [id]);
     
     if (result.rows.length === 0) {
       return sendResponse(res, false, null, 'FAQ non trouvée');
@@ -1115,7 +1354,7 @@ app.post('/api/admin/support/kb-articles', authenticateToken, async (req, res) =
       return sendResponse(res, false, null, 'Accès non autorisé');
     }
 
-    const { title, content, category, tags, is_published } = req.body;
+    const { title, content, category, tags, is_published = true } = req.body;
     
     console.log('📚 Création d\'un nouvel article...');
     
@@ -1722,20 +1961,28 @@ app.delete('/api/carousel-images/:id', authenticateToken, async (req, res) => {
 // GET /api/bookings
 app.get('/api/bookings', authenticateToken, async (req, res) => {
   try {
-    const { data: bookings, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Erreur récupération bookings:', error);
-      return sendResponse(res, false, null, 'Erreur lors de la récupération des réservations');
-    }
-
-    sendResponse(res, true, bookings || []);
+    console.log('📅 Récupération des réservations pour l\'utilisateur:', req.user.id);
+    
+    const result = await pool.query(`
+      SELECT 
+        b.*,
+        s.name as space_name,
+        s.description as space_description,
+        s.price_per_hour,
+        s.capacity,
+        p.full_name as user_name,
+        p.email as user_email
+      FROM bookings b
+      LEFT JOIN spaces s ON b.space_id = s.id
+      LEFT JOIN profiles p ON b.user_id = p.id
+      WHERE b.user_id = $1
+      ORDER BY b.created_at DESC
+    `, [req.user.id]);
+    
+    console.log('✅ Réservations récupérées:', result.rows.length);
+    sendResponse(res, true, result.rows);
   } catch (error) {
-    console.error('Erreur bookings:', error);
+    console.error('❌ Erreur bookings:', error);
     sendResponse(res, false, null, 'Erreur serveur');
   }
 });
@@ -1749,25 +1996,18 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
       return sendResponse(res, false, null, 'Données de réservation incomplètes');
     }
 
-    const { data: booking, error } = await supabase
-      .from('bookings')
-      .insert({
-        user_id: req.user.id,
-        space_id,
-        start_date,
-        end_date,
-        notes: notes || null,
-        status: 'pending'
-      })
-      .select()
-      .single();
+    const result = await pool.query(`
+      INSERT INTO bookings (user_id, space_id, start_date, end_date, notes, status, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, 'pending', NOW(), NOW())
+      RETURNING *
+    `, [req.user.id, space_id, start_date, end_date, notes || null]);
 
-    if (error) {
-      console.error('Erreur création booking:', error);
+    if (result.rows.length === 0) {
       return sendResponse(res, false, null, 'Erreur lors de la création de la réservation');
     }
 
-    sendResponse(res, true, booking);
+    console.log('✅ Réservation créée:', result.rows[0].id);
+    sendResponse(res, true, result.rows[0]);
   } catch (error) {
     console.error('Erreur create booking:', error);
     sendResponse(res, false, null, 'Erreur serveur');
@@ -1894,6 +2134,197 @@ app.post('/api/support/tickets/:id/responses-user-no-auth', async (req, res) => 
     sendResponse(res, true, result.rows[0]);
   } catch (error) {
     console.error('Erreur création réponse:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// ===== ENDPOINTS POUR LE SUPPORT (avec authentification) =====
+
+// GET /api/support/tickets - Tickets de l'utilisateur connecté
+app.get('/api/support/tickets', authenticateToken, async (req, res) => {
+  try {
+    console.log('🎫 Récupération des tickets pour l\'utilisateur:', req.user.id);
+    
+    const result = await pool.query(
+      'SELECT * FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+
+    console.log('✅ Tickets récupérés:', result.rows.length);
+    sendResponse(res, true, result.rows);
+  } catch (error) {
+    console.error('❌ Erreur support tickets:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// GET /api/support/faqs - FAQ
+app.get('/api/support/faqs', async (req, res) => {
+  try {
+    console.log('❓ Récupération des FAQ');
+    
+    const result = await pool.query(
+      'SELECT * FROM support_faqs WHERE is_active = true ORDER BY order_index ASC, id ASC'
+    );
+
+    console.log('✅ FAQ récupérées:', result.rows.length);
+    sendResponse(res, true, result.rows);
+  } catch (error) {
+    console.error('❌ Erreur support FAQ:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// GET /api/support/kb-articles - Articles de base de connaissances
+app.get('/api/support/kb-articles', async (req, res) => {
+  try {
+    console.log('📚 Récupération des articles de base de connaissances');
+    
+    const result = await pool.query(`
+      SELECT 
+        kb.*,
+        u.full_name as author_name,
+        u.email as author_email
+      FROM knowledge_base kb
+      LEFT JOIN profiles u ON kb.author_id = u.id
+      WHERE kb.is_published = true
+      ORDER BY kb.created_at DESC
+    `);
+
+    console.log('✅ Articles récupérés:', result.rows.length);
+    sendResponse(res, true, result.rows);
+  } catch (error) {
+    console.error('❌ Erreur support KB articles:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// POST /api/support/tickets - Créer un ticket
+app.post('/api/support/tickets', authenticateToken, async (req, res) => {
+  try {
+    const { subject, message, priority = 'medium' } = req.body;
+
+    if (!subject || !message) {
+      return sendResponse(res, false, null, 'Sujet et message requis');
+    }
+
+    console.log('🎫 Création d\'un ticket pour l\'utilisateur:', req.user.id);
+
+    const result = await pool.query(
+      'INSERT INTO support_tickets (user_id, subject, message, priority, status, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *',
+      [req.user.id, subject, message, priority, 'open']
+    );
+
+    console.log('✅ Ticket créé:', result.rows[0].id);
+    sendResponse(res, true, result.rows[0]);
+  } catch (error) {
+    console.error('❌ Erreur création ticket:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// GET /api/support/tickets/:id/responses - Réponses d'un ticket
+app.get('/api/support/tickets/:id/responses', authenticateToken, async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+    console.log('💬 Récupération des réponses pour le ticket:', ticketId);
+    
+    const result = await pool.query(
+      'SELECT * FROM support_ticket_responses WHERE ticket_id = $1 ORDER BY created_at ASC',
+      [ticketId]
+    );
+
+    console.log('✅ Réponses récupérées:', result.rows.length);
+    sendResponse(res, true, result.rows);
+  } catch (error) {
+    console.error('❌ Erreur récupération réponses:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// POST /api/support/tickets/:id/responses - Ajouter une réponse
+app.post('/api/support/tickets/:id/responses', authenticateToken, async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+    const { message } = req.body;
+
+    if (!message) {
+      return sendResponse(res, false, null, 'Message requis');
+    }
+
+    console.log('💬 Ajout d\'une réponse au ticket:', ticketId);
+
+    const result = await pool.query(
+      'INSERT INTO support_ticket_responses (ticket_id, message, is_admin_response, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
+      [ticketId, message, false]
+    );
+
+    console.log('✅ Réponse ajoutée:', result.rows[0].id);
+    sendResponse(res, true, result.rows[0]);
+  } catch (error) {
+    console.error('❌ Erreur ajout réponse:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// ===== ENDPOINTS POUR L'UPLOAD D'IMAGES =====
+
+// POST /api/upload/avatar - Upload d'avatar
+app.post('/api/upload/avatar', authenticateToken, async (req, res) => {
+  try {
+    console.log('📸 Upload d\'avatar pour l\'utilisateur:', req.user.id);
+    
+    // Pour l'instant, on simule un upload réussi
+    // Dans un vrai système, vous utiliseriez multer ou un autre middleware d'upload
+    const { avatar_url } = req.body;
+    
+    if (!avatar_url) {
+      return sendResponse(res, false, null, 'URL d\'avatar requise');
+    }
+    
+    // Mettre à jour le profil utilisateur
+    const result = await pool.query(
+      'UPDATE profiles SET avatar_url = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [avatar_url, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return sendResponse(res, false, null, 'Utilisateur non trouvé');
+    }
+    
+    console.log('✅ Avatar mis à jour:', result.rows[0].avatar_url);
+    sendResponse(res, true, result.rows[0]);
+  } catch (error) {
+    console.error('❌ Erreur upload avatar:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// POST /api/upload/logo - Upload de logo
+app.post('/api/upload/logo', authenticateToken, async (req, res) => {
+  try {
+    console.log('🏢 Upload de logo pour l\'utilisateur:', req.user.id);
+    
+    const { logo_url } = req.body;
+    
+    if (!logo_url) {
+      return sendResponse(res, false, null, 'URL de logo requise');
+    }
+    
+    // Mettre à jour le profil utilisateur
+    const result = await pool.query(
+      'UPDATE profiles SET logo_url = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [logo_url, req.user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return sendResponse(res, false, null, 'Utilisateur non trouvé');
+    }
+    
+    console.log('✅ Logo mis à jour:', result.rows[0].logo_url);
+    sendResponse(res, true, result.rows[0]);
+  } catch (error) {
+    console.error('❌ Erreur upload logo:', error);
     sendResponse(res, false, null, 'Erreur serveur');
   }
 });
@@ -2072,6 +2503,67 @@ app.put('/api/email-config/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== ENDPOINTS STRIPE =====
+
+// Endpoint pour créer un portail client Stripe
+app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, res) => {
+  try {
+    const { customerEmail, returnUrl } = req.body;
+    
+    if (!customerEmail || !returnUrl) {
+      return sendResponse(res, false, null, 'Email client et URL de retour requis');
+    }
+
+    console.log('🔗 Création du portail client Stripe pour:', customerEmail);
+
+    // Vérifier si Stripe est configuré
+    if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_...') {
+      console.log('⚠️ Stripe non configuré, redirection vers une page de test');
+      return sendResponse(res, true, { 
+        url: 'https://stripe.com/docs/billing/quickstart',
+        message: 'Stripe non configuré - redirection vers la documentation'
+      });
+    }
+
+    // Créer ou récupérer le client Stripe
+    let customer;
+    try {
+      // Chercher un client existant par email
+      const existingCustomers = await stripe.customers.list({
+        email: customerEmail,
+        limit: 1
+      });
+
+      if (existingCustomers.data.length > 0) {
+        customer = existingCustomers.data[0];
+        console.log('✅ Client existant trouvé:', customer.id);
+      } else {
+        // Créer un nouveau client
+        customer = await stripe.customers.create({
+          email: customerEmail,
+          name: req.user.full_name || customerEmail
+        });
+        console.log('✅ Nouveau client créé:', customer.id);
+      }
+    } catch (stripeError) {
+      console.error('❌ Erreur Stripe client:', stripeError);
+      return sendResponse(res, false, null, `Erreur Stripe: ${stripeError.message}`);
+    }
+
+    // Créer une session de portail client
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customer.id,
+      return_url: returnUrl,
+    });
+
+    console.log('✅ Portail client créé:', portalSession.url);
+    sendResponse(res, true, { url: portalSession.url });
+  } catch (error) {
+    console.error('❌ Erreur création portail client:', error);
+    sendResponse(res, false, null, `Erreur lors de la création du portail client: ${error.message}`);
+  }
+});
+
 // ===== GESTION DES ERREURS 404 =====
 
 app.use((req, res) => {
@@ -2144,9 +2636,16 @@ app.listen(PORT, () => {
   console.log(`   - POST /api/support/tickets-user-no-auth`);
   console.log(`   - GET  /api/support/tickets/:id/responses-user-no-auth`);
   console.log(`   - POST /api/support/tickets/:id/responses-user-no-auth`);
+  console.log(`   - GET  /api/support/faqs`);
+  console.log(`   - GET  /api/support/kb-articles`);
+  console.log(`   - POST /api/upload/avatar`);
+  console.log(`   - POST /api/upload/logo`);
   console.log(`   - GET  /api/admin/support/tickets-no-auth`);
   console.log(`   - GET  /api/admin/support/tickets/:id/responses-no-auth`);
   console.log(`   - POST /api/admin/support/tickets/:id/responses-no-auth`);
   console.log(`   - GET  /api/health`);
   console.log(`   - POST /api/send-email`);
+  console.log(`   - POST /api/stripe/create-customer-portal`);
+  console.log(`   - POST /api/users/:id/documents`);
+  console.log(`   - DELETE /api/users/:id/documents/:documentId`);
 });

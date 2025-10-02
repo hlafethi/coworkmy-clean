@@ -3,34 +3,35 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { apiClient } from "@/lib/api-client";
 
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import DocumentsSection from "@/pages/profile/DocumentsSection";
-import AvatarUpload from "@/components/profile/AvatarUpload";
-import LogoUpload from "@/components/profile/LogoUpload";
-import { Edit, Building2, User, MapPin, FileText } from "lucide-react";
+import { AvatarUploadSimple } from "@/components/profile/AvatarUploadSimple";
+import { LogoUploadSimple } from "@/components/profile/LogoUploadSimple";
+import { Edit, Building2, User, FileText } from "lucide-react";
 import { StripeCustomerPortal } from "@/components/common/StripeCustomerPortal";
 
 const Profile = () => {
-    const { user, profile: authProfile, loading: authLoading, profileLoaded, updateProfile } = useAuth();
+    const { user, profile: authProfile, loading: authLoading, profileLoaded } = useAuth();
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [forceRender, setForceRender] = useState(0);
     const navigate = useNavigate();
 
     const handleAvatarUpdated = async (newAvatarUrl: string) => {
         // Mise à jour immédiate du profil local
-        setProfile(prev => ({
+        setProfile((prev: any) => ({
             ...prev,
             avatar_url: newAvatarUrl
         }));
         
         // Mise à jour du contexte d'authentification
-        updateProfile({ avatar_url: newAvatarUrl });
+        // updateProfile({ avatar_url: newAvatarUrl });
         
         // Mise à jour en arrière-plan sans bloquer l'interface
         if (user) {
@@ -47,13 +48,13 @@ const Profile = () => {
 
     const handleLogoUpdated = async (newLogoUrl: string) => {
         // Mise à jour immédiate du profil local
-        setProfile(prev => ({
+        setProfile((prev: any) => ({
             ...prev,
             logo_url: newLogoUrl
         }));
         
         // Mise à jour du contexte d'authentification
-        updateProfile({ logo_url: newLogoUrl });
+        // updateProfile({ logo_url: newLogoUrl });
         
         // Mise à jour en arrière-plan sans bloquer l'interface
         if (user) {
@@ -89,28 +90,50 @@ const Profile = () => {
             return;
         }
 
-        // Si le profil n'est pas encore chargé, attendre
-        if (!profileLoaded) {
-            console.log('⏳ Profil pas encore chargé');
-            return;
-        }
+        // Charger le profil directement depuis l'API
+  const loadProfile = async () => {
+    try {
+      const result = await apiClient.get(`/users/${user.id}`);
+      
+      if (result.success && result.data) {
+        setProfile(result.data);
+        setForceRender(prev => prev + 1);
+      } else {
+        toast.error("Erreur lors du chargement du profil");
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement du profil:', error);
+      toast.error("Erreur lors du chargement du profil");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        // Utilisateur connecté, utiliser le profil du contexte d'authentification
-        if (authProfile) {
-            console.log('✅ Utilisation du profil du contexte');
-            setProfile(authProfile);
-            setLoading(false);
-        } else {
-            console.log('❌ Pas de profil dans le contexte - erreur');
-            toast.error("Erreur lors du chargement du profil");
-            setLoading(false);
-        }
-    }, [navigate, user, authProfile, authLoading, profileLoaded]);
+        loadProfile();
+    }, [navigate, user, authLoading, refreshKey]);
 
-    console.log('PROFILE render', { profile, loading, user, profileLoaded });
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+    setForceRender(prev => prev + 1);
+  };
+
+    console.log('PROFILE render', { 
+        profile: profile ? {
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            phone: profile.phone,
+            company: profile.company,
+            city: profile.city
+        } : null,
+        loading, 
+        user: user ? {
+            id: user.id,
+            email: user.email
+        } : null, 
+        profileLoaded 
+    });
 
     if (authLoading || !profileLoaded || (loading && !profile)) {
-        console.log('⏳ Affichage du spinner de chargement');
         return (
             <div className="min-h-screen flex flex-col">
                 <Navbar />
@@ -132,7 +155,7 @@ const Profile = () => {
                         <div className="flex flex-col items-center md:items-start space-y-6 md:col-span-1">
                             {/* Avatar */}
                             {user && (
-                                <AvatarUpload
+                                <AvatarUploadSimple
                                     currentAvatarUrl={profile?.avatar_url}
                                     userId={user.id}
                                     onAvatarUpdated={handleAvatarUpdated}
@@ -140,7 +163,7 @@ const Profile = () => {
                             )}
                             {/* Logo entreprise */}
                             {user && (
-                                <LogoUpload
+                                <LogoUploadSimple
                                     currentLogoUrl={profile?.logo_url}
                                     userId={user.id}
                                     onLogoUpdated={handleLogoUpdated}
@@ -162,14 +185,23 @@ const Profile = () => {
                                     </p>
                                 )}
                             </div>
-                            {/* Bouton édition */}
-                            <Button 
-                                onClick={() => navigate("/profile/edit")}
-                                className="flex items-center gap-2 self-center md:self-start"
-                            >
-                                <Edit className="h-4 w-4" />
-                                Modifier le profil
-                            </Button>
+                            {/* Boutons d'action */}
+                            <div className="flex flex-col gap-2 self-center md:self-start">
+                                <Button 
+                                    onClick={() => navigate("/profile/edit")}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Modifier le profil
+                                </Button>
+                                <Button 
+                                    onClick={handleRefresh}
+                                    variant="outline"
+                                    className="flex items-center gap-2"
+                                >
+                                    🔄 Actualiser
+                                </Button>
+                            </div>
                         </div>
                         {/* Colonne droite : infos complémentaires, documents, etc. */}
                         <div className="md:col-span-2 space-y-6">
@@ -181,14 +213,18 @@ const Profile = () => {
                                         Informations personnelles
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" key={`profile-content-${forceRender}`}>
+                                    <div key={`firstname-${forceRender}`}>
                                         <Label className="text-sm font-medium text-gray-500">Prénom</Label>
-                                        <p className="mt-1 text-sm text-gray-900">{profile?.first_name || "Non renseigné"}</p>
+        <p className="mt-1 text-sm text-gray-900">
+          {profile?.first_name || "Non renseigné"}
+        </p>
                                     </div>
-                                    <div>
+                                    <div key={`lastname-${forceRender}`}>
                                         <Label className="text-sm font-medium text-gray-500">Nom</Label>
-                                        <p className="mt-1 text-sm text-gray-900">{profile?.last_name || "Non renseigné"}</p>
+        <p className="mt-1 text-sm text-gray-900">
+          {profile?.last_name || "Non renseigné"}
+        </p>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-gray-500">Email</Label>
@@ -200,9 +236,11 @@ const Profile = () => {
                                             {profile?.birth_date ? new Date(profile.birth_date).toLocaleDateString('fr-FR') : "Non renseigné"}
                                         </p>
                                     </div>
-                                    <div>
+                                    <div key={`phone-${forceRender}`}>
                                         <Label className="text-sm font-medium text-gray-500">Téléphone</Label>
-                                        <p className="mt-1 text-sm text-gray-900">{profile?.phone || "Non renseigné"}</p>
+        <p className="mt-1 text-sm text-gray-900">
+          {profile?.phone || "Non renseigné"}
+        </p>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-gray-500">Numéro de téléphone</Label>
@@ -244,7 +282,7 @@ const Profile = () => {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <DocumentsSection userId={user?.id} />
+                                    <DocumentsSection userId={user?.id || ''} />
                                 </CardContent>
                             </Card>
                             {/* Portail client Stripe */}

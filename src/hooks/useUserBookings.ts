@@ -82,10 +82,13 @@ export function useUserBookings() {
         throw new Error(bookingsResponse.error || 'Erreur lors du chargement des réservations');
       }
 
-      if (!bookingsResponse.data || bookingsResponse.data.length === 0) {
+      // S'assurer que les données sont un tableau
+      const bookingsData = Array.isArray(bookingsResponse.data) ? bookingsResponse.data : [];
+      
+      if (bookingsData.length === 0) {
         globalState.bookings = [];
       } else {
-        globalState.bookings = bookingsResponse.data;
+        globalState.bookings = bookingsData;
       }
 
       globalState.loading = false;

@@ -67,15 +67,18 @@ export function useDashboard() {
       
       const bookings = bookingsResponse.data;
       
+      // S'assurer que bookings est un tableau
+      const bookingsArray = Array.isArray(bookings) ? bookings : [];
+      
       // Filtrer les réservations à venir (date de fin > maintenant)
       const now = new Date();
-      const upcomingBookings = bookings?.filter(b => {
+      const upcomingBookings = bookingsArray.filter(b => {
         const endTime = new Date(b.end_date);
         return endTime > now;
-      }) || [];
+      });
       
       setStats({
-        totalBookings: bookings?.length || 0,
+        totalBookings: bookingsArray.length,
         upcomingBookings: upcomingBookings.length,
         recentActivities: upcomingBookings.slice(0, 5).map(b => ({
           id: b.id,

@@ -1,6 +1,6 @@
 import { withRetry } from "./supabaseUtils";
-import { supabase } from "@/integrations/supabase/client";
 import { loadStripe } from "@stripe/stripe-js";
+import { apiClient } from "@/lib/api-client";
 
 /**
  * Crée une session de paiement Stripe et retourne l'URL de redirection
@@ -139,23 +139,16 @@ export const createStripeCustomerPortal = async (
       }
     }
     
-    // 2. Si pas de token dans localStorage, essayer getSession avec timeout
+    // 2. Si pas de token dans localStorage, utiliser l'API client
     if (!accessToken) {
       try {
-        console.log('[Stripe] Tentative de récupération du token via getSession...');
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout getSession')), 3000)
-        );
-        
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
-        
-        if (session) {
-          accessToken = session.access_token;
-          console.log('[Stripe] Token récupéré via getSession');
-        }
+        console.log('[Stripe] Tentative de récupération du token via API client...');
+        // L'API client gère automatiquement l'authentification
+        // Pas besoin de récupérer le token manuellement
+        accessToken = 'authenticated'; // Marqueur pour indiquer que l'utilisateur est authentifié
+        console.log('[Stripe] Utilisateur authentifié via API client');
       } catch (error) {
-        console.warn('[Stripe] Erreur lors de la récupération du token via getSession:', error);
+        console.warn('[Stripe] Erreur lors de la récupération du token via API client:', error);
       }
     }
 
@@ -165,60 +158,22 @@ export const createStripeCustomerPortal = async (
 
     console.log('[Stripe] Token d\'authentification récupéré avec succès');
 
-    // Utiliser la fonction Edge Supabase avec authentification
-    const edgeUrl = import.meta.env.PROD
-      ? '/functions/v1/create-customer-portal'
-      : 'https://exffryodynkyizbeesbt.functions.supabase.co/create-customer-portal';
+    // Utiliser l'API backend avec authentification
+    console.log('[Stripe] Appel API backend pour créer le portail client...');
     
-    console.log('[Stripe] URL Edge utilisée :', edgeUrl);
-
-    // S'assurer que les données sont bien sérialisées
-    const requestBody = {
+    const response = await apiClient.post('/stripe/create-customer-portal', {
       customerEmail,
       returnUrl,
       isAdmin
-    };
-
-    console.log('[Stripe] Données envoyées:', JSON.stringify(requestBody));
-
-    const response = await fetch(edgeUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(requestBody),
     });
 
-    console.log('[Stripe] Statut HTTP de la réponse :', response.status);
-    console.log('[Stripe] Headers de la réponse :', Object.fromEntries(response.headers.entries()));
+    console.log('[Stripe] Réponse de l\'API :', response);
 
-    if (!response.ok) {
-      let errorMessage = 'Erreur lors de la création du portail client';
-      
-      try {
-        const errorText = await response.text();
-        console.log('[Stripe] Réponse d\'erreur brute :', errorText);
-        
-        // Essayer de parser comme JSON
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-          if (errorData.details) {
-            errorMessage += ` - ${errorData.details}`;
-          }
-        } catch (parseError) {
-          // Si ce n'est pas du JSON, utiliser le texte brut
-          errorMessage = errorText || errorMessage;
-        }
-      } catch (textError) {
-        console.error('[Stripe] Erreur lors de la lecture de la réponse d\'erreur:', textError);
-      }
-      
-      throw new Error(errorMessage);
+    if (!response.success) {
+      throw new Error(response.error || 'Erreur lors de la création du portail client');
     }
 
-    const data = await response.json();
+    const data = response.data;
     console.log('[Stripe] Portail client créé avec succès :', data);
     return data;
 

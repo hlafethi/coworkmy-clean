@@ -34,9 +34,9 @@ class ApiClient {
     
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (this.token) {
@@ -72,30 +72,35 @@ class ApiClient {
       body: JSON.stringify({ email, password }),
     });
 
-    if (result.data) {
-      this.token = result.data.token;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('coworkmy-token', this.token);
+      if (result.data && result.data.token) {
+        this.token = result.data.token;
+        if (typeof window !== 'undefined' && this.token) {
+          localStorage.setItem('coworkmy-token', this.token);
+        }
       }
-    }
 
     return result;
   }
 
   async signUp(email: string, password: string, fullName?: string) {
-    const result = await this.request('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, full_name: fullName }),
-    });
+    try {
+      const result = await this.request('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, full_name: fullName }),
+      });
 
-    if (result.data) {
-      this.token = result.data.token;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('coworkmy-token', this.token);
+      if (result.success && result.data && result.data.token) {
+        this.token = result.data.token;
+        if (typeof window !== 'undefined' && this.token) {
+          localStorage.setItem('coworkmy-token', this.token);
+        }
       }
-    }
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error('Erreur signUp API client:', error);
+      return { success: false, error: 'Erreur de connexion' };
+    }
   }
 
   async getCurrentUser() {
@@ -137,7 +142,7 @@ class ApiClient {
 
   // Espaces
   async getSpaces() {
-    return this.request('/spaces');
+    return this.request('/spaces/active');
   }
 
   async createSpace(spaceData: any) {

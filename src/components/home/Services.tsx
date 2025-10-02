@@ -11,22 +11,74 @@ interface Space {
   description: string | null;
   image_url: string | null;
   is_active: boolean;
+  pricing_type: string;
+  hourly_price: number;
+  daily_price: number;
+  monthly_price: number;
+  half_day_price: number;
+  quarter_price: number;
+  yearly_price: number;
+  custom_price: number;
+  custom_label: string | null;
 }
 
 const Services = () => {
+  // Fonction pour formater les tarifs
+  const formatPrice = (space: Space) => {
+    const prices = {
+      hourly: space.hourly_price,
+      daily: space.daily_price,
+      monthly: space.monthly_price,
+      halfDay: space.half_day_price,
+      quarter: space.quarter_price,
+      yearly: space.yearly_price,
+      custom: space.custom_price
+    };
+
+    // Trouver le prix non-nul le plus bas
+    const nonZeroPrices = Object.entries(prices)
+      .filter(([_, price]) => price && price > 0)
+      .map(([type, price]) => ({ type, price: Number(price) }))
+      .sort((a, b) => a.price - b.price);
+
+    if (nonZeroPrices.length === 0) return 'Prix sur demande';
+
+    const lowestPrice = nonZeroPrices[0];
+    
+    // Formater le prix selon le type
+    switch (lowestPrice.type) {
+      case 'hourly':
+        return `À partir de ${lowestPrice.price}€/h`;
+      case 'daily':
+        return `À partir de ${lowestPrice.price}€/jour`;
+      case 'monthly':
+        return `À partir de ${lowestPrice.price}€/mois`;
+      case 'halfDay':
+        return `À partir de ${lowestPrice.price}€/demi-journée`;
+      case 'quarter':
+        return `À partir de ${lowestPrice.price}€/trimestre`;
+      case 'yearly':
+        return `À partir de ${lowestPrice.price}€/an`;
+      case 'custom':
+        return space.custom_label || `À partir de ${lowestPrice.price}€`;
+      default:
+        return `À partir de ${lowestPrice.price}€`;
+    }
+  };
+
   const { data: spaces, isLoading } = useQuery({
     queryKey: ["available-spaces"],
     queryFn: async () => {
       console.log('🔄 Chargement des espaces...');
       
-      const response = await apiClient.get('/spaces');
+      const response = await apiClient.get('/spaces/active');
       
       if (!response.success) {
         console.error('❌ Erreur chargement espaces:', response.error);
         throw new Error(response.error || 'Erreur lors du chargement des espaces');
       }
       
-      // Filtrer seulement les espaces actifs
+      // Les espaces sont déjà filtrés (actifs uniquement)
       const activeSpaces = response.data.filter((space: Space) => space.is_active);
       console.log('✅ Espaces chargés:', activeSpaces);
       return activeSpaces as Space[];
@@ -91,9 +143,25 @@ const Services = () => {
                   <CardTitle>{space.name}</CardTitle>
                   <CardDescription>{space.description}</CardDescription>
                 </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary mb-2">
+                      {formatPrice(space)}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {space.pricing_type === 'hourly' && 'Tarif horaire'}
+                      {space.pricing_type === 'daily' && 'Tarif journalier'}
+                      {space.pricing_type === 'monthly' && 'Tarif mensuel'}
+                      {space.pricing_type === 'half_day' && 'Tarif demi-journée'}
+                      {space.pricing_type === 'quarter' && 'Tarif trimestriel'}
+                      {space.pricing_type === 'yearly' && 'Tarif annuel'}
+                      {space.pricing_type === 'custom' && 'Tarif personnalisé'}
+                    </div>
+                  </div>
+                </CardContent>
                 <CardFooter className="mt-auto">
                   <Button className="w-full" asChild>
-                    <Link to="/booking">Réserver</Link>
+                    <Link to={`/booking/${space.id}`}>Réserver</Link>
                   </Button>
                 </CardFooter>
               </Card>

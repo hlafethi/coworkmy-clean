@@ -104,8 +104,9 @@ export function AllBookings() {
     return status.toLowerCase() !== "cancelled" && status.toLowerCase() !== "completed";
   };
 
-  // Trier les réservations : futures en premier, puis par date de création
-  const sortedBookings = bookings.sort((a, b) => {
+  // S'assurer que bookings est un tableau et le trier
+  const bookingsArray = Array.isArray(bookings) ? bookings : [];
+  const sortedBookings = bookingsArray.sort((a, b) => {
     const aEndTime = new Date(a.end_time);
     const bEndTime = new Date(b.end_time);
     const now = new Date();

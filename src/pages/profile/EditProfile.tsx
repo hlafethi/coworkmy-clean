@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, User, Building2, MapPin, Camera } from "lucide-react";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
-import AvatarUpload from "@/components/profile/AvatarUpload";
-import LogoUpload from "@/components/profile/LogoUpload";
+import { AvatarUploadSimple } from "@/components/profile/AvatarUploadSimple";
+import { LogoUploadSimple } from "@/components/profile/LogoUploadSimple";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -25,6 +25,7 @@ const EditProfile = () => {
     phone_number: "",
     company: "",
     company_name: "",
+    city: "",
     address: "",
     address_street: "",
     address_city: "",
@@ -57,6 +58,7 @@ const EditProfile = () => {
         phone_number: authProfile.phone_number || "",
         company: authProfile.company || "",
         company_name: authProfile.company_name || "",
+        city: authProfile.city || "",
         address: authProfile.address || "",
         address_street: authProfile.address_street || "",
         address_city: authProfile.address_city || "",
@@ -93,6 +95,7 @@ const EditProfile = () => {
         phone_number: formData.phone_number,
         company: formData.company,
         company_name: formData.company_name,
+        city: formData.city,
         address: formData.address,
         address_street: formData.address_street,
         address_city: formData.address_city,
@@ -102,15 +105,18 @@ const EditProfile = () => {
         presentation: formData.presentation,
         profile_picture: formData.profile_picture,
         logo_url: formData.logo_url,
-        avatar_url: formData.avatar_url,
-        updated_at: new Date().toISOString()
+        avatar_url: formData.avatar_url
       };
 
       const result = await apiClient.put(`/users/${user.id}`, updateData);
 
       if (!result.success) {
-        console.error("Error updating profile:", result.error);
-        toast.error("Erreur lors de la mise à jour du profil");
+        if (result.error === 'Token invalide' || result.error === 'Accès non autorisé') {
+          toast.error("Session expirée. Veuillez vous reconnecter.");
+          navigate("/auth/login");
+          return;
+        }
+        toast.error(`Erreur lors de la mise à jour du profil: ${result.error}`);
         return;
       }
 
@@ -186,20 +192,12 @@ const EditProfile = () => {
             </Button>
             <h1 className="text-2xl font-bold">Modifier le profil</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/profile")}
-            >
-              Annuler
-            </Button>
-            <Button 
-              onClick={handleSubmit}
-              disabled={saving}
-            >
-              {saving ? "Enregistrement..." : "Enregistrer"}
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/profile")}
+          >
+            Annuler
+          </Button>
         </div>
       </div>
       
@@ -216,7 +214,7 @@ const EditProfile = () => {
             </CardHeader>
             <CardContent>
               {user && (
-                <AvatarUpload
+                <AvatarUploadSimple
                   currentAvatarUrl={formData.avatar_url}
                   userId={user.id}
                   onAvatarUpdated={handleAvatarUpdated}
@@ -235,7 +233,7 @@ const EditProfile = () => {
             </CardHeader>
             <CardContent>
               {user && (
-                <LogoUpload
+                <LogoUploadSimple
                   currentLogoUrl={formData.logo_url}
                   userId={user.id}
                   onLogoUpdated={handleLogoUpdated}
@@ -263,6 +261,7 @@ const EditProfile = () => {
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -272,6 +271,7 @@ const EditProfile = () => {
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -282,6 +282,7 @@ const EditProfile = () => {
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -325,6 +326,22 @@ const EditProfile = () => {
                   placeholder="Parlez-nous de vous..."
                 />
               </div>
+              
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/profile")}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={saving}
+                >
+                  {saving ? "Enregistrement..." : "Enregistrer"}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -354,6 +371,15 @@ const EditProfile = () => {
                   id="company_name"
                   name="company_name"
                   value={formData.company_name}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Ville</Label>
+                <Input
+                  id="city"
+                  name="city"
+                  value={formData.city}
                   onChange={handleChange}
                 />
               </div>

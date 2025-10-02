@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -16,16 +16,15 @@ const Spaces = () => {
   useEffect(() => {
     const fetchSpaces = async () => {
       try {
-        const { data, error } = await supabase
-          .from("spaces")
-          .select("*")
-          .eq("is_active", true);
-
-        if (error) {
-          throw error;
+        console.log('🔄 Chargement des espaces depuis l\'API...');
+        const response = await apiClient.get('/spaces/active');
+        
+        if (!response.success) {
+          throw new Error(response.error || 'Erreur lors du chargement des espaces');
         }
 
-        setSpaces(data || []);
+        console.log('✅ Espaces chargés:', response.data?.length || 0);
+        setSpaces(response.data || []);
       } catch (error) {
         console.error("Erreur lors de la récupération des espaces:", error);
         toast.error("Une erreur s'est produite lors du chargement des espaces");

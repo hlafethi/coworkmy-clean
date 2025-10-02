@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContextPostgreSQL';
 import { SupportService } from '@/services/supportService';
 import { 
   FileQuestion, 
@@ -66,6 +66,7 @@ export const SupportSystem = () => {
   // États pour la documentation
   const [kbArticles, setKbArticles] = useState<any[]>([]);
   const [isLoadingKb, setIsLoadingKb] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
 
   // Charger les tickets de l'utilisateur
   const loadUserTickets = useCallback(async () => {
@@ -73,8 +74,8 @@ export const SupportSystem = () => {
     
     setIsLoadingTickets(true);
     try {
-      const tickets = await SupportService.getTickets();
-      setUserTickets(tickets);
+      const tickets = await SupportService.getUserTickets();
+      setUserTickets(Array.isArray(tickets) ? tickets : []);
     } catch (error) {
       console.error('Erreur chargement tickets:', error);
       toast.error('Erreur lors du chargement des tickets');
@@ -114,8 +115,8 @@ export const SupportSystem = () => {
   const loadKbArticles = useCallback(async () => {
     setIsLoadingKb(true);
     try {
-      const kbData = await SupportService.getKbArticles();
-      setKbArticles(kbData);
+      const articles = await SupportService.getKBArticles();
+      setKbArticles(articles);
     } catch (error) {
       console.error('Erreur chargement documentation:', error);
     } finally {
@@ -329,7 +330,7 @@ export const SupportSystem = () => {
                   <div className="flex justify-center items-center h-32">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : userTickets.length === 0 ? (
+                ) : !Array.isArray(userTickets) || userTickets.length === 0 ? (
                   <div className="text-center text-gray-500 py-8">
                     <LifeBuoy className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                     <p>Aucun ticket créé</p>
@@ -452,15 +453,70 @@ export const SupportSystem = () => {
                     <p>Aucune documentation disponible pour le moment</p>
                     <p className="text-sm mt-2">Notre équipe prépare la documentation complète.</p>
                   </div>
+                ) : selectedArticle ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setSelectedArticle(null)}
+                      >
+                        ← Retour à la liste
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg p-6">
+                      <h2 className="text-2xl font-bold mb-4">{selectedArticle.title}</h2>
+                      <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                        <span>Catégorie: {selectedArticle.category}</span>
+                        {selectedArticle.author_name && (
+                          <span>Auteur: {selectedArticle.author_name}</span>
+                        )}
+                        <span>Publié le: {new Date(selectedArticle.created_at).toLocaleDateString('fr-FR')}</span>
+                      </div>
+                      <div className="prose max-w-none">
+                        <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                          {selectedArticle.content}
+                        </div>
+                      </div>
+                      {selectedArticle.tags && selectedArticle.tags.length > 0 && (
+                        <div className="mt-6 pt-4 border-t">
+                          <div className="flex flex-wrap gap-2">
+                            {selectedArticle.tags.map((tag: string, index: number) => (
+                              <Badge key={index} variant="secondary">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div className="grid gap-4">
                     {kbArticles.map((article) => (
-                      <div key={article.id} className="border rounded-lg p-4">
+                      <div key={article.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <h3 className="font-semibold text-lg mb-2">{article.title}</h3>
-                        <p className="text-gray-600 mb-3">{article.description}</p>
-                        <Button variant="outline" size="sm">
-                          Lire l'article
-                        </Button>
+                        <p className="text-gray-600 mb-3 line-clamp-2">
+                          {article.content.substring(0, 150)}...
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{article.category}</span>
+                            {article.author_name && (
+                              <>
+                                <span>•</span>
+                                <span>{article.author_name}</span>
+                              </>
+                            )}
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedArticle(article)}
+                          >
+                            Lire l'article
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

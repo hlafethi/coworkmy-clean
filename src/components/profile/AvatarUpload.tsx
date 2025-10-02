@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { createStorageClient } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Upload, Loader2 } from 'lucide-react';
@@ -146,8 +147,10 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
     }
   };
 
-  const getInitials = (userId: string) => {
-    return userId.substring(0, 2).toUpperCase();
+  const getInitials = (userId: string | number) => {
+    if (!userId) return 'U';
+    const userIdStr = String(userId);
+    return userIdStr.substring(0, 2).toUpperCase();
   };
 
   return (

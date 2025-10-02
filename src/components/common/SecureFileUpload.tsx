@@ -36,6 +36,7 @@ interface SecureFileUploadProps {
   maxSize?: number;
   documentType?: string;
   className?: string;
+  userId?: string;
 }
 
 interface UploadingFile {
@@ -50,8 +51,9 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
   onFileUploaded,
   acceptedTypes = ALLOWED_EXTENSIONS,
   maxSize = 10 * 1024 * 1024, // 10MB par défaut
-  documentType = 'general',
-  className = ''
+  documentType = 'other',
+  className = '',
+  userId
 }) => {
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -126,25 +128,40 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
     const { file } = uploadingFile;
     
     try {
-      // Pour l'instant, simuler un upload réussi avec des données par défaut
-      // Dans un vrai système, vous utiliseriez votre propre service de stockage
       updateFileStatus(index, 'uploading', 80);
 
-      // Convertir le fichier en base64 pour le stockage
+      // Convertir le fichier en base64 pour l'API
       const base64Data = await fileToBase64(file);
-      const fileUrl = `data:${file.type};base64,${base64Data}`;
 
-      // Simuler l'enregistrement en base de données
-      const documentData = {
-        id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        user_id: 'current_user', // Sera remplacé par l'ID réel de l'utilisateur
+      // Appel API pour sauvegarder le document
+      console.log('🔍 SecureFileUpload - documentType reçu:', documentType, 'Type:', typeof documentType);
+      
+      const response = await apiClient.post(`/users/${userId}/documents`, {
         file_name: file.name,
-        file_size: file.size,
         file_type: file.type,
-        file_url: fileUrl,
-        document_type: documentType,
-        uploaded_at: new Date().toISOString()
-      };
+        file_size: file.size,
+        file_content: base64Data,
+        document_type: documentType
+      });
+      
+      console.log('🔍 SecureFileUpload - document_type envoyé:', documentType);
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors de l\'upload');
+      }
+
+      updateFileStatus(index, 'completed', 100);
+      
+      // Notifier le parent avec les données du serveur
+      onFileUploaded({
+        id: response.data.id,
+        file_url: response.data.file_path, // Le serveur retourne file_path
+        file_name: response.data.file_name,
+        file_size: response.data.file_size,
+        file_type: response.data.file_type
+      });
+
+      toast.success(`Fichier "${file.name}" uploadé avec succès`);
 
       // Fonction utilitaire pour convertir le fichier en base64
       function fileToBase64(file: File): Promise<string> {
@@ -158,19 +175,6 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
           reader.onerror = error => reject(error);
         });
       }
-
-      updateFileStatus(index, 'completed', 100);
-      
-      // Notifier le parent
-      onFileUploaded({
-        id: documentData.id,
-        file_url: documentData.file_url,
-        file_name: documentData.file_name,
-        file_size: documentData.file_size,
-        file_type: documentData.file_type
-      });
-
-      toast.success(`Fichier "${file.name}" uploadé avec succès`);
 
     } catch (error: any) {
       console.error('Erreur lors de l\'upload:', error);
