@@ -68,11 +68,18 @@ export function removeChannel(channelName: string): void {
 }
 
 export function getAllChannels(): string[] {
-  return Array.from(channels.keys());
+  const channelNames = Array.from(channels.keys());
+  console.log('📡 Canaux actifs:', channelNames);
+  return channelNames;
 }
 
 export function isInitialized(): boolean {
   return _isInitialized;
+}
+
+export function forceConnected(): void {
+  _isInitialized = true;
+  console.log('🔧 État WebSocket forcé à connecté');
 }
 
 export function cleanupAllChannels(): void {

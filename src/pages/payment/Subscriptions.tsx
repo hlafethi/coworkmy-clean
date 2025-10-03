@@ -59,4 +59,5 @@ export default function Subscriptions() {
       </div>
     </div>
   );
+
 }

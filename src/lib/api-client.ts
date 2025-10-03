@@ -108,8 +108,24 @@ class ApiClient {
   }
 
   // Méthode générique GET
-  async get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'GET' });
+  async get<T = any>(endpoint: string, options?: { params?: Record<string, any> }): Promise<ApiResponse<T>> {
+    let url = endpoint;
+    
+    // Ajouter les paramètres de requête si fournis
+    if (options?.params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+    
+    return this.request<T>(url, { method: 'GET' });
   }
 
   // Méthode générique POST

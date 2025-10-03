@@ -4,8 +4,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Users, Building2, Calendar, DollarSign } from "lucide-react";
 
-export const AdminStats = () => {
-    const { stats, loading, error } = useAdminStats();
+interface AdminStatsProps {
+    mode: 'test' | 'live' | 'all';
+}
+
+export const AdminStats = ({ mode }: AdminStatsProps) => {
+    const { stats, loading, error } = useAdminStats(mode);
+    
+    console.log('🔍 AdminStats rendu avec mode:', mode);
+    console.log('🔍 AdminStats - stats:', stats);
+    console.log('🔍 AdminStats - loading:', loading);
+    console.log('🔍 AdminStats - error:', error);
 
     // Fonction utilitaire pour formater les nombres
     const formatNumber = (num: number | null | undefined): string => {
@@ -111,13 +120,22 @@ export const AdminStats = () => {
     );
 
     // Affichage conditionnel
+    console.log('🔍 AdminStats - État du rendu:');
+    console.log('  - loading:', loading);
+    console.log('  - error:', error);
+    console.log('  - stats:', stats);
+    console.log('  - stats existe:', !!stats);
+    
     if (loading) {
+        console.log('🔍 AdminStats - Affichage du skeleton de chargement');
         return <LoadingSkeleton />;
     }
 
     if (error) {
+        console.log('🔍 AdminStats - Affichage de l\'erreur:', error);
         return <ErrorDisplay />;
     }
 
+    console.log('🔍 AdminStats - Affichage des statistiques');
     return <StatsDisplay />;
 }; 

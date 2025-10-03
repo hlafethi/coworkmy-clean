@@ -57,9 +57,9 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
       <div className="flex min-h-screen w-full">
         <Sidebar>
           <SidebarHeader>
-            <div className="px-3 py-2">
-              <h2 className="text-xl font-bold text-primary">Administration</h2>
-              <p className="text-sm text-gray-500">Gestion du coworking</p>
+            <div className="px-2 py-2">
+              <h2 className="text-lg font-bold text-primary">Admin</h2>
+              <p className="text-xs text-gray-500">Coworking</p>
             </div>
           </SidebarHeader>
           <SidebarContent>
@@ -71,16 +71,18 @@ export const AdminLayout = ({ children, title }: AdminLayoutProps) => {
                 <SidebarMenuButton 
                   onClick={() => navigate("/dashboard")}
                   tooltip="Retour"
+                  className="text-xs"
                 >
-                  <span>Retour au compte</span>
+                  <span>Retour</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={handleLogout}
                   tooltip="Déconnexion"
+                  className="text-xs"
                 >
-                  <LogOut />
+                  <LogOut className="h-4 w-4" />
                   <span>Déconnexion</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

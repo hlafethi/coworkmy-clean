@@ -18,6 +18,7 @@ export interface AdminStats {
     bookings_count: number;
   }>;
   recent_bookings: any[];
+  mode: 'test' | 'live';
 }
 
 export interface AdminStatsState {
@@ -25,6 +26,7 @@ export interface AdminStatsState {
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
+  mode: 'test' | 'live';
 }
 
 const DEFAULT_STATS: AdminStats = {
@@ -37,15 +39,17 @@ const DEFAULT_STATS: AdminStats = {
   total_revenue: 0,
   monthly_revenue: 0,
   popular_spaces: [],
-  recent_bookings: []
+  recent_bookings: [],
+  mode: 'test'
 };
 
-export const useAdminStats = () => {
+export const useAdminStats = (mode: 'test' | 'live' = 'test') => {
   const [state, setState] = useState<AdminStatsState>({
     data: null,
     loading: true,
     error: null,
-    lastUpdated: null
+    lastUpdated: null,
+    mode
   });
 
   const retryCountRef = useRef(0);
@@ -61,30 +65,36 @@ export const useAdminStats = () => {
         updateState({ loading: true, error: null });
       }
 
-      logger.log('📊 Chargement des statistiques admin (mode PostgreSQL)...');
+      logger.log(`📊 Chargement des statistiques admin (mode: ${mode})...`);
       
-      // Données par défaut pour PostgreSQL
-      const defaultStats: AdminStats = {
-        total_users: 1,
-        active_users: 1,
-        total_spaces: 0,
-        available_spaces: 0,
-        total_bookings: 0,
-        active_bookings: 0,
-        total_revenue: 0,
-        monthly_revenue: 0,
-        popular_spaces: [],
-        recent_bookings: []
-      };
-
-      updateState({
-        data: defaultStats,
-        loading: false,
-        error: null,
-        lastUpdated: new Date()
+      // Récupérer les vraies données depuis l'API
+      console.log(`🔍 Appel API /admin/stats avec mode: ${mode}`);
+      const response = await apiClient.get('/admin/stats', {
+        params: { mode }
       });
 
-      retryCountRef.current = 0; // Reset du compteur en cas de succès
+      console.log('🔍 Réponse API:', response);
+
+      if (response.success && response.data) {
+        const statsData: AdminStats = {
+          ...response.data,
+          mode
+        };
+
+        console.log('✅ Données statistiques récupérées:', statsData);
+
+        updateState({
+          data: statsData,
+          loading: false,
+          error: null,
+          lastUpdated: new Date()
+        });
+
+        retryCountRef.current = 0; // Reset du compteur en cas de succès
+      } else {
+        console.error('❌ Erreur réponse API:', response);
+        throw new Error(response.error || 'Erreur lors de la récupération des statistiques');
+      }
 
     } catch (error) {
       logger.error('❌ Erreur lors du chargement des statistiques:', error);
@@ -103,12 +113,12 @@ export const useAdminStats = () => {
         updateState({
           error: errorMessage,
           loading: false,
-          data: DEFAULT_STATS
+          data: { ...DEFAULT_STATS, mode }
         });
         retryCountRef.current = 0;
       }
     }
-  }, [updateState]);
+  }, [updateState, mode]);
 
   useEffect(() => {
     fetchStats();
