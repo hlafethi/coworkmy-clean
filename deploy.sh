@@ -1,109 +1,78 @@
 #!/bin/bash
 
-# Script de déploiement pour CoWorkMy
-# Usage: ./deploy.sh [production|staging]
+# Script de déploiement pour CoworkMy
+# Usage: ./deploy.sh
 
 set -e
 
-ENVIRONMENT=${1:-production}
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BUILD_DIR="dist"
-BACKUP_DIR="backups/${ENVIRONMENT}_${TIMESTAMP}"
+echo "🚀 Déploiement de CoworkMy sur VPS"
+echo "=================================="
 
-echo "🚀 Déploiement CoWorkMy - Environnement: $ENVIRONMENT"
-echo "⏰ Timestamp: $TIMESTAMP"
-echo ""
-
-# Vérification des prérequis
-echo "📋 Vérification des prérequis..."
-if ! command -v npm &> /dev/null; then
-    echo "❌ npm n'est pas installé"
+# Vérifier que Docker est installé
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker n'est pas installé. Veuillez l'installer d'abord."
     exit 1
 fi
 
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js n'est pas installé"
+# Vérifier que Docker Compose est installé
+if ! command -v docker-compose &> /dev/null; then
+    echo "❌ Docker Compose n'est pas installé. Veuillez l'installer d'abord."
     exit 1
 fi
 
-echo "✅ Prérequis vérifiés"
-echo ""
-
-# Nettoyage et installation des dépendances
-echo "📦 Installation des dépendances..."
-npm ci --silent
-echo "✅ Dépendances installées"
-echo ""
-
-# Build de l'application
-echo "🔨 Build de l'application..."
-npm run build
-echo "✅ Build terminé"
-echo ""
-
-# Vérification des fichiers de configuration
-echo "🔍 Vérification des fichiers de configuration..."
-if [ ! -f "$BUILD_DIR/.htaccess" ]; then
-    echo "❌ Fichier .htaccess manquant"
+# Vérifier que le fichier .env.production existe
+if [ ! -f "env.production" ]; then
+    echo "❌ Le fichier env.production n'existe pas."
+    echo "📝 Créez le fichier env.production avec vos vraies clés."
     exit 1
 fi
 
-if [ ! -f "$BUILD_DIR/web.config" ]; then
-    echo "❌ Fichier web.config manquant"
-    exit 1
-fi
-
-if [ ! -f "$BUILD_DIR/index.html" ]; then
-    echo "❌ Fichier index.html manquant"
-    exit 1
-fi
-
-echo "✅ Fichiers de configuration vérifiés"
+echo "📋 Étapes de déploiement :"
+echo "1. Arrêt des conteneurs existants"
+echo "2. Construction de l'image Docker"
+echo "3. Démarrage des services"
+echo "4. Vérification du déploiement"
 echo ""
 
-# Création du backup si nécessaire
-if [ "$ENVIRONMENT" = "production" ]; then
-    echo "💾 Création du backup..."
-    mkdir -p backups
-    if [ -d "public_html" ]; then
-        cp -r public_html "$BACKUP_DIR"
-        echo "✅ Backup créé: $BACKUP_DIR"
-    else
-        echo "⚠️  Aucun dossier public_html trouvé pour le backup"
-    fi
-    echo ""
-fi
+# Arrêter les conteneurs existants
+echo "🛑 Arrêt des conteneurs existants..."
+docker-compose down --remove-orphans || true
 
-# Statistiques du build
-echo "📊 Statistiques du build:"
-echo "   - Taille totale: $(du -sh $BUILD_DIR | cut -f1)"
-echo "   - Nombre de fichiers: $(find $BUILD_DIR -type f | wc -l)"
-echo "   - Assets JS: $(find $BUILD_DIR/assets -name "*.js" | wc -l)"
-echo "   - Assets CSS: $(find $BUILD_DIR/assets -name "*.css" | wc -l)"
-echo ""
+# Construire l'image
+echo "🔨 Construction de l'image Docker..."
+docker-compose build --no-cache
 
-# Instructions de déploiement
-echo "🎯 Instructions de déploiement:"
-echo ""
-echo "1. Copiez le contenu du dossier '$BUILD_DIR' vers votre serveur web"
-echo "2. Assurez-vous que les fichiers .htaccess et web.config sont présents"
-echo "3. Configurez votre serveur pour servir les fichiers statiques"
-echo "4. Testez l'application en production"
-echo ""
-echo "📁 Dossier de build: $BUILD_DIR"
-echo "🔧 Fichiers de configuration:"
-echo "   - .htaccess (Apache)"
-echo "   - web.config (IIS)"
-echo ""
+# Démarrer les services
+echo "🚀 Démarrage des services..."
+docker-compose up -d
 
-# Vérification de la sécurité
-echo "🔒 Vérification de la sécurité..."
-if grep -q "console.log" $BUILD_DIR/assets/*.js; then
-    echo "⚠️  Attention: Des console.log sont présents dans le build"
+# Attendre que les services soient prêts
+echo "⏳ Attente du démarrage des services..."
+sleep 30
+
+# Vérifier le statut des conteneurs
+echo "📊 Statut des conteneurs :"
+docker-compose ps
+
+# Vérifier la connectivité
+echo "🔍 Vérification de la connectivité..."
+if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+    echo "✅ Application accessible sur http://localhost:3000"
 else
-    echo "✅ Aucun console.log détecté dans le build"
+    echo "❌ Application non accessible. Vérifiez les logs :"
+    docker-compose logs coworkmy-app
 fi
 
 echo ""
-echo "✅ Déploiement préparé avec succès!"
-echo "🚀 Prêt pour le déploiement en $ENVIRONMENT" 
+echo "🎉 Déploiement terminé !"
+echo ""
+echo "📋 Prochaines étapes :"
+echo "1. Configurez Nginx Proxy Manager pour le domaine coworkmy.fr"
+echo "2. Configurez SSL avec Let's Encrypt"
+echo "3. Testez l'application sur https://coworkmy.fr"
+echo ""
+echo "🔧 Commandes utiles :"
+echo "- Voir les logs : docker-compose logs -f"
+echo "- Redémarrer : docker-compose restart"
+echo "- Arrêter : docker-compose down"
+echo "- Mettre à jour : git pull && docker-compose up -d --build"

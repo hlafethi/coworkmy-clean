@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Application CoworkMy
+  coworkmy-app:
+    build: .
+    container_name: coworkmy-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=coworkmy
+      - DB_USER=coworkmy_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=true
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=587
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - ALLOWED_ORIGINS=https://coworkmy.fr,https://www.coworkmy.fr
+      - FRONTEND_URL=https://coworkmy.fr
+    depends_on:
+      - postgres
+    networks:
+      - coworkmy-network
+    ports:
+      - "3000:3000"
+
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: coworkmy-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=coworkmy
+      - POSTGRES_USER=coworkmy_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - coworkmy-network
+    ports:
+      - "5432:5432"
+
+  # Redis pour les sessions (optionnel)
+  redis:
+    image: redis:7-alpine
+    container_name: coworkmy-redis
+    restart: unless-stopped
+    networks:
+      - coworkmy-network
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+
+networks:
+  coworkmy-network:
+    driver: bridge
