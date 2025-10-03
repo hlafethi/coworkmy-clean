@@ -965,11 +965,48 @@ app.get('/api/stripe/payments', authenticateToken, async (req, res) => {
     // Récupérer les paiements récents
     const payments = await stripeInstance.paymentIntents.list({
       limit: 50,
-      expand: ['data.customer', 'data.charges.data.balance_transaction']
+      expand: ['data.customer']
     });
 
-    console.log(`✅ ${payments.data.length} paiements récupérés`);
-    sendResponse(res, true, payments.data);
+    // Récupérer tous les remboursements récents
+    const allRefunds = await stripeInstance.refunds.list({
+      limit: 100
+    });
+
+    console.log(`🔍 Debug: ${allRefunds.data.length} remboursements trouvés au total`);
+
+    // Créer un map des remboursements par payment_intent
+    const refundsByPaymentIntent = {};
+    allRefunds.data.forEach(refund => {
+      if (refund.payment_intent) {
+        if (!refundsByPaymentIntent[refund.payment_intent]) {
+          refundsByPaymentIntent[refund.payment_intent] = [];
+        }
+        refundsByPaymentIntent[refund.payment_intent].push(refund);
+      }
+    });
+
+    // Pour chaque paiement, vérifier s'il a des remboursements
+    const paymentsWithRefundStatus = payments.data.map((payment) => {
+      const refunds = refundsByPaymentIntent[payment.id] || [];
+      const hasRefunds = refunds.length > 0;
+      
+      console.log(`🔍 Debug paiement ${payment.id}:`, {
+        status: payment.status,
+        refunds_count: refunds.length,
+        has_refunds: hasRefunds,
+        refund_ids: refunds.map(r => r.id)
+      });
+      
+      return {
+        ...payment,
+        has_refunds: hasRefunds,
+        refunds_data: refunds
+      };
+    });
+
+    console.log(`✅ ${paymentsWithRefundStatus.length} paiements récupérés`);
+    sendResponse(res, true, paymentsWithRefundStatus);
   } catch (error) {
     console.error('❌ Erreur récupération paiements Stripe:', error);
     sendResponse(res, false, null, `Erreur: ${error.message}`);

@@ -71,6 +71,7 @@ const AdminPayments = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<'all' | 'live' | 'test'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'succeeded' | 'failed' | 'processing' | 'refunded' | 'pending'>('all');
   const [filterEmail, setFilterEmail] = useState('');
   const [filterAmountMin, setFilterAmountMin] = useState('');
   const [filterAmountMax, setFilterAmountMax] = useState('');
@@ -96,22 +97,72 @@ const AdminPayments = () => {
       
       if (result.success && result.data) {
         // Convertir les données Stripe vers notre format
-        const paymentsData = Array.isArray(result.data) ? result.data.map((stripePayment: any) => ({
-          id: stripePayment.id,
-          booking_id: stripePayment.metadata?.booking_id || '',
-          amount: stripePayment.amount / 100, // Convertir de centimes en euros
-          status: stripePayment.status,
-          payment_method: stripePayment.payment_method_types?.[0] || 'card',
-          payment_intent_id: stripePayment.id,
-          invoice_url: stripePayment.charges?.data?.[0]?.receipt_url || null,
-          created_at: new Date(stripePayment.created * 1000).toISOString(),
-          updated_at: new Date(stripePayment.created * 1000).toISOString(),
-          currency: stripePayment.currency,
-          mode: 'test', // Pour l'instant, on assume que c'est en mode test
-          user_email: stripePayment.customer?.email || '',
-          description: stripePayment.description || '',
-          metadata: stripePayment.metadata
-        })) : [];
+        const paymentsData = Array.isArray(result.data) ? result.data.map((stripePayment: any) => {
+          // Debug: Log des données Stripe pour comprendre la structure
+          console.log('🔍 Debug paiement Stripe:', {
+            id: stripePayment.id,
+            status: stripePayment.status,
+            charges: stripePayment.charges?.data?.length || 0,
+            chargesData: stripePayment.charges?.data
+          });
+          
+          // Vérifier si le paiement a des remboursements
+          let hasRefunds = false;
+          
+          // Utiliser la nouvelle propriété has_refunds du backend
+          if (stripePayment.has_refunds === true) {
+            hasRefunds = true;
+            console.log('✅ Remboursements détectés via has_refunds:', stripePayment.id);
+          } else {
+            // Fallback: vérifier les charges (ancienne méthode)
+            if (stripePayment.charges?.data) {
+              for (const charge of stripePayment.charges.data) {
+                console.log('🔍 Debug charge:', {
+                  id: charge.id,
+                  refunded: charge.refunded,
+                  refunds: charge.refunds?.data?.length || 0,
+                  refundsData: charge.refunds?.data
+                });
+                
+                // Vérifier si la charge est remboursée
+                if (charge.refunded === true) {
+                  hasRefunds = true;
+                  break;
+                }
+                
+                // Vérifier s'il y a des remboursements dans les données
+                if (charge.refunds && charge.refunds.data && charge.refunds.data.length > 0) {
+                  hasRefunds = true;
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Déterminer le statut final
+          let finalStatus = stripePayment.status;
+          if (hasRefunds) {
+            finalStatus = 'refunded';
+            console.log('✅ Paiement remboursé détecté:', stripePayment.id);
+          }
+          
+          return {
+            id: stripePayment.id,
+            booking_id: stripePayment.metadata?.booking_id || '',
+            amount: stripePayment.amount / 100, // Convertir de centimes en euros
+            status: finalStatus,
+            payment_method: stripePayment.payment_method_types?.[0] || 'card',
+            payment_intent_id: stripePayment.id,
+            invoice_url: stripePayment.charges?.data?.[0]?.receipt_url || null,
+            created_at: new Date(stripePayment.created * 1000).toISOString(),
+            updated_at: new Date(stripePayment.created * 1000).toISOString(),
+            currency: stripePayment.currency,
+            mode: 'test', // Pour l'instant, on assume que c'est en mode test
+            user_email: stripePayment.customer?.email || '',
+            description: stripePayment.description || '',
+            metadata: stripePayment.metadata
+          };
+        }) : [];
         setPayments(paymentsData);
         console.log(`✅ ${paymentsData.length} paiements Stripe récupérés`);
       } else {
@@ -156,6 +207,7 @@ const AdminPayments = () => {
   // Filtrage avancé
   const filteredPayments = (Array.isArray(payments) ? payments : []).filter((p) => {
     if (filterMode !== 'all' && p.mode !== filterMode) return false;
+    if (filterStatus !== 'all' && p.status !== filterStatus) return false;
     if (filterEmail && !(p.user_email || '').toLowerCase().includes(filterEmail.toLowerCase())) return false;
     if (filterAmountMin && Number(p.amount) < Number(filterAmountMin)) return false;
     if (filterAmountMax && Number(p.amount) > Number(filterAmountMax)) return false;
@@ -225,6 +277,15 @@ const AdminPayments = () => {
             <Button variant={filterMode === 'all' ? 'default' : 'outline'} onClick={() => setFilterMode('all')}>Tous</Button>
             <Button variant={filterMode === 'live' ? 'default' : 'outline'} onClick={() => setFilterMode('live')}>Production</Button>
             <Button variant={filterMode === 'test' ? 'default' : 'outline'} onClick={() => setFilterMode('test')}>Test</Button>
+          </div>
+          <div className="flex gap-2 items-center mt-2 flex-wrap">
+            <span>Filtrer par statut :</span>
+            <Button variant={filterStatus === 'all' ? 'default' : 'outline'} onClick={() => setFilterStatus('all')}>Tous</Button>
+            <Button variant={filterStatus === 'succeeded' ? 'default' : 'outline'} onClick={() => setFilterStatus('succeeded')}>Réussi</Button>
+            <Button variant={filterStatus === 'failed' ? 'default' : 'outline'} onClick={() => setFilterStatus('failed')}>Échoué</Button>
+            <Button variant={filterStatus === 'processing' ? 'default' : 'outline'} onClick={() => setFilterStatus('processing')}>En cours</Button>
+            <Button variant={filterStatus === 'refunded' ? 'default' : 'outline'} onClick={() => setFilterStatus('refunded')}>Remboursé</Button>
+            <Button variant={filterStatus === 'pending' ? 'default' : 'outline'} onClick={() => setFilterStatus('pending')}>En attente</Button>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 items-end">
