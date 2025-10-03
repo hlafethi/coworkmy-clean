@@ -81,7 +81,7 @@ export function useDashboard() {
       setStats({
         totalBookings: bookingsArray.length,
         upcomingBookings: upcomingBookings.length,
-        recentActivities: upcomingBookings.slice(0, 5).map(b => ({
+        recentActivities: (upcomingBookings || []).slice(0, 5).map(b => ({
           id: b.id,
           description: `${b.space_name || 'Espace'} - ${b.start_date}`,
           date: b.start_date,

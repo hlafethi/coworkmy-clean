@@ -91,7 +91,7 @@ export const useEmailHistory = (limit: number = 50) => {
       if (error) throw error;
 
       // Mettre à jour la liste des emails
-      setEmails(prev => [data, ...prev].slice(0, limit));
+      setEmails(prev => [data, ...(prev || [])].slice(0, limit));
       setTotalCount(prev => prev + 1);
 
       return { success: true, data };

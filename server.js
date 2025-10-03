@@ -53,40 +53,54 @@ const getStripeConfig = async () => {
   }
 };
 
+// Fonction pour calculer le prix TTC (HT + 20% TVA)
+const calculatePriceWithTax = (priceHT) => {
+  return priceHT * 1.20; // 20% TVA
+};
+
 // Nouvelle fonction pour récupérer la config Stripe selon un mode spécifique
 const getStripeConfigForMode = async (requestedMode) => {
   try {
-    console.log('🔧 Récupération config Stripe depuis les variables d\'environnement...');
+    console.log('🔧 Récupération config Stripe depuis la base de données...');
     
-    // Utiliser les variables d'environnement existantes
-    const secretKey = requestedMode === 'live' 
-      ? process.env.STRIPE_SECRET_KEY 
-      : process.env.STRIPE_TEST_SECRET_KEY;
-    
-    const publishableKey = requestedMode === 'live' 
-      ? process.env.VITE_STRIPE_PUBLIC_KEY 
-      : process.env.VITE_STRIPE_TEST_PUBLIC_KEY;
-    
-    const webhookSecret = requestedMode === 'live' 
-      ? process.env.STRIPE_WEBHOOK_SECRET 
-      : process.env.STRIPE_TEST_WEBHOOK_SECRET;
-    
-    console.log('🔧 Configuration Stripe depuis .env:', {
-      requestedMode,
-      hasTestSecret: !!process.env.STRIPE_TEST_SECRET_KEY,
-      hasLiveSecret: !!process.env.STRIPE_SECRET_KEY,
-      secretKeyExists: !!secretKey,
-      secretKeyPreview: secretKey ? secretKey.substring(0, 10) + '...' : 'none'
-    });
-    
-    if (!secretKey) {
-      throw new Error(`Clé secrète Stripe manquante pour le mode ${requestedMode}. Vérifiez les variables d'environnement STRIPE_${requestedMode.toUpperCase()}_SECRET_KEY.`);
+    // Récupérer la configuration depuis la base de données
+    const configResult = await pool.query(`
+      SELECT secret_key, publishable_key, webhook_secret
+      FROM stripe_config 
+      WHERE mode = $1
+    `, [requestedMode]);
+
+    if (configResult.rows.length === 0) {
+      throw new Error(`Configuration Stripe non trouvée pour le mode ${requestedMode}. Vérifiez la table stripe_config.`);
     }
-    
+
+    const config = configResult.rows[0];
+    const { secret_key, publishable_key, webhook_secret } = config;
+
+    // Vérifier que la clé correspond au mode demandé
+    if (requestedMode === 'live' && secret_key && !secret_key.startsWith('sk_live_')) {
+      throw new Error('Clé Stripe non compatible avec le mode live. Utilisez une clé sk_live_...');
+    }
+    if (requestedMode === 'test' && secret_key && !secret_key.startsWith('sk_test_')) {
+      throw new Error('Clé Stripe non compatible avec le mode test. Utilisez une clé sk_test_...');
+    }
+
+    console.log('🔧 Configuration Stripe depuis BDD:', {
+      requestedMode,
+      secretKeyExists: !!secret_key,
+      secretKeyPreview: secret_key ? secret_key.substring(0, 10) + '...' : 'none',
+      publishableKeyExists: !!publishable_key,
+      webhookSecretExists: !!webhook_secret
+    });
+
+    if (!secret_key) {
+      throw new Error(`Clé secrète Stripe manquante pour le mode ${requestedMode}. Vérifiez la table stripe_config.`);
+    }
+
     return {
-      secretKey,
-      publishableKey,
-      webhookSecret,
+      secretKey: secret_key,
+      publishableKey: publishable_key,
+      webhookSecret: webhook_secret,
       mode: requestedMode
     };
   } catch (error) {
@@ -3925,10 +3939,11 @@ app.post('/api/stripe/sync-all', authenticateToken, async (req, res) => {
       return sendResponse(res, false, null, 'Accès non autorisé');
     }
 
-    console.log('🔄 Synchronisation de tous les espaces avec Stripe...');
+    const { mode = 'test' } = req.body;
+    console.log(`🔄 Synchronisation de tous les espaces avec Stripe (mode: ${mode})...`);
     
-    // Récupérer la configuration Stripe depuis la base de données
-    const config = await getStripeConfig();
+    // Récupérer la configuration Stripe selon le mode demandé
+    const config = await getStripeConfigForMode(mode);
     const stripeInstance = new Stripe(config.secretKey, {
       apiVersion: '2023-10-16',
     });
@@ -4107,6 +4122,198 @@ app.post('/api/stripe/sync-all', authenticateToken, async (req, res) => {
   }
 });
 
+// Endpoint pour synchroniser les espaces vers Stripe
+app.post('/api/stripe/sync-spaces', authenticateToken, async (req, res) => {
+  try {
+    const { mode = 'test' } = req.body;
+    
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès refusé. Seuls les administrateurs peuvent synchroniser les espaces.');
+    }
+    
+    console.log(`🔄 Synchronisation des espaces vers Stripe (mode: ${mode})`);
+    
+    // Récupérer la configuration Stripe selon le mode
+    const config = await getStripeConfigForMode(mode);
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
+    
+    // Récupérer tous les espaces actifs
+    const spacesResult = await pool.query(`
+      SELECT id, name, description, price_per_hour, price_per_day, price_per_month, 
+             is_active, image_url, created_at
+      FROM spaces 
+      WHERE is_active = true
+      ORDER BY created_at DESC
+    `);
+    
+    console.log(`📊 ${spacesResult.rows.length} espaces trouvés`);
+    
+    if (spacesResult.rows.length === 0) {
+      return sendResponse(res, true, { message: 'Aucun espace actif à synchroniser', synced: 0 });
+    }
+    
+    const results = [];
+    
+    // Synchroniser chaque espace
+    for (const space of spacesResult.rows) {
+      try {
+        console.log(`🔄 Synchronisation de l'espace: ${space.name}`);
+        
+        // Vérifier si le produit existe déjà
+        let product;
+        if (space.stripe_product_id) {
+          try {
+            product = await stripeInstance.products.retrieve(space.stripe_product_id);
+            console.log(`✅ Produit existant trouvé: ${product.id}`);
+          } catch (error) {
+            console.log(`⚠️ Produit ${space.stripe_product_id} introuvable, création d'un nouveau`);
+            product = null;
+          }
+        }
+        
+        if (!product) {
+                 // Créer le produit Stripe
+                 const productData = {
+                   name: space.name,
+                   description: space.description || `Espace de coworking: ${space.name}`,
+                   metadata: {
+                     space_id: space.id.toString(),
+                     sync_date: new Date().toISOString()
+                   }
+                 };
+
+                 // Ajouter l'image si elle existe
+                 if (space.image_url) {
+                   if (space.image_url.startsWith('http')) {
+                     // URL directe
+                     productData.images = [space.image_url];
+                     console.log(`  🖼️ Image URL ajoutée: ${space.image_url.substring(0, 50)}...`);
+                   } else if (space.image_url.startsWith('data:image/')) {
+                     // Image base64 - utiliser l'endpoint API
+                     const baseUrl = process.env.PUBLIC_URL || 'http://localhost:5000';
+                     const imageUrl = `${baseUrl}/api/space-image/${space.id}`;
+                     productData.images = [imageUrl];
+                     console.log(`  🖼️ Image base64 convertie en URL: ${imageUrl}`);
+                   }
+                 }
+
+                 product = await stripeInstance.products.create(productData);
+          console.log(`✅ Nouveau produit créé: ${product.id}`);
+        }
+        
+        // Créer les prix selon les tarifs disponibles
+        const prices = [];
+        
+        if (space.price_per_hour) {
+          const priceTTC = calculatePriceWithTax(space.price_per_hour);
+          const hourlyPrice = await stripeInstance.prices.create({
+            product: product.id,
+            unit_amount: Math.round(priceTTC * 100),
+            currency: 'eur',
+            nickname: 'Tarif horaire TTC',
+            metadata: {
+              space_id: space.id.toString(),
+              pricing_type: 'hourly',
+              price_ht: space.price_per_hour,
+              price_ttc: priceTTC,
+              tax_rate: '20%'
+            }
+          });
+          prices.push({ type: 'hourly', price: hourlyPrice });
+          console.log(`  💰 Prix horaire: ${space.price_per_hour}€ HT → ${priceTTC.toFixed(2)}€ TTC`);
+        }
+        
+        if (space.price_per_day) {
+          const priceTTC = calculatePriceWithTax(space.price_per_day);
+          const dailyPrice = await stripeInstance.prices.create({
+            product: product.id,
+            unit_amount: Math.round(priceTTC * 100),
+            currency: 'eur',
+            nickname: 'Tarif journalier TTC',
+            metadata: {
+              space_id: space.id.toString(),
+              pricing_type: 'daily',
+              price_ht: space.price_per_day,
+              price_ttc: priceTTC,
+              tax_rate: '20%'
+            }
+          });
+          prices.push({ type: 'daily', price: dailyPrice });
+          console.log(`  💰 Prix journalier: ${space.price_per_day}€ HT → ${priceTTC.toFixed(2)}€ TTC`);
+        }
+        
+        if (space.price_per_month) {
+          const priceTTC = calculatePriceWithTax(space.price_per_month);
+          const monthlyPrice = await stripeInstance.prices.create({
+            product: product.id,
+            unit_amount: Math.round(priceTTC * 100),
+            currency: 'eur',
+            nickname: 'Tarif mensuel TTC',
+            metadata: {
+              space_id: space.id.toString(),
+              pricing_type: 'monthly',
+              price_ht: space.price_per_month,
+              price_ttc: priceTTC,
+              tax_rate: '20%'
+            }
+          });
+          prices.push({ type: 'monthly', price: monthlyPrice });
+          console.log(`  💰 Prix mensuel: ${space.price_per_month}€ HT → ${priceTTC.toFixed(2)}€ TTC`);
+        }
+        
+        // Mettre à jour la base de données avec les IDs Stripe
+        await pool.query(`
+          UPDATE spaces 
+          SET stripe_product_id = $1,
+              stripe_hourly_price_id = $2,
+              stripe_daily_price_id = $3,
+              stripe_monthly_price_id = $4,
+              updated_at = NOW()
+          WHERE id = $5
+        `, [
+          product.id,
+          prices.find(p => p.type === 'hourly')?.price.id || null,
+          prices.find(p => p.type === 'daily')?.price.id || null,
+          prices.find(p => p.type === 'monthly')?.price.id || null,
+          space.id
+        ]);
+        
+        results.push({
+          space_id: space.id,
+          space_name: space.name,
+          product_id: product.id,
+          prices: prices.map(p => ({ type: p.type, price_id: p.price.id }))
+        });
+        
+        console.log(`✅ Espace ${space.name} synchronisé avec succès`);
+        
+      } catch (spaceError) {
+        console.error(`❌ Erreur pour l'espace ${space.name}:`, spaceError.message);
+        results.push({
+          space_id: space.id,
+          space_name: space.name,
+          error: spaceError.message
+        });
+      }
+    }
+    
+    console.log(`🎉 Synchronisation terminée: ${results.length} espaces traités`);
+    sendResponse(res, true, { 
+      message: 'Synchronisation terminée',
+      mode: mode,
+      synced: results.length,
+      results: results
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur synchronisation espaces:', error);
+    sendResponse(res, false, null, `Erreur lors de la synchronisation: ${error.message}`);
+  }
+});
+
 // Endpoint pour créer un portail client Stripe
 app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, res) => {
   try {
@@ -4118,8 +4325,13 @@ app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, re
 
     console.log('🔗 Création du portail client Stripe pour:', customerEmail);
 
-    // Récupérer la configuration Stripe depuis la base de données
-    const config = await getStripeConfig();
+    // Récupérer la configuration Stripe selon le rôle de l'utilisateur
+    // Les utilisateurs normaux utilisent le mode production (live)
+    // Les admins peuvent utiliser le mode test
+    const mode = req.user.is_admin ? 'test' : 'live';
+    console.log(`🔧 Mode Stripe pour ${req.user.is_admin ? 'admin' : 'utilisateur'}: ${mode}`);
+    
+    const config = await getStripeConfigForMode(mode);
     const stripeInstance = new Stripe(config.secretKey, {
       apiVersion: '2023-10-16',
     });
@@ -4149,27 +4361,315 @@ app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, re
       return sendResponse(res, false, null, `Erreur Stripe: ${stripeError.message}`);
     }
 
-    // Créer une session de portail client
-    const portalSession = await stripeInstance.billingPortal.sessions.create({
-      customer: customer.id,
-      return_url: returnUrl,
-    });
+    try {
+      // Créer une session de portail client (sans configuration personnalisée)
+      const portalSession = await stripeInstance.billingPortal.sessions.create({
+        customer: customer.id,
+        return_url: returnUrl
+      });
 
-    console.log('✅ Portail client créé:', portalSession.url);
-    sendResponse(res, true, { url: portalSession.url });
+      console.log('✅ Portail client créé:', portalSession.url);
+      sendResponse(res, true, { 
+        url: portalSession.url, 
+        mode: mode,
+        customerId: customer.id 
+      });
+    } catch (portalError) {
+      if (portalError.message.includes('No configuration provided')) {
+        console.log('⚠️ Portail client non configuré, redirection vers dashboard Stripe');
+        const dashboardUrl = mode === 'live' 
+          ? 'https://dashboard.stripe.com/settings/billing/portal'
+          : 'https://dashboard.stripe.com/test/settings/billing/portal';
+        sendResponse(res, true, { 
+          url: dashboardUrl,
+          message: 'Portail client non configuré. Redirection vers le dashboard Stripe pour configuration.'
+        });
+      } else {
+        throw portalError;
+      }
+    }
   } catch (error) {
     console.error('❌ Erreur création portail client:', error);
     sendResponse(res, false, null, `Erreur lors de la création du portail client: ${error.message}`);
   }
 });
 
+// Endpoint pour vérifier le statut de synchronisation
+app.get('/api/stripe/sync-status', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès refusé. Seuls les administrateurs peuvent vérifier le statut de synchronisation.');
+    }
+
+    console.log('🔍 Vérification du statut de synchronisation Stripe...');
+
+    // Récupérer les espaces avec leur statut Stripe
+    const spacesResult = await pool.query(`
+      SELECT id, name, stripe_product_id, stripe_hourly_price_id, 
+             stripe_daily_price_id, stripe_monthly_price_id, last_stripe_sync
+      FROM spaces 
+      WHERE is_active = true
+      ORDER BY created_at DESC
+    `);
+
+    const spaces = spacesResult.rows;
+    const totalSpaces = spaces.length;
+    const syncedSpaces = spaces.filter(space => space.stripe_product_id).length;
+    const pendingSpaces = totalSpaces - syncedSpaces;
+
+    // Vérifier la dernière synchronisation
+    const lastSync = spaces
+      .filter(space => space.last_stripe_sync)
+      .sort((a, b) => new Date(b.last_stripe_sync) - new Date(a.last_stripe_sync))[0];
+
+    const status = {
+      total_spaces: totalSpaces,
+      synced_spaces: syncedSpaces,
+      pending_spaces: pendingSpaces,
+      sync_percentage: totalSpaces > 0 ? Math.round((syncedSpaces / totalSpaces) * 100) : 0,
+      last_sync: lastSync?.last_stripe_sync || null,
+      spaces: spaces.map(space => ({
+        id: space.id,
+        name: space.name,
+        is_synced: !!space.stripe_product_id,
+        has_hourly_price: !!space.stripe_hourly_price_id,
+        has_daily_price: !!space.stripe_daily_price_id,
+        has_monthly_price: !!space.stripe_monthly_price_id,
+        last_sync: space.last_stripe_sync
+      }))
+    };
+
+    console.log(`📊 Statut: ${syncedSpaces}/${totalSpaces} espaces synchronisés (${status.sync_percentage}%)`);
+    
+    sendResponse(res, true, status);
+
+  } catch (error) {
+    console.error('❌ Erreur vérification statut sync:', error);
+    sendResponse(res, false, null, `Erreur lors de la vérification: ${error.message}`);
+  }
+});
+
+// Endpoint pour synchroniser un seul espace avec Stripe
+app.post('/api/stripe/sync-space/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { mode = 'test' } = req.body;
+    
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return sendResponse(res, false, null, 'Accès refusé. Seuls les administrateurs peuvent synchroniser les espaces.');
+    }
+    
+    console.log(`🔄 Synchronisation de l'espace ${id} vers Stripe (mode: ${mode})`);
+    
+    // Récupérer la configuration Stripe selon le mode
+    const config = await getStripeConfigForMode(mode);
+    const stripeInstance = new Stripe(config.secretKey, {
+      apiVersion: '2023-10-16',
+    });
+    
+    // Récupérer l'espace spécifique
+    const spaceResult = await pool.query(`
+      SELECT id, name, description, price_per_hour, price_per_day, price_per_month, 
+             is_active, image_url, created_at, stripe_product_id
+      FROM spaces 
+      WHERE id = $1 AND is_active = true
+    `, [id]);
+    
+    if (spaceResult.rows.length === 0) {
+      return sendResponse(res, false, null, 'Espace non trouvé ou inactif');
+    }
+    
+    const space = spaceResult.rows[0];
+    console.log(`📊 Synchronisation de l'espace: ${space.name}`);
+    
+    let product;
+    if (space.stripe_product_id) {
+      try {
+        product = await stripeInstance.products.retrieve(space.stripe_product_id);
+        console.log(`✅ Produit existant trouvé: ${product.id}`);
+      } catch (error) {
+        console.log(`⚠️ Produit ${space.stripe_product_id} introuvable, création d'un nouveau`);
+        product = null;
+      }
+    }
+    
+    if (!product) {
+      // Créer le produit Stripe
+      const productData = {
+        name: space.name,
+        description: space.description || `Espace de coworking: ${space.name}`,
+        metadata: {
+          space_id: space.id.toString(),
+          sync_date: new Date().toISOString()
+        }
+      };
+
+      // Ajouter l'image si elle existe
+      if (space.image_url) {
+        if (space.image_url.startsWith('http')) {
+          // URL directe
+          productData.images = [space.image_url];
+          console.log(`  🖼️ Image URL ajoutée: ${space.image_url.substring(0, 50)}...`);
+        } else if (space.image_url.startsWith('data:image/')) {
+          // Image base64 - utiliser l'endpoint API
+          const baseUrl = process.env.PUBLIC_URL || 'http://localhost:5000';
+          const imageUrl = `${baseUrl}/api/space-image/${space.id}`;
+          productData.images = [imageUrl];
+          console.log(`  🖼️ Image base64 convertie en URL: ${imageUrl}`);
+        }
+      }
+
+      product = await stripeInstance.products.create(productData);
+      console.log(`✅ Nouveau produit créé: ${product.id}`);
+    }
+    
+    // Créer les prix selon les tarifs disponibles
+    const prices = [];
+    
+    if (space.price_per_hour) {
+      const priceTTC = calculatePriceWithTax(space.price_per_hour);
+      const hourlyPrice = await stripeInstance.prices.create({
+        product: product.id,
+        unit_amount: Math.round(priceTTC * 100),
+        currency: 'eur',
+        nickname: 'Tarif horaire TTC',
+        metadata: {
+          space_id: space.id.toString(),
+          pricing_type: 'hourly',
+          price_ht: space.price_per_hour,
+          price_ttc: priceTTC,
+          tax_rate: '20%'
+        }
+      });
+      prices.push({ type: 'hourly', price: hourlyPrice });
+      console.log(`  💰 Prix horaire: ${space.price_per_hour}€ HT → ${priceTTC.toFixed(2)}€ TTC`);
+    }
+    
+    if (space.price_per_day) {
+      const priceTTC = calculatePriceWithTax(space.price_per_day);
+      const dailyPrice = await stripeInstance.prices.create({
+        product: product.id,
+        unit_amount: Math.round(priceTTC * 100),
+        currency: 'eur',
+        nickname: 'Tarif journalier TTC',
+        metadata: {
+          space_id: space.id.toString(),
+          pricing_type: 'daily',
+          price_ht: space.price_per_day,
+          price_ttc: priceTTC,
+          tax_rate: '20%'
+        }
+      });
+      prices.push({ type: 'daily', price: dailyPrice });
+      console.log(`  💰 Prix journalier: ${space.price_per_day}€ HT → ${priceTTC.toFixed(2)}€ TTC`);
+    }
+    
+    if (space.price_per_month) {
+      const priceTTC = calculatePriceWithTax(space.price_per_month);
+      const monthlyPrice = await stripeInstance.prices.create({
+        product: product.id,
+        unit_amount: Math.round(priceTTC * 100),
+        currency: 'eur',
+        nickname: 'Tarif mensuel TTC',
+        metadata: {
+          space_id: space.id.toString(),
+          pricing_type: 'monthly',
+          price_ht: space.price_per_month,
+          price_ttc: priceTTC,
+          tax_rate: '20%'
+        }
+      });
+      prices.push({ type: 'monthly', price: monthlyPrice });
+      console.log(`  💰 Prix mensuel: ${space.price_per_month}€ HT → ${priceTTC.toFixed(2)}€ TTC`);
+    }
+    
+    // Mettre à jour la base de données avec les IDs Stripe
+    await pool.query(`
+      UPDATE spaces
+      SET stripe_product_id = $1,
+          stripe_hourly_price_id = $2,
+          stripe_daily_price_id = $3,
+          stripe_monthly_price_id = $4,
+          updated_at = NOW()
+      WHERE id = $5
+    `, [
+      product.id,
+      prices.find(p => p.type === 'hourly')?.price.id || null,
+      prices.find(p => p.type === 'daily')?.price.id || null,
+      prices.find(p => p.type === 'monthly')?.price.id || null,
+      space.id
+    ]);
+    
+    console.log(`✅ Espace ${space.name} synchronisé avec succès`);
+    
+    sendResponse(res, true, {
+      message: 'Espace synchronisé avec succès',
+      space_id: space.id,
+      space_name: space.name,
+      product_id: product.id,
+      prices: prices.map(p => ({ type: p.type, price_id: p.price.id }))
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur synchronisation espace:', error);
+    sendResponse(res, false, null, `Erreur lors de la synchronisation: ${error.message}`);
+  }
+});
+
 // ===== GESTION DES ERREURS 404 =====
 
+// Endpoint pour servir les images des espaces
+app.get('/api/space-image/:spaceId', async (req, res) => {
+  try {
+    const { spaceId } = req.params;
+    
+    // Récupérer l'image de l'espace
+    const result = await pool.query(`
+      SELECT image_url, name
+      FROM spaces 
+      WHERE id = $1 AND image_url IS NOT NULL
+    `, [spaceId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Espace ou image non trouvé' });
+    }
+    
+    const space = result.rows[0];
+    
+    // Si c'est une image base64, la convertir et la servir
+    if (space.image_url.startsWith('data:image/')) {
+      const matches = space.image_url.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches) {
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache 1 an
+        res.send(buffer);
+        return;
+      }
+    }
+    
+    // Si c'est déjà une URL, rediriger
+    if (space.image_url.startsWith('http')) {
+      return res.redirect(space.image_url);
+    }
+    
+    res.status(404).json({ error: 'Format d\'image non supporté' });
+    
+  } catch (error) {
+    console.error('❌ Erreur récupération image espace:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
+  res.status(404).json({
+    success: false,
     error: 'Endpoint non trouvé',
-    path: req.originalUrl 
+    path: req.originalUrl
   });
 });
 
@@ -4249,6 +4749,7 @@ app.listen(PORT, () => {
   console.log(`   - POST /api/send-email`);
   console.log(`   - GET  /api/stripe/test-connection`);
   console.log(`   - POST /api/stripe/sync-all`);
+  console.log(`   - POST /api/stripe/sync-space/:id`);
   console.log(`   - POST /api/stripe/create-customer-portal`);
   console.log(`   - POST /api/users/:id/documents`);
   console.log(`   - DELETE /api/users/:id/documents/:documentId`);

@@ -21,6 +21,7 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<DebugResult[]>([]);
   const [stripeConnection, setStripeConnection] = useState<any>(null);
+  const [selectedMode, setSelectedMode] = useState<'test' | 'live'>('test');
 
   const addResult = (result: DebugResult) => {
     setResults(prev => [result, ...prev.slice(0, 9)]); // Garder les 10 derniers résultats
@@ -72,7 +73,9 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
     setIsLoading(true);
     try {
       // Synchronisation réelle avec Stripe
-      const response = await apiClient.post('/stripe/sync-all');
+      const response = await apiClient.post('/stripe/sync-all', {
+        mode: selectedMode
+      });
       
       if (response.success) {
         addResult({
@@ -83,7 +86,7 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
             success_count: response.data.success_count,
             error_count: response.data.error_count,
             skipped_count: response.data.skipped_count,
-            results: response.data.results.slice(0, 5) // Afficher les 5 premiers résultats
+            results: (response.data.results || []).slice(0, 5) // Afficher les 5 premiers résultats
           },
           timestamp: new Date().toLocaleString('fr-FR')
         });
@@ -135,7 +138,9 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
 
       // Synchroniser le premier espace actif
       const space = activeSpaces[0];
-      const response = await apiClient.post(`/stripe/sync-space/${space.id}`);
+      const response = await apiClient.post(`/stripe/sync-space/${space.id}`, {
+        mode: selectedMode
+      });
       
       if (response.success) {
         addResult({
@@ -184,7 +189,7 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
             synced: response.data.synced,
             unsynced: response.data.unsynced,
             mode: response.data.mode,
-            spaces: response.data.spaces.slice(0, 5) // Afficher les 5 premiers espaces
+            spaces: (response.data.spaces || []).slice(0, 5) // Afficher les 5 premiers espaces
           },
           timestamp: new Date().toLocaleString('fr-FR')
         });
@@ -238,6 +243,23 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Sélecteur de mode */}
+        <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+          <label className="text-sm font-medium">Mode Stripe:</label>
+          <select
+            value={selectedMode}
+            onChange={(e) => setSelectedMode(e.target.value as 'test' | 'live')}
+            className="px-3 py-1 border rounded-md text-sm"
+            disabled={isLoading}
+          >
+            <option value="test">Test</option>
+            <option value="live">Production</option>
+          </select>
+          <Badge variant={selectedMode === 'live' ? 'destructive' : 'secondary'}>
+            {selectedMode === 'live' ? 'Production' : 'Test'}
+          </Badge>
+        </div>
 
         {/* Boutons d'action */}
         <div className="flex flex-wrap gap-2">
