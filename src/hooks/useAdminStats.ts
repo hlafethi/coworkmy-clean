@@ -40,7 +40,7 @@ const DEFAULT_STATS: AdminStats = {
   recent_bookings: []
 };
 
-export const useAdminStats = () => {
+export const useAdminStats = (mode: 'test' | 'live' = 'test') => {
   const [state, setState] = useState<AdminStatsState>({
     data: null,
     loading: true,
@@ -61,24 +61,16 @@ export const useAdminStats = () => {
         updateState({ loading: true, error: null });
       }
 
-      logger.log('📊 Chargement des statistiques admin (mode PostgreSQL)...');
+      logger.log(`📊 Chargement des statistiques admin (mode: ${mode})...`);
       
-      // Données par défaut pour PostgreSQL
-      const defaultStats: AdminStats = {
-        total_users: 1,
-        active_users: 1,
-        total_spaces: 0,
-        available_spaces: 0,
-        total_bookings: 0,
-        active_bookings: 0,
-        total_revenue: 0,
-        monthly_revenue: 0,
-        popular_spaces: [],
-        recent_bookings: []
-      };
+      const response = await apiClient.get(`/admin/stats?mode=${mode}`);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Erreur lors du chargement des statistiques');
+      }
 
       updateState({
-        data: defaultStats,
+        data: response.data,
         loading: false,
         error: null,
         lastUpdated: new Date()
@@ -108,7 +100,7 @@ export const useAdminStats = () => {
         retryCountRef.current = 0;
       }
     }
-  }, [updateState]);
+  }, [updateState, mode]);
 
   useEffect(() => {
     fetchStats();

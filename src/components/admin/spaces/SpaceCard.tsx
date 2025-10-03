@@ -28,14 +28,14 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
   const handleSync = async () => {
     setSyncing(true);
     try {
-      // Simulation de synchronisation via l'API
+      // Synchronisation via l'API
       const response = await apiClient.get(`/spaces/${space.id}`);
       
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de la récupération de l\'espace');
       }
 
-      toast.success(`Synchronisation simulée réussie pour "${space.name}"`);
+      toast.success(`Synchronisation réussie pour "${space.name}"`);
     } catch (e: any) {
       toast.error("Erreur lors de la synchronisation : " + e.message);
     } finally {

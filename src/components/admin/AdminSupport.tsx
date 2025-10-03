@@ -58,7 +58,7 @@ export const AdminSupport = () => {
   const loadTickets = async () => {
     setIsLoadingTickets(true);
     try {
-      // Simulation de données - remplacer par l'appel API réel
+      // TODO: Remplacer par l'appel API réel
       const mockTickets: Ticket[] = [
         {
           id: '1',
@@ -94,7 +94,7 @@ export const AdminSupport = () => {
   const loadTicketResponses = async (ticketId: string) => {
     setIsLoadingResponses(true);
     try {
-      // Simulation de données - remplacer par l'appel API réel
+      // TODO: Remplacer par l'appel API réel
       const mockResponses: TicketResponse[] = [
         {
           id: '1',
@@ -141,7 +141,7 @@ export const AdminSupport = () => {
 
     setIsLoading(true);
     try {
-      // Simulation de l'ajout de réponse - remplacer par l'appel API réel
+      // TODO: Remplacer par l'appel API réel
       const newResponse: TicketResponse = {
         id: Date.now().toString(),
         ticket_id: selectedTicket.id,

@@ -5,6 +5,7 @@ import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import { CookieSettingsAdmin } from "@/components/admin/CookieSettings";
 import { SidebarContent } from "@/components/ui/sidebar";
 import AdminOverview from "@/components/admin/AdminOverview";
+import AdminOverviewDual from "@/components/admin/AdminOverviewDual";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminSpaces from "@/components/admin/AdminSpaces";
 import AdminBookings from "@/components/admin/AdminBookings";
@@ -26,8 +27,6 @@ import {
   Building2, 
   Calendar, 
   Euro, 
-  Wifi, 
-  WifiOff,
   Box,
   Home,
   Settings,
@@ -41,37 +40,15 @@ import {
   LifeBuoy
 } from "lucide-react";
 import { RecentBookings } from "@/components/admin/dashboard/RecentBookings";
-import { getAllChannels } from "@/lib";
-import { logger } from "@/utils/logger";
 
 const AdminDashboard = () => {
   const [activeView, setActiveView] = useState("overview");
-  const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const { user, loading, isAdmin } = useAuth();
-
-  // Effet pour surveiller le statut WebSocket
-  useEffect(() => {
-    const checkWsStatus = () => {
-      const activeChannels = getAllChannels();
-      if (activeChannels.length > 0) {
-        setWsStatus('connected');
-      } else {
-        setWsStatus('error');
-      }
-    };
-
-    // Vérifier le statut initial
-    checkWsStatus();
-
-    // Vérifier périodiquement
-    const interval = setInterval(checkWsStatus, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const getViewTitle = () => {
     switch (activeView) {
       case "overview": return "Tableau de bord";
+      case "overview-dual": return "Vue Dual (Test/Production)";
       case "spaces": return "Gestion des espaces";
       case "users": return "Gestion des utilisateurs";
       case "bookings": return "Gestion des réservations";
@@ -92,6 +69,8 @@ const AdminDashboard = () => {
     switch (activeView) {
       case "overview":
         return <AdminOverview />;
+      case "overview-dual":
+        return <AdminOverviewDual />;
       case "spaces":
         return <AdminSpaces />;
       case "users":
@@ -141,22 +120,6 @@ const AdminDashboard = () => {
   return (
     <AdminLayout title={getViewTitle()}>
       <div className="space-y-6">
-        {/* Statut WebSocket */}
-        <Alert className={wsStatus === 'connected' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-          <div className="flex items-center gap-2">
-            {wsStatus === 'connected' ? <Wifi className="h-4 w-4 text-green-600" /> : <WifiOff className="h-4 w-4 text-red-600" />}
-            <AlertTitle>
-              {wsStatus === 'connected' ? 'Connexion temps réel active' : 'Connexion temps réel inactive'}
-            </AlertTitle>
-          </div>
-          <AlertDescription>
-            {wsStatus === 'connected' 
-              ? 'Les mises à jour en temps réel sont disponibles.' 
-              : 'Les mises à jour en temps réel ne sont pas disponibles. Vérifiez votre connexion.'
-            }
-          </AlertDescription>
-        </Alert>
-
         {/* Navigation */}
         <AdminNavigation activeView={activeView} onViewChange={setActiveView} />
 

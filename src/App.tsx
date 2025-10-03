@@ -30,7 +30,6 @@ const Privacy = lazy(() => import("@/pages/legal/Privacy"));
 const Terms = lazy(() => import("@/pages/legal/Terms"));
 const PaymentSuccess = lazy(() => import("@/pages/payment/PaymentSuccess"));
 const PaymentCancel = lazy(() => import("@/pages/payment/PaymentCancel"));
-const StripeSimulator = lazy(() => import("@/pages/payment/StripeSimulator"));
 const Invoices = lazy(() => import("@/pages/payment/Invoices"));
 const Subscriptions = lazy(() => import("@/pages/payment/Subscriptions"));
 const Callback = lazy(() => import("@/pages/auth/Callback"));
@@ -52,7 +51,6 @@ const AppRoutes = () => {
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<Callback />} />
-        <Route path="/stripe-simulator" element={<StripeSimulator />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/payment-cancel" element={<PaymentCancel />} />
         <Route path="/support" element={<Support />} />
@@ -74,7 +72,6 @@ const AppRoutes = () => {
           <Route path="/spaces" element={<SpacesPage />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
-          <Route path="/payment/simulator" element={<StripeSimulator />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/subscriptions" element={<Subscriptions />} />
         </Route>

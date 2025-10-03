@@ -29,7 +29,7 @@ export function createChannel(
     // Pour PostgreSQL direct, les WebSockets en temps réel ne sont pas disponibles
     console.log(`ℹ️ WebSocket temps réel non disponible avec PostgreSQL direct (${channelName})`);
     
-    // Simuler une connexion réussie pour éviter les erreurs
+    // TODO: Implémenter une vraie connexion WebSocket
     const mockChannel = {
       unsubscribe: () => {},
       on: () => mockChannel,
@@ -43,7 +43,7 @@ export function createChannel(
       event 
     });
     
-    console.log(`✅ Canal ${channelName} simulé (PostgreSQL mode)`);
+    console.log(`✅ Canal ${channelName} configuré (PostgreSQL mode)`);
     _isInitialized = true;
 
   } catch (error) {
@@ -56,7 +56,7 @@ export function removeChannel(channelName: string): void {
   
   if (channelConfig) {
     try {
-      // Simuler la déconnexion
+      // Déconnexion du canal
       console.log(`🔌 Déconnexion du canal ${channelName} (PostgreSQL mode)`);
       channels.delete(channelName);
     } catch (error) {

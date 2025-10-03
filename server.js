@@ -1,6 +1,9 @@
 import express from 'express';
 import nodemailer from 'nodemailer';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import slowDown from 'express-slow-down';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
@@ -33,9 +36,10 @@ const getStripeConfig = async () => {
       hasLiveSecret: !!config.live_secret_key
     });
     
-    const secretKey = config.mode === 'live' ? config.live_secret_key : config.test_secret_key;
-    const publishableKey = config.mode === 'live' ? config.live_publishable_key : config.test_publishable_key;
-    const webhookSecret = config.mode === 'live' ? config.live_webhook_secret : config.webhook_secret;
+    // Utiliser les clés Stripe depuis les variables d'environnement
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+    const webhookSecret = config.live_webhook_secret || config.webhook_secret;
     
     if (!secretKey) {
       throw new Error(`Clé secrète Stripe manquante pour le mode ${config.mode}`);
@@ -54,8 +58,61 @@ const getStripeConfig = async () => {
 };
 
 const app = express();
-app.use(cors());
+
+// Middleware de sécurité
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.stripe.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://api.stripe.com"],
+      frameSrc: ["'self'", "https://js.stripe.com"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      childSrc: ["'self'", "blob:"],
+      workerSrc: ["'self'", "blob:"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: true
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limite chaque IP à 100 requêtes par windowMs
+  message: {
+    error: 'Trop de requêtes depuis cette IP, veuillez réessayer plus tard.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Slow down pour les tentatives de connexion
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  delayAfter: 5, // commencer à ralentir après 5 requêtes
+  delayMs: 500 // ajouter 500ms de délai par requête
+});
+
+// CORS sécurisé
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With']
+}));
+
 app.use(express.json({ limit: '10mb' })); // Augmenter la limite pour les images
+
+// Application des limiters
+app.use(limiter);
+app.use('/api/auth', speedLimiter);
 
 // Configuration PostgreSQL
 const pool = new Pool({
@@ -76,8 +133,12 @@ pool.on('error', (err) => {
   console.error('❌ Erreur de connexion PostgreSQL:', err);
 });
 
-// JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// JWT Secret - OBLIGATOIRE en production
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('❌ JWT_SECRET manquant dans les variables d\'environnement');
+  process.exit(1);
+}
 
 // Middleware d'authentification
 const authenticateToken = (req, res, next) => {
@@ -97,7 +158,7 @@ const authenticateToken = (req, res, next) => {
       console.log('❌ Token invalide:', err.message);
       return res.status(403).json({ error: 'Token invalide' });
     }
-    console.log('🔑 Token décodé:', { id: user.id, email: user.email, is_admin: user.is_admin });
+    // Token validé avec succès
     req.user = user;
     next();
   });
@@ -123,63 +184,11 @@ app.post('/api/auth/signin', async (req, res) => {
       return sendResponse(res, false, null, 'Email et mot de passe requis');
     }
 
-    // Comptes de test pour le développement - utiliser les vrais IDs de la base
-    const testUsers = {
-      'admin@coworkmy.fr': {
-        email: 'admin@coworkmy.fr',
-        password: 'Project@2025*',
-        full_name: 'Administrateur',
-        is_admin: true
-      },
-      'user@heleam.com': {
-        email: 'user@heleam.com',
-        password: 'user123',
-        full_name: 'Utilisateur Test',
-        is_admin: false
-      }
-    };
+    // Comptes de test supprimés pour la sécurité
+    // Utilisez l'interface d'inscription pour créer des comptes
 
-    // Vérification des identifiants de test
-    const testUser = testUsers[email];
-    if (testUser && password === testUser.password) {
-      // Récupérer l'ID réel de la base de données
-      try {
-        const dbResult = await pool.query(
-          'SELECT id, email, full_name, first_name, last_name, is_admin FROM profiles WHERE email = $1',
-          [email]
-        );
-        
-        if (dbResult.rows.length === 0) {
-          return sendResponse(res, false, null, 'Utilisateur non trouvé en base de données');
-        }
-        
-        const dbUser = dbResult.rows[0];
-        
-        // Génération du token JWT avec l'ID réel de la base
-        const token = jwt.sign(
-          { 
-            id: dbUser.id, 
-            email: dbUser.email,
-            is_admin: dbUser.is_admin || testUser.is_admin
-          },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
-
-        return sendResponse(res, true, {
-          user: {
-            id: dbUser.id,
-            email: dbUser.email,
-            full_name: dbUser.full_name || testUser.full_name,
-            is_admin: dbUser.is_admin || testUser.is_admin
-          },
-          token
-        });
-      } catch (dbError) {
-        console.error('Erreur lors de la récupération de l\'utilisateur:', dbError);
-        return sendResponse(res, false, null, 'Erreur de base de données');
-      }
-    }
+    // Vérification des identifiants - uniquement via la base de données
+    // Les comptes de test ont été supprimés pour la sécurité
 
     // Recherche de l'utilisateur dans PostgreSQL
     try {
@@ -201,12 +210,8 @@ app.post('/api/auth/signin', async (req, res) => {
           return sendResponse(res, false, null, 'Identifiants invalides');
         }
       } else {
-        // Si pas de password_hash, vérifier avec le mot de passe en dur pour admin@heleam.com
-        if (email === 'admin@heleam.com' && password === 'admin123') {
-          // OK, continuer
-        } else {
-          return sendResponse(res, false, null, 'Identifiants invalides');
-        }
+        // Vérification du mot de passe via bcrypt uniquement
+        return sendResponse(res, false, null, 'Identifiants invalides');
       }
 
       // Génération du token JWT
@@ -791,7 +796,7 @@ app.post('/api/users/:id/documents', authenticateToken, async (req, res) => {
       console.error('❌ Erreur création table:', tableError);
     }
 
-    // Simuler un scan VirusTotal (en mode développement)
+    // TODO: Implémenter un vrai scan VirusTotal
     const scanStatus = 'clean'; // En production, ceci serait déterminé par VirusTotal
     const scanDetails = {
       scanner: 'VirusTotal',
@@ -2863,7 +2868,7 @@ app.post('/api/upload/avatar', authenticateToken, async (req, res) => {
   try {
     console.log('📸 Upload d\'avatar pour l\'utilisateur:', req.user.id);
     
-    // Pour l'instant, on simule un upload réussi
+    // TODO: Implémenter un vrai upload d'avatar
     // Dans un vrai système, vous utiliseriez multer ou un autre middleware d'upload
     const { avatar_url } = req.body;
     
@@ -3366,6 +3371,473 @@ app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, re
   } catch (error) {
     console.error('❌ Erreur création portail client:', error);
     sendResponse(res, false, null, `Erreur lors de la création du portail client: ${error.message}`);
+  }
+});
+
+// ===== ENDPOINTS ADMIN STATISTIQUES =====
+
+// GET /api/admin/stats - Statistiques générales
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+  try {
+    const { mode = 'test' } = req.query;
+    console.log(`📊 Récupération des statistiques admin (mode: ${mode})...`);
+    
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Accès refusé - Admin requis' });
+    }
+
+    // Statistiques de base (toujours les mêmes pour l'application)
+    const [usersResult, spacesResult, bookingsResult, recentBookingsResult, popularSpacesResult] = await Promise.all([
+      pool.query(`
+        SELECT 
+          COUNT(*) as total_users,
+          COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as active_users
+        FROM profiles
+      `),
+      pool.query(`
+        SELECT 
+          COUNT(*) as total_spaces,
+          COUNT(CASE WHEN is_active = true THEN 1 END) as available_spaces
+        FROM spaces
+      `),
+      pool.query(`
+        SELECT 
+          COUNT(*) as total_bookings,
+          COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as active_bookings
+        FROM bookings
+      `),
+      pool.query(`
+        SELECT 
+          b.id,
+          s.name as space_name,
+          COALESCE(p.full_name, p.first_name || ' ' || p.last_name, 'Utilisateur inconnu') as user_name,
+          b.created_at,
+          b.status,
+          p.company
+        FROM bookings b
+        LEFT JOIN spaces s ON b.space_id = s.id
+        LEFT JOIN profiles p ON b.user_id = p.id
+        ORDER BY b.created_at DESC
+        LIMIT 5
+      `),
+      pool.query(`
+        SELECT 
+          s.id,
+          s.name,
+          COUNT(b.id) as bookings_count
+        FROM spaces s
+        LEFT JOIN bookings b ON s.id = b.space_id
+        WHERE s.is_active = true
+        GROUP BY s.id, s.name
+        ORDER BY bookings_count DESC
+        LIMIT 5
+      `)
+    ]);
+
+
+    // Récupérer les données Stripe selon le mode
+    let stripeCustomers = 0;
+    let stripeProducts = 0;
+    let totalRevenue = 0;
+    let monthlyRevenue = 0;
+    let netRevenue = 0;
+
+    try {
+      const stripeConfig = await getStripeConfig();
+      if (stripeConfig) {
+        const stripeInstance = new Stripe(stripeConfig.secretKey);
+        
+        // Récupérer les clients Stripe selon le mode
+        const customers = await stripeInstance.customers.list({ limit: 100 });
+        console.log(`📊 Clients Stripe récupérés (total: ${customers.data.length}):`);
+        customers.data.forEach(customer => {
+          console.log(`  - ID: ${customer.id}, livemode: ${customer.livemode}, email: ${customer.email}`);
+        });
+        
+        // Utiliser les données live si disponibles, sinon test
+        const liveCustomers = customers.data.filter(customer => customer.livemode);
+        const testCustomers = customers.data.filter(customer => !customer.livemode);
+        
+        if (mode === 'test') {
+          stripeCustomers = testCustomers.length;
+          console.log(`🧪 Mode TEST: ${stripeCustomers} clients de test trouvés`);
+        } else {
+          // En mode production, FORCER l'utilisation des données live
+          stripeCustomers = liveCustomers.length;
+          console.log(`🚀 Mode PRODUCTION: ${stripeCustomers} clients live (${liveCustomers.length} live, ${testCustomers.length} test) - FORCÉ LIVE`);
+        }
+        
+        // Récupérer les produits Stripe selon le mode
+        const products = await stripeInstance.products.list({ limit: 100 });
+        console.log(`📦 Produits Stripe récupérés (total: ${products.data.length}):`);
+        products.data.forEach(product => {
+          console.log(`  - ID: ${product.id}, livemode: ${product.livemode}, name: ${product.name}`);
+        });
+        
+        // Utiliser les données live si disponibles, sinon test
+        const liveProducts = products.data.filter(product => product.livemode);
+        const testProducts = products.data.filter(product => !product.livemode);
+        
+        if (mode === 'test') {
+          stripeProducts = testProducts.length;
+          console.log(`🧪 Mode TEST: ${stripeProducts} produits de test trouvés`);
+        } else {
+          // En mode production, FORCER l'utilisation des données live
+          stripeProducts = liveProducts.length;
+          console.log(`🚀 Mode PRODUCTION: ${stripeProducts} produits live (${liveProducts.length} live, ${testProducts.length} test) - FORCÉ LIVE`);
+        }
+        
+        // Récupérer les revenus selon le mode
+        const charges = await stripeInstance.charges.list({ 
+          limit: 100,
+          created: {
+            gte: Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60) // 30 derniers jours
+          }
+        });
+        
+        // Calculer les revenus selon le mode
+        const liveCharges = charges.data.filter(charge => charge.livemode === true);
+        const testCharges = charges.data.filter(charge => charge.livemode === false);
+        
+        if (mode === 'test') {
+          // En mode test, inclure seulement les charges de test
+          totalRevenue = testCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0) / 100;
+          monthlyRevenue = totalRevenue;
+          console.log(`🧪 Mode TEST: ${testCharges.length} charges de test trouvées`);
+        } else {
+          // En mode production, FORCER l'utilisation des charges live
+          totalRevenue = liveCharges.reduce((sum, charge) => sum + (charge.amount || 0), 0) / 100;
+          monthlyRevenue = totalRevenue;
+          console.log(`🚀 Mode PRODUCTION: ${liveCharges.length} charges live (${liveCharges.length} live, ${testCharges.length} test) - FORCÉ LIVE`);
+        }
+        
+        // Calculer les revenus nets (approximation avec 2.9% + 0.25€ par transaction)
+        netRevenue = totalRevenue * 0.971; // Approximation des frais Stripe
+        
+        console.log(`📊 Données Stripe (mode: ${mode}):`, {
+          totalCustomers: customers.data.length,
+          filteredCustomers: stripeCustomers,
+          totalProducts: products.data.length,
+          filteredProducts: stripeProducts,
+          totalCharges: charges.data.length,
+          revenue: totalRevenue,
+          netRevenue: netRevenue
+        });
+        
+        // Message d'information si pas de données live
+        if (mode === 'live' && liveCustomers.length === 0 && liveProducts.length === 0) {
+          console.log('ℹ️  Aucune donnée Stripe live trouvée - Affichage des données de test');
+        }
+      }
+    } catch (stripeError) {
+      console.log('⚠️ Erreur récupération données Stripe:', stripeError.message);
+    }
+
+    const stats = {
+      total_users: parseInt(usersResult.rows[0].total_users) || 0,
+      active_users: parseInt(usersResult.rows[0].active_users) || 0,
+      total_spaces: parseInt(spacesResult.rows[0].total_spaces) || 0,
+      available_spaces: parseInt(spacesResult.rows[0].available_spaces) || 0,
+      total_bookings: parseInt(bookingsResult.rows[0].total_bookings) || 0,
+      active_bookings: parseInt(bookingsResult.rows[0].active_bookings) || 0,
+      total_revenue: totalRevenue,
+      monthly_revenue: monthlyRevenue,
+      net_revenue: netRevenue,
+      stripe_customers: stripeCustomers,
+      stripe_products: stripeProducts,
+      recent_bookings: recentBookingsResult.rows.map(row => ({
+        id: row.id,
+        space_name: row.space_name,
+        user_name: row.user_name,
+        created_at: new Date(row.created_at).toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        status: row.status,
+        company: row.company
+      })),
+      popular_spaces: popularSpacesResult.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        bookings_count: parseInt(row.bookings_count) || 0
+      }))
+    };
+
+
+    console.log(`✅ Statistiques récupérées (mode: ${mode}):`, {
+      baseData: {
+        users: stats.total_users,
+        spaces: stats.total_spaces,
+        bookings: stats.total_bookings
+      },
+      stripeData: {
+        customers: stats.stripe_customers,
+        products: stats.stripe_products,
+        revenue: stats.total_revenue,
+        netRevenue: stats.net_revenue
+      },
+      fullStats: stats
+    });
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('❌ Erreur récupération stats admin:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/admin/alerts - Alertes système
+app.get('/api/admin/alerts', authenticateToken, async (req, res) => {
+  try {
+    const { mode = 'test' } = req.query;
+    console.log(`🚨 Récupération des alertes (mode: ${mode})...`);
+    
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Accès refusé - Admin requis' });
+    }
+
+    const alerts = [
+      {
+        id: '1',
+        type: 'info',
+        title: 'Mode de fonctionnement',
+        message: `Application en mode ${mode === 'test' ? 'test' : 'production'}`,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        type: 'success',
+        title: 'Connexion base de données',
+        message: 'Connexion PostgreSQL établie avec succès',
+        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      },
+      {
+        id: '3',
+        type: 'warning',
+        title: 'Synchronisation Stripe',
+        message: mode === 'test' 
+          ? 'Synchronisation Stripe test en cours...' 
+          : 'Vérifiez la synchronisation Stripe production',
+        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      }
+    ];
+
+    // Ajouter une alerte d'erreur si on est en mode production
+    if (mode === 'live') {
+      alerts.push({
+        id: '4',
+        type: 'error',
+        title: 'Mode Production',
+        message: 'Vous êtes en mode production - attention aux modifications',
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      });
+    }
+
+    console.log(`✅ Alertes récupérées (mode: ${mode}):`, alerts.length);
+    res.json({ success: true, data: alerts });
+  } catch (error) {
+    console.error('❌ Erreur récupération alertes:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/admin/stripe-stats - Statistiques Stripe détaillées
+app.get('/api/admin/stripe-stats', authenticateToken, async (req, res) => {
+  try {
+    const { mode = 'test', period = 'month' } = req.query;
+    
+    console.log(`📊 Récupération des statistiques Stripe (mode: ${mode}, période: ${period})`);
+    
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Accès refusé - Admin requis' });
+    }
+
+    // Récupérer les vraies données Stripe
+    let stripeData = [];
+    
+    try {
+      const stripeConfig = await getStripeConfig();
+      if (stripeConfig) {
+        const stripeInstance = new Stripe(stripeConfig.secretKey);
+        
+        // Récupérer les charges selon le mode et la période
+        const daysBack = period === 'day' ? 7 : period === 'month' ? 30 : 365;
+        const startDate = Math.floor(Date.now() / 1000) - (daysBack * 24 * 60 * 60);
+        
+        const charges = await stripeInstance.charges.list({
+          limit: 100,
+          created: { gte: startDate }
+        });
+        
+        // Filtrer selon le mode
+        const filteredCharges = mode === 'test' 
+          ? charges.data.filter(charge => !charge.livemode)
+          : charges.data.filter(charge => charge.livemode);
+        
+        // Grouper par jour et calculer les statistiques
+        const dailyStats = {};
+        filteredCharges.forEach(charge => {
+          const date = new Date(charge.created * 1000).toISOString().split('T')[0];
+          if (!dailyStats[date]) {
+            dailyStats[date] = {
+              date,
+              revenue: 0,
+              bookings: 0,
+              cancellations: 0,
+              net_revenue: 0
+            };
+          }
+          
+          dailyStats[date].revenue += charge.amount / 100;
+          dailyStats[date].bookings += 1;
+          dailyStats[date].net_revenue += (charge.amount / 100) * 0.971; // Frais Stripe
+          
+          if (charge.refunded) {
+            dailyStats[date].cancellations += 1;
+          }
+        });
+        
+        stripeData = Object.values(dailyStats).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        console.log(`📊 Données Stripe réelles (mode: ${mode}):`, {
+          totalCharges: charges.data.length,
+          filteredCharges: filteredCharges.length,
+          dailyStats: stripeData.length,
+          sampleCharges: filteredCharges.slice(0, 3).map(c => ({
+            id: c.id,
+            amount: c.amount,
+            livemode: c.livemode,
+            created: new Date(c.created * 1000).toISOString()
+          }))
+        });
+      }
+    } catch (stripeError) {
+      console.log('⚠️ Erreur récupération données Stripe:', stripeError.message);
+    }
+
+    console.log('✅ Statistiques Stripe récupérées:', stripeData.length, 'entrées');
+    res.json({ success: true, data: stripeData });
+  } catch (error) {
+    console.error('❌ Erreur récupération stats Stripe:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/admin/detailed-stats - Statistiques détaillées
+app.get('/api/admin/detailed-stats', authenticateToken, async (req, res) => {
+  try {
+    const { mode = 'test', period = 'month' } = req.query;
+    
+    console.log(`📊 Récupération des statistiques détaillées (mode: ${mode}, période: ${period})`);
+    
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Accès refusé - Admin requis' });
+    }
+
+    // Récupérer les vraies données détaillées
+    let detailedData = [];
+    
+    try {
+      // Récupérer les données de l'application
+      const [usersResult, spacesResult, bookingsResult] = await Promise.all([
+        pool.query(`
+          SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as users
+          FROM profiles 
+          WHERE created_at >= NOW() - INTERVAL '${period === 'day' ? '7' : period === 'month' ? '30' : '365'} days'
+          GROUP BY DATE(created_at)
+          ORDER BY date
+        `),
+        pool.query(`
+          SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as spaces
+          FROM spaces 
+          WHERE created_at >= NOW() - INTERVAL '${period === 'day' ? '7' : period === 'month' ? '30' : '365'} days'
+          GROUP BY DATE(created_at)
+          ORDER BY date
+        `),
+        pool.query(`
+          SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as bookings
+          FROM bookings 
+          WHERE created_at >= NOW() - INTERVAL '${period === 'day' ? '7' : period === 'month' ? '30' : '365'} days'
+          GROUP BY DATE(created_at)
+          ORDER BY date
+        `)
+      ]);
+
+      // Récupérer les données Stripe selon le mode
+      let stripeRevenue = {};
+      try {
+        const stripeConfig = await getStripeConfig();
+        if (stripeConfig) {
+          const stripeInstance = new Stripe(stripeConfig.secretKey);
+          const daysBack = period === 'day' ? 7 : period === 'month' ? 30 : 365;
+          const startDate = Math.floor(Date.now() / 1000) - (daysBack * 24 * 60 * 60);
+          
+          const charges = await stripeInstance.charges.list({
+            limit: 100,
+            created: { gte: startDate }
+          });
+          
+          const filteredCharges = mode === 'test' 
+            ? charges.data.filter(charge => !charge.livemode)
+            : charges.data.filter(charge => charge.livemode);
+          
+          filteredCharges.forEach(charge => {
+            const date = new Date(charge.created * 1000).toISOString().split('T')[0];
+            if (!stripeRevenue[date]) {
+              stripeRevenue[date] = 0;
+            }
+            stripeRevenue[date] += charge.amount / 100;
+          });
+        }
+      } catch (stripeError) {
+        console.log('⚠️ Erreur récupération revenus Stripe:', stripeError.message);
+      }
+
+      // Combiner les données
+      const allDates = new Set([
+        ...usersResult.rows.map(r => r.date),
+        ...spacesResult.rows.map(r => r.date),
+        ...bookingsResult.rows.map(r => r.date),
+        ...Object.keys(stripeRevenue)
+      ]);
+
+      detailedData = Array.from(allDates).map(date => ({
+        date,
+        users: usersResult.rows.find(r => r.date === date)?.users || 0,
+        spaces: spacesResult.rows.find(r => r.date === date)?.spaces || 0,
+        bookings: bookingsResult.rows.find(r => r.date === date)?.bookings || 0,
+        revenue: stripeRevenue[date] || 0
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      console.log(`📊 Données détaillées réelles (mode: ${mode}):`, {
+        totalDates: detailedData.length,
+        usersData: usersResult.rows.length,
+        spacesData: spacesResult.rows.length,
+        bookingsData: bookingsResult.rows.length,
+        stripeRevenue: Object.keys(stripeRevenue).length,
+        sampleDetailedData: detailedData.slice(0, 3)
+      });
+    } catch (dbError) {
+      console.log('⚠️ Erreur récupération données base:', dbError.message);
+    }
+
+    console.log('✅ Statistiques détaillées récupérées:', detailedData.length, 'entrées');
+    res.json({ success: true, data: detailedData });
+  } catch (error) {
+    console.error('❌ Erreur récupération stats détaillées:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAdminStats } from "@/hooks/useAdminStats";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -13,8 +12,15 @@ interface Booking {
   company?: string;
 }
 
-export const RecentBookings = () => {
-  const { stats, loading, error } = useAdminStats();
+interface RecentBookingsProps {
+  stats?: {
+    recent_bookings?: Booking[];
+  };
+  loading?: boolean;
+  error?: string | null;
+}
+
+export const RecentBookings = ({ stats, loading = false, error = null }: RecentBookingsProps) => {
 
   // Composant de chargement
   const LoadingSkeleton = () => (
@@ -58,9 +64,9 @@ export const RecentBookings = () => {
     if (bookings.length === 0) {
       return (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Réservations Récentes</CardTitle>
-          </CardHeader>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">Récentes</CardTitle>
+        </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">Aucune réservation récente</p>
           </CardContent>

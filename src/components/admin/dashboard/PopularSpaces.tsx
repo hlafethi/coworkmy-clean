@@ -1,8 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAdminStats } from "@/hooks/useAdminStats";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Building2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Building2, TrendingUp, Users } from 'lucide-react';
 
 interface Space {
   id: string;
@@ -10,92 +8,87 @@ interface Space {
   bookings_count: number;
 }
 
-export const PopularSpaces = () => {
-  const { stats, loading, error } = useAdminStats();
+interface PopularSpacesProps {
+  spaces: Space[];
+  loading: boolean;
+}
 
-  // Composant de chargement
-  const LoadingSkeleton = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">
-          <Skeleton className="h-6 w-[200px]" />
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {[...Array(5)].map((_, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-[150px]" />
-                <Skeleton className="h-3 w-[100px]" />
-              </div>
-              <Skeleton className="h-4 w-[80px]" />
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  // Composant d'erreur
-  const ErrorDisplay = () => (
-    <Alert variant="destructive">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Erreur</AlertTitle>
-      <AlertDescription>
-        {error || "Une erreur est survenue lors du chargement des espaces populaires"}
-      </AlertDescription>
-    </Alert>
-  );
-
-  // Composant de données
-  const SpacesDisplay = () => {
-    const spaces: Space[] = stats?.popular_spaces || [];
-
-    if (spaces.length === 0) {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Espaces Populaires</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">Aucun espace disponible</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
+export const PopularSpaces = ({ spaces, loading }: PopularSpacesProps) => {
+  if (loading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Espaces Populaires</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Populaires
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {spaces.map((space) => (
-              <div key={space.id} className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{space.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {space.bookings_count} réservations
-                  </p>
+            {[...Array(5)].map((_, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[150px]" />
+                  <Skeleton className="h-3 w-[100px]" />
                 </div>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <Skeleton className="h-4 w-[60px]" />
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
     );
-  };
-
-  if (loading) {
-    return <LoadingSkeleton />;
   }
 
-  if (error) {
-    return <ErrorDisplay />;
+  if (spaces.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Populaires
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Aucun espace avec des réservations</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
-  return <SpacesDisplay />;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          Espaces populaires
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {spaces.map((space, index) => (
+            <div key={space.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded-full text-sm font-bold">
+                  {index + 1}
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">{space.name}</h4>
+                  <p className="text-sm text-gray-500">Espace de coworking</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="h-4 w-4" />
+                <span className="font-medium">{space.bookings_count}</span>
+                <span>réservations</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 };

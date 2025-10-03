@@ -1,6 +1,10 @@
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const SEVERITY_LEVELS = ['low', 'moderate', 'high', 'critical'];
@@ -129,7 +133,7 @@ function checkDependencyIssues() {
   log('\n=== Checking for known dependency issues ===', colors.cyan);
   
   const packageFile = path.join(process.cwd(), 'package.json');
-  const packageData = require(packageFile);
+  const packageData = JSON.parse(fs.readFileSync(packageFile, 'utf8'));
   const dependencies = { 
     ...packageData.dependencies, 
     ...packageData.devDependencies 

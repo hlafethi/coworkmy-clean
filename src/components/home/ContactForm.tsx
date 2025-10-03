@@ -24,8 +24,9 @@ const ContactForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    // TODO: Remplacer par un vrai appel API
+    try {
+      // const response = await apiClient.post('/contact', formData);
       console.log("Form submitted:", formData);
       toast.success("Message envoyé avec succès ! Nous vous contacterons bientôt.");
       setFormData({
@@ -34,8 +35,11 @@ const ContactForm = () => {
         phone: "",
         message: "",
       });
+    } catch (error) {
+      toast.error("Erreur lors de l'envoi du message");
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (

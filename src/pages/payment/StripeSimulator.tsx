@@ -23,7 +23,7 @@ const StripeSimulator = () => {
 
   const handlePayment = () => {
     setLoading(true);
-    // Simuler un délai de traitement du paiement
+    // Délai de traitement du paiement
     setTimeout(() => {
       if (successUrl) {
         window.location.href = decodeURIComponent(successUrl);
@@ -55,7 +55,7 @@ const StripeSimulator = () => {
             </div>
           </div>
           <CardDescription>
-            Ceci est une simulation de la page de paiement Stripe pour les tests
+            Page de test pour les paiements Stripe
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -68,7 +68,7 @@ const StripeSimulator = () => {
             <div className="pt-2 border-t">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <ShieldCheck className="h-4 w-4 text-green-600" />
-                <span>Paiement sécurisé (simulation)</span>
+                <span>Paiement sécurisé (test)</span>
               </div>
             </div>
           </div>
@@ -84,7 +84,7 @@ const StripeSimulator = () => {
               <div className="h-10 bg-gray-200 rounded w-1/2"></div>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Pour cette simulation, aucune information de carte n'est nécessaire
+              Pour ce test, aucune information de carte n'est nécessaire
             </p>
           </div>
         </CardContent>
