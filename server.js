@@ -56,31 +56,31 @@ const getStripeConfig = async () => {
 // Nouvelle fonction pour récupérer la config Stripe selon un mode spécifique
 const getStripeConfigForMode = async (requestedMode) => {
   try {
-    const result = await pool.query(`
-      SELECT value FROM admin_settings 
-      WHERE key = 'stripe' 
-      ORDER BY updated_at DESC 
-      LIMIT 1
-    `);
+    console.log('🔧 Récupération config Stripe depuis les variables d\'environnement...');
     
-    if (result.rows.length === 0) {
-      throw new Error('Configuration Stripe non trouvée');
-    }
+    // Utiliser les variables d'environnement existantes
+    const secretKey = requestedMode === 'live' 
+      ? process.env.STRIPE_SECRET_KEY 
+      : process.env.STRIPE_TEST_SECRET_KEY;
     
-    const config = result.rows[0].value;
-    console.log('🔧 Configuration Stripe récupérée pour mode:', {
+    const publishableKey = requestedMode === 'live' 
+      ? process.env.VITE_STRIPE_PUBLIC_KEY 
+      : process.env.VITE_STRIPE_TEST_PUBLIC_KEY;
+    
+    const webhookSecret = requestedMode === 'live' 
+      ? process.env.STRIPE_WEBHOOK_SECRET 
+      : process.env.STRIPE_TEST_WEBHOOK_SECRET;
+    
+    console.log('🔧 Configuration Stripe depuis .env:', {
       requestedMode,
-      hasTestSecret: !!config.test_secret_key,
-      hasLiveSecret: !!config.live_secret_key
+      hasTestSecret: !!process.env.STRIPE_TEST_SECRET_KEY,
+      hasLiveSecret: !!process.env.STRIPE_SECRET_KEY,
+      secretKeyExists: !!secretKey,
+      secretKeyPreview: secretKey ? secretKey.substring(0, 10) + '...' : 'none'
     });
     
-    // Utiliser le mode demandé plutôt que le mode configuré
-    const secretKey = requestedMode === 'live' ? config.live_secret_key : config.test_secret_key;
-    const publishableKey = requestedMode === 'live' ? config.live_publishable_key : config.test_publishable_key;
-    const webhookSecret = requestedMode === 'live' ? config.live_webhook_secret : config.webhook_secret;
-    
     if (!secretKey) {
-      throw new Error(`Clé secrète Stripe manquante pour le mode ${requestedMode}`);
+      throw new Error(`Clé secrète Stripe manquante pour le mode ${requestedMode}. Vérifiez les variables d'environnement STRIPE_${requestedMode.toUpperCase()}_SECRET_KEY.`);
     }
     
     return {
@@ -1260,7 +1260,170 @@ app.delete('/api/admin/bookings/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Fonction pour récupérer les statistiques Stripe détaillées par période
+async function getStripeDetailedStats(mode, period) {
+  try {
+    console.log(`🔍 Début getStripeDetailedStats avec mode: ${mode}, période: ${period}`);
+    
+    // Initialiser Stripe avec le mode spécifique
+    let stripeInstance = null;
+    try {
+      const config = await getStripeConfigForMode(mode);
+      console.log(`🔧 Configuration Stripe pour mode ${mode}:`, {
+        hasSecretKey: !!config.secretKey,
+        secretKeyPreview: config.secretKey ? config.secretKey.substring(0, 10) + '...' : 'none',
+        mode: config.mode
+      });
+      
+      stripeInstance = new Stripe(config.secretKey, {
+        apiVersion: '2023-10-16',
+      });
+      console.log(`✅ Instance Stripe initialisée pour le mode: ${mode}`);
+    } catch (stripeError) {
+      console.log(`⚠️ Erreur initialisation Stripe pour le mode ${mode}:`, stripeError.message);
+      return [];
+    }
+
+    if (!stripeInstance) {
+      return [];
+    }
+
+    // Récupérer les charges Stripe
+    const charges = await stripeInstance.charges.list({ limit: 100 });
+    console.log(`🔍 Total charges récupérées: ${charges.data.length}`);
+    console.log(`🔍 Mode demandé: ${mode}`);
+    
+    // Debug: afficher quelques charges pour comprendre
+    if (charges.data.length > 0) {
+      console.log('🔍 Première charge:', {
+        id: charges.data[0].id,
+        livemode: charges.data[0].livemode,
+        status: charges.data[0].status,
+        amount: charges.data[0].amount,
+        created: new Date(charges.data[0].created * 1000).toISOString()
+      });
+    }
+    
+    const filteredCharges = charges.data.filter(charge => {
+      if (mode === 'test') return !charge.livemode;
+      if (mode === 'live') return charge.livemode;
+      return true;
+    });
+
+    console.log(`🔍 ${filteredCharges.length} charges trouvées pour le mode ${mode}`);
+    console.log(`🔍 Répartition: ${charges.data.filter(c => !c.livemode).length} test, ${charges.data.filter(c => c.livemode).length} live`);
+
+    if (filteredCharges.length === 0) {
+      console.log(`⚠️ Aucune charge trouvée pour le mode ${mode}. Vérifiez:`);
+      console.log(`   - Configuration Stripe en mode ${mode}`);
+      console.log(`   - Existence de données dans Stripe Dashboard`);
+      console.log(`   - Clés API correctes`);
+      return [];
+    }
+
+    // Grouper les données par période
+    const groupedData = {};
+    
+    filteredCharges.forEach(charge => {
+      if (charge.status === 'succeeded') {
+        const date = new Date(charge.created * 1000);
+        let key;
+        
+        switch (period) {
+          case 'day':
+            key = date.toISOString().split('T')[0]; // YYYY-MM-DD
+            break;
+          case 'month':
+            key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+            break;
+          case 'year':
+            key = date.getFullYear().toString(); // YYYY
+            break;
+          default:
+            key = date.toISOString().split('T')[0];
+        }
+
+        if (!groupedData[key]) {
+          groupedData[key] = {
+            date: key,
+            reservations: 0,
+            annulations: 0,
+            revenus: 0,
+            revenus_nets: 0,
+            clients: 0,
+            tarifs_moyens: 0
+          };
+        }
+
+        // Compter les réservations (charges réussies)
+        groupedData[key].reservations += 1;
+        
+        // Calculer les revenus
+        const grossAmount = charge.amount / 100;
+        let netAmount = grossAmount;
+        
+        // Gérer les remboursements
+        if (charge.refunded && charge.amount_refunded > 0) {
+          const refundAmount = charge.amount_refunded / 100;
+          groupedData[key].annulations += 1;
+          groupedData[key].revenus += grossAmount;
+          groupedData[key].revenus_nets += Math.max(0, grossAmount - refundAmount);
+        } else {
+          groupedData[key].revenus += grossAmount;
+          groupedData[key].revenus_nets += grossAmount; // En mode test, pas de frais
+        }
+
+        // Compter les clients uniques
+        if (charge.customer) {
+          groupedData[key].clients += 1;
+        }
+
+        // Calculer les tarifs moyens
+        groupedData[key].tarifs_moyens = groupedData[key].revenus / groupedData[key].reservations;
+      }
+    });
+
+    // Convertir en tableau et trier par date
+    const result = Object.values(groupedData).sort((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+
+    console.log(`✅ Statistiques détaillées générées: ${result.length} périodes`);
+    return result;
+
+  } catch (error) {
+    console.error('❌ Erreur getStripeDetailedStats:', error);
+    return [];
+  }
+}
+
 // ===== ENDPOINTS POUR LES STATISTIQUES ADMIN =====
+
+// GET /api/admin/stripe-stats - Récupérer les statistiques Stripe détaillées
+app.get('/api/admin/stripe-stats', authenticateToken, async (req, res) => {
+  try {
+    console.log('🔍 Endpoint /api/admin/stripe-stats appelé');
+    console.log('🔍 User:', req.user);
+    
+    // Vérifier que l'utilisateur est admin
+    if (!req.user.is_admin) {
+      console.log('❌ Utilisateur non admin');
+      return sendResponse(res, false, null, 'Accès non autorisé');
+    }
+
+    const { mode = 'test', period = 'month' } = req.query;
+    console.log(`📊 Récupération des statistiques Stripe (mode: ${mode}, période: ${period})...`);
+
+    // Récupérer les statistiques Stripe détaillées
+    const stats = await getStripeDetailedStats(mode, period);
+    
+    console.log(`✅ Statistiques Stripe récupérées:`, stats.length, 'entrées');
+    sendResponse(res, true, stats);
+  } catch (error) {
+    console.error('❌ Erreur récupération stats Stripe:', error);
+    sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
 
 // GET /api/admin/stats - Récupérer les statistiques admin
 app.get('/api/admin/stats', authenticateToken, async (req, res) => {

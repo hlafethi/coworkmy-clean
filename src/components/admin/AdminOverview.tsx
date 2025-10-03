@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Users, Building2, Calendar, Euro } from "lucide-react";
 import { RecentBookings } from "./dashboard/RecentBookings";
+import { StripeStatsChart } from "./dashboard/StripeStatsChart";
 // ModeFilters supprimé - affichage des deux modes simultanément
 import { useState } from "react";
 
@@ -137,7 +138,13 @@ const AdminOverview = () => {
   const { data: liveStats, loading: liveLoading, error: liveError } = useAdminStats('live');
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Graphiques des statistiques Stripe */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <StripeStatsChart mode="test" />
+        <StripeStatsChart mode="live" />
+      </div>
+
       {/* Deux colonnes : Test et Production */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Colonne Mode Test */}

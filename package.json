@@ -88,7 +88,7 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^0.0.55",
     "react-router-dom": "^7.5.3",
-    "recharts": "^2.10.1",
+    "recharts": "^2.15.4",
     "remark-gfm": "^4.0.1",
     "sonner": "^1.2.3",
     "stripe": "^18.5.0",
