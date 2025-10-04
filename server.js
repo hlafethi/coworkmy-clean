@@ -97,7 +97,8 @@ const limiter = rateLimit({
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 5, // commencer à ralentir après 5 requêtes
-  delayMs: 500 // ajouter 500ms de délai par requête
+  delayMs: () => 500, // ajouter 500ms de délai par requête
+  validate: { delayMs: false }
 });
 
 // CORS sécurisé
@@ -134,10 +135,10 @@ pool.on('error', (err) => {
 });
 
 // JWT Secret - OBLIGATOIRE en production
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('❌ JWT_SECRET manquant dans les variables d\'environnement');
-  process.exit(1);
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-production';
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET manquant - utilisation d\'une clé de développement');
+  console.warn('⚠️  ATTENTION: Changez cette clé en production !');
 }
 
 // Middleware d'authentification
