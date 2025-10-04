@@ -76,7 +76,7 @@ app.use(helmet({
       workerSrc: ["'self'", "blob:"],
       frameAncestors: ["'none'"],
       formAction: ["'self'"],
-      upgradeInsecureRequests: true
+      upgradeInsecureRequests: []
     }
   },
   crossOriginEmbedderPolicy: false
