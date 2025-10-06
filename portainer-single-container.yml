@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  coworkmy-app:
+    image: node:20-alpine
+    container_name: coworkmy-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: 147.93.58.155
+      DB_PORT: 5432
+      DB_NAME: coworkmy
+      DB_USER: vpshostinger
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL: true
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: https://coworkmy.fr,https://www.coworkmy.fr
+      FRONTEND_URL: https://coworkmy.fr
+    volumes:
+      - uploads_data:/app/uploads
+    working_dir: /app
+    command: >
+      sh -c "
+        set -e &&
+        apk add --no-cache git &&
+        echo 'Cleaning /app directory...' &&
+        rm -rf /app/* /app/.* 2>/dev/null || true &&
+        echo 'Cloning repository...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
+        cp -r /tmp/app/* /app/ &&
+        rm -rf /tmp/app &&
+        echo 'Installing dependencies...' &&
+        npm install --omit=dev &&
+        echo 'Starting application...' &&
+        node server.js
+      "
+
+volumes:
+  uploads_data:
