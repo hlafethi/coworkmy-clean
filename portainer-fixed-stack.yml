@@ -28,24 +28,26 @@ services:
       - FRONTEND_URL=https://coworkmy.fr
     command: >
       sh -c "
+        set -e &&
         apk add --no-cache git curl &&
         mkdir -p /app &&
         cd /app &&
-        rm -rf /tmp/app &&
-        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
-        cd /tmp/app &&
+        echo 'Cloning repository...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git . &&
         git checkout master &&
-        cp -r . /app/ &&
-        cd /app &&
-        rm -rf /tmp/app &&
+        echo 'Installing dependencies...' &&
         npm install &&
+        echo 'Building application...' &&
         npm run build &&
+        echo 'Starting application...' &&
         npm start
       "
     networks:
       - coworkmy-network
     ports:
       - "3002:5000"
+    volumes:
+      - app_cache:/app/node_modules
 
   redis:
     image: redis:7-alpine
@@ -55,6 +57,10 @@ services:
       - coworkmy-network
     ports:
       - "6380:6379"
+
+volumes:
+  app_cache:
+    driver: local
 
 networks:
   coworkmy-network:
