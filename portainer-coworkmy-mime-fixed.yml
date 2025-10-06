@@ -37,24 +37,24 @@ services:
       - coworkmy-network
 
   frontend:
-    image: nginx:alpine
+    image: node:20-alpine
     container_name: coworkmy-frontend
     restart: unless-stopped
     ports:
       - "3000:80"
     command: >
       sh -c "
-        apk add --no-cache git &&
+        apk add --no-cache git nginx &&
         echo 'Cloning repository...' &&
         git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/repo &&
-        echo 'Copying frontend files...' &&
+        echo 'Installing dependencies...' &&
+        cd /tmp/repo &&
+        npm install &&
+        echo 'Building frontend...' &&
+        npm run build &&
+        echo 'Copying built files...' &&
         mkdir -p /usr/share/nginx/html &&
-        if [ -d /tmp/repo/dist ]; then
-          cp -r /tmp/repo/dist/* /usr/share/nginx/html/;
-        else
-          echo 'Dist directory not found, creating minimal index.html';
-          echo '<!DOCTYPE html><html><head><title>COWORKMY</title></head><body><h1>Application en cours de déploiement...</h1></body></html>' > /usr/share/nginx/html/index.html;
-        fi &&
+        cp -r dist/* /usr/share/nginx/html/ &&
         cd / &&
         rm -rf /tmp/repo &&
         echo 'Creating nginx config with correct MIME types...' &&
