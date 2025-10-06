@@ -29,29 +29,22 @@ services:
     command: >
       sh -c "
         set -e &&
-        apk add --no-cache git curl &&
-        echo 'Cleaning workspace...' &&
-        rm -rf /tmp/coworkmy-app &&
-        echo 'Cloning repository...' &&
-        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/coworkmy-app &&
-        cd /tmp/coworkmy-app &&
+        apk add --no-cache git &&
+        echo 'Cloning and setting up...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
+        cd /tmp/app &&
         git checkout master &&
-        echo 'Moving files to /app...' &&
-        rm -rf /app/* /app/.* 2>/dev/null || true &&
         cp -r . /app/ &&
         cd /app &&
-        rm -rf /tmp/coworkmy-app &&
-        echo 'Installing production dependencies only...' &&
-        npm ci --only=production &&
-        echo 'Starting application...' &&
+        rm -rf /tmp/app &&
+        npm install &&
+        npm run build &&
         npm start
       "
     networks:
       - coworkmy-network
     ports:
       - "3002:5000"
-    volumes:
-      - app_cache:/app/node_modules
 
   redis:
     image: redis:7-alpine
@@ -61,10 +54,6 @@ services:
       - coworkmy-network
     ports:
       - "6380:6379"
-
-volumes:
-  app_cache:
-    driver: local
 
 networks:
   coworkmy-network:
