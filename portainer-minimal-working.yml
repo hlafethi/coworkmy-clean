@@ -7,8 +7,25 @@ services:
     restart: unless-stopped
     ports:
       - "8080:80"
-    volumes:
-      - ./dist:/usr/share/nginx/html:ro
+    command: >
+      sh -c "
+        set -e &&
+        apk add --no-cache git nodejs npm &&
+        echo 'Cloning repository...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
+        cd /tmp/app &&
+        echo 'Installing dependencies...' &&
+        npm install &&
+        echo 'Building application...' &&
+        npm run build &&
+        echo 'Copying built files...' &&
+        mkdir -p /usr/share/nginx/html &&
+        cp -r dist/* /usr/share/nginx/html/ &&
+        cd / &&
+        rm -rf /tmp/app &&
+        echo 'Starting nginx...' &&
+        nginx -g 'daemon off;'
+      "
     networks:
       - coworkmy-network
 
