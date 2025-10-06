@@ -30,13 +30,17 @@ services:
       sh -c "
         set -e &&
         apk add --no-cache git curl &&
-        echo 'Cleaning /app directory...' &&
-        rm -rf /app/* /app/.* 2>/dev/null || true &&
-        mkdir -p /app &&
-        cd /app &&
+        echo 'Cleaning workspace...' &&
+        rm -rf /tmp/coworkmy-app &&
         echo 'Cloning repository...' &&
-        git clone https://github.com/hlafethi/coworkmy-clean.git . &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/coworkmy-app &&
+        cd /tmp/coworkmy-app &&
         git checkout master &&
+        echo 'Moving files to /app...' &&
+        rm -rf /app/* /app/.* 2>/dev/null || true &&
+        cp -r . /app/ &&
+        cd /app &&
+        rm -rf /tmp/coworkmy-app &&
         echo 'Installing dependencies...' &&
         npm install &&
         echo 'Building application...' &&
