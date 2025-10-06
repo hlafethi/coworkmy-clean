@@ -111,6 +111,9 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' })); // Augmenter la limite pour les images
 
+// Servir les fichiers statiques du frontend
+app.use(express.static('dist'));
+
 // Application des limiters
 app.use(limiter);
 app.use('/api/auth', speedLimiter);
@@ -3844,12 +3847,19 @@ app.get('/api/admin/detailed-stats', authenticateToken, async (req, res) => {
 
 // ===== GESTION DES ERREURS 404 =====
 
-app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    error: 'Endpoint non trouvé',
-    path: req.originalUrl 
-  });
+// Route pour SPA - toutes les routes non-API redirigent vers index.html
+app.get('*', (req, res) => {
+  // Si c'est une route API, retourner 404
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ 
+      success: false,
+      error: "Endpoint non trouvé",
+      path: req.originalUrl 
+    });
+  }
+  
+  // Pour toutes les autres routes, servir index.html (SPA)
+  res.sendFile('index.html', { root: 'dist' });
 });
 
 const PORT = process.env.API_PORT || 5000;

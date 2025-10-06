@@ -7,8 +7,8 @@ WORKDIR /app
 # Copier les fichiers de configuration
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm ci --only=production
+# Installer toutes les dépendances (dev + prod) pour le build
+RUN npm ci
 
 # Copier le code source
 COPY . .
@@ -16,12 +16,18 @@ COPY . .
 # Construire l'application
 RUN npm run build
 
+# Supprimer les dépendances de développement
+RUN npm prune --production
+
+# Copier les fichiers statiques du frontend
+COPY dist/ ./dist/
+
 # Exposer le port
-EXPOSE 3000
+EXPOSE 5000
 
 # Variables d'environnement
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV API_PORT=5000
 
 # Commande de démarrage
 CMD ["npm", "start"]
