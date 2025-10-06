@@ -28,28 +28,21 @@ services:
         cd / &&
         rm -rf /tmp/app &&
         echo 'Creating nginx config...' &&
-        cat > /etc/nginx/conf.d/default.conf << 'EOF'
-server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-    index index.html;
-
-    # Correct MIME types for JavaScript modules
-    location ~* \.js$ {
-        add_header Content-Type application/javascript;
-    }
-    
-    location ~* \.css$ {
-        add_header Content-Type text/css;
-    }
-
-    # SPA routing: serve index.html for all routes
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
-EOF
+        echo 'server {' > /etc/nginx/conf.d/default.conf &&
+        echo '    listen 80;' >> /etc/nginx/conf.d/default.conf &&
+        echo '    server_name _;' >> /etc/nginx/conf.d/default.conf &&
+        echo '    root /usr/share/nginx/html;' >> /etc/nginx/conf.d/default.conf &&
+        echo '    index index.html;' >> /etc/nginx/conf.d/default.conf &&
+        echo '    location ~* \.js$ {' >> /etc/nginx/conf.d/default.conf &&
+        echo '        add_header Content-Type application/javascript;' >> /etc/nginx/conf.d/default.conf &&
+        echo '    }' >> /etc/nginx/conf.d/default.conf &&
+        echo '    location ~* \.css$ {' >> /etc/nginx/conf.d/default.conf &&
+        echo '        add_header Content-Type text/css;' >> /etc/nginx/conf.d/default.conf &&
+        echo '    }' >> /etc/nginx/conf.d/default.conf &&
+        echo '    location / {' >> /etc/nginx/conf.d/default.conf &&
+        echo '        try_files $uri $uri/ /index.html;' >> /etc/nginx/conf.d/default.conf &&
+        echo '    }' >> /etc/nginx/conf.d/default.conf &&
+        echo '}' >> /etc/nginx/conf.d/default.conf &&
         echo 'Starting nginx...' &&
         nginx -g 'daemon off;'
       "
