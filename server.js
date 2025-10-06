@@ -3848,7 +3848,7 @@ app.get('/api/admin/detailed-stats', authenticateToken, async (req, res) => {
 // ===== GESTION DES ERREURS 404 =====
 
 // Route pour SPA - toutes les routes non-API redirigent vers index.html
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   // Si c'est une route API, retourner 404
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ 
