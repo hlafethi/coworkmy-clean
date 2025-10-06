@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
 
 export interface GoogleBusinessConfig {
   place_id: string;
@@ -22,13 +23,13 @@ export async function getGoogleBusinessConfig(): Promise<GoogleBusinessConfig> {
       .single();
 
     if (error) {
-      console.warn('Erreur lors de la récupération de la configuration Google Business:', error);
+      logger.warn('Erreur lors de la récupération de la configuration Google Business:', error);
       return DEFAULT_CONFIG;
     }
 
     return data || DEFAULT_CONFIG;
   } catch (error) {
-    console.error('Erreur lors de la récupération de la configuration Google Business:', error);
+    logger.error('Erreur lors de la récupération de la configuration Google Business:', error);
     return DEFAULT_CONFIG;
   }
 }
@@ -40,13 +41,13 @@ export async function updateGoogleBusinessConfig(config: Partial<GoogleBusinessC
       .upsert(config);
 
     if (error) {
-      console.error('Erreur lors de la mise à jour de la configuration Google Business:', error);
+      logger.error('Erreur lors de la mise à jour de la configuration Google Business:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la configuration Google Business:', error);
+    logger.error('Erreur lors de la mise à jour de la configuration Google Business:', error);
     return false;
   }
 } 

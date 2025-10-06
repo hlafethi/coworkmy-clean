@@ -1,5 +1,6 @@
 // @ts-nocheck
 import pg from 'pg';
+import { logger } from '@/utils/logger';
 const { Pool } = pg;
 
 // Configuration de la connexion à la base de données PostgreSQL
@@ -21,10 +22,10 @@ export async function query(text: string, params: any[] = []) {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Exécution de la requête', { text, duration, rows: res.rowCount });
+    logger.debug('Exécution de la requête', { text, duration, rows: res.rowCount });
     return res;
   } catch (error) {
-    console.error('Erreur lors de l\'exécution de la requête', { text, error });
+    logger.error('Erreur lors de l\'exécution de la requête', { text, error });
     throw error;
   }
 }

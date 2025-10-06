@@ -15,6 +15,7 @@ import { useId } from "react";
 import { useState } from "react";
 // import { supabase } from "@/lib/supabase"; // Désactivé - utilisation de PostgreSQL
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 interface HomepageSettingsTabProps {
   form: UseFormReturn<SettingsFormValues>;
@@ -330,7 +331,7 @@ export function ImageUploader(props: {
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Erreur upload image:', error);
+      logger.error('Erreur upload image:', error);
       toast.error("Erreur lors de l'upload de l'image");
     } finally {
       setIsUploading(false);

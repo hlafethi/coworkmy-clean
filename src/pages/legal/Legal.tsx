@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { LegalPageType, useLegalPages } from "@/hooks/useLegalPages";
+import { logger } from '@/utils/logger';
 
 const Legal = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Legal = () => {
           setTitle(page.title);
         }
       } catch (error) {
-        console.error("Error loading legal notice:", error);
+        logger.error("Error loading legal notice:", error);
       } finally {
         setLoading(false);
       }

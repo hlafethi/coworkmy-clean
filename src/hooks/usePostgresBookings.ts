@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { BookingService } from "@/integrations/postgres/services";
 import { Booking } from "@/integrations/postgres/types";
 import { usePostgresAuth } from "./usePostgresAuth";
+import { logger } from '@/utils/logger';
 
 /**
  * Hook pour gérer les réservations avec PostgreSQL
@@ -28,7 +29,7 @@ export function usePostgresBookings() {
 
       return data;
     } catch (err) {
-      console.error("Erreur lors de la récupération des réservations:", err);
+      logger.error("Erreur lors de la récupération des réservations:", err);
       setError(err as Error);
       toast.error("Impossible de charger les réservations");
       return [];
@@ -55,7 +56,7 @@ export function usePostgresBookings() {
 
       return data;
     } catch (err) {
-      console.error("Erreur lors de la récupération des réservations de l'utilisateur:", err);
+      logger.error("Erreur lors de la récupération des réservations de l'utilisateur:", err);
       setError(err as Error);
       toast.error("Impossible de charger vos réservations");
       return [];
@@ -76,7 +77,7 @@ export function usePostgresBookings() {
       const data = await BookingService.getBySpaceId(spaceId);
       return data;
     } catch (err) {
-      console.error("Erreur lors de la récupération des réservations pour l'espace:", err);
+      logger.error("Erreur lors de la récupération des réservations pour l'espace:", err);
       setError(err as Error);
       toast.error("Impossible de charger les réservations pour cet espace");
       return [];
@@ -97,7 +98,7 @@ export function usePostgresBookings() {
       const data = await BookingService.getByStatus(status);
       return data;
     } catch (err) {
-      console.error("Erreur lors de la récupération des réservations par statut:", err);
+      logger.error("Erreur lors de la récupération des réservations par statut:", err);
       setError(err as Error);
       toast.error("Impossible de charger les réservations");
       return [];
@@ -118,7 +119,7 @@ export function usePostgresBookings() {
       const data = await BookingService.getById(id);
       return data;
     } catch (err) {
-      console.error("Erreur lors de la récupération de la réservation:", err);
+      logger.error("Erreur lors de la récupération de la réservation:", err);
       setError(err as Error);
       toast.error("Impossible de charger la réservation");
       return null;
@@ -161,7 +162,7 @@ export function usePostgresBookings() {
       toast.success("Réservation créée avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la création de la réservation:", err);
+      logger.error("Erreur lors de la création de la réservation:", err);
       setError(err as Error);
       toast.error(err.message || "Impossible de créer la réservation");
       return null;
@@ -214,7 +215,7 @@ export function usePostgresBookings() {
       toast.success("Réservation mise à jour avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la mise à jour de la réservation:", err);
+      logger.error("Erreur lors de la mise à jour de la réservation:", err);
       setError(err as Error);
       toast.error(err.message || "Impossible de mettre à jour la réservation");
       return null;
@@ -247,7 +248,7 @@ export function usePostgresBookings() {
       toast.success("Réservation annulée avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de l'annulation de la réservation:", err);
+      logger.error("Erreur lors de l'annulation de la réservation:", err);
       setError(err as Error);
       toast.error("Impossible d'annuler la réservation");
       return null;
@@ -280,7 +281,7 @@ export function usePostgresBookings() {
       toast.success("Réservation confirmée avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la confirmation de la réservation:", err);
+      logger.error("Erreur lors de la confirmation de la réservation:", err);
       setError(err as Error);
       toast.error("Impossible de confirmer la réservation");
       return null;
@@ -315,7 +316,7 @@ export function usePostgresBookings() {
       
       return success;
     } catch (err) {
-      console.error("Erreur lors de la suppression de la réservation:", err);
+      logger.error("Erreur lors de la suppression de la réservation:", err);
       setError(err as Error);
       toast.error("Impossible de supprimer la réservation");
       return false;
@@ -338,7 +339,7 @@ export function usePostgresBookings() {
       const isAvailable = await BookingService.checkAvailability(spaceId, startTime, endTime);
       return isAvailable;
     } catch (err) {
-      console.error("Erreur lors de la vérification de la disponibilité:", err);
+      logger.error("Erreur lors de la vérification de la disponibilité:", err);
       setError(err as Error);
       toast.error("Impossible de vérifier la disponibilité");
       return false;
@@ -369,7 +370,7 @@ export function usePostgresBookings() {
       
       return data;
     } catch (err) {
-      console.error("Erreur lors de la récupération des réservations:", err);
+      logger.error("Erreur lors de la récupération des réservations:", err);
       setError(err as Error);
       toast.error("Impossible de charger les réservations");
       return [];

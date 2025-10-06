@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import Stripe from "stripe";
+import { logger } from '@/utils/logger';
 
 export interface PriceValidation {
   isValid: boolean;
@@ -90,7 +91,7 @@ export const createStripePrice = async (
 
     return stripePrice.id;
   } catch (error) {
-    console.error('❌ Erreur lors de la création du prix Stripe:', error);
+    logger.error('❌ Erreur lors de la création du prix Stripe:', error);
     throw error;
   }
 };
@@ -112,18 +113,18 @@ export const updateSpacePrices = async (
 
     if (error) throw error;
   } catch (error) {
-    console.error('❌ Erreur lors de la mise à jour des prix dans Supabase:', error);
+    logger.error('❌ Erreur lors de la mise à jour des prix dans Supabase:', error);
     throw error;
   }
 };
 
 export const logPriceValidation = (spaceId: string, validation: PriceValidation): void => {
   if (!validation.isValid) {
-    console.warn(`⚠️ Espace ${spaceId}: ${validation.error}`);
+    logger.warn(`⚠️ Espace ${spaceId}: ${validation.error}`);
     return;
   }
 
-  console.log(`✅ Espace ${spaceId}: Prix validés`, {
+  logger.debug(`✅ Espace ${spaceId}: Prix validés`, {
     priceHT: validation.priceHT,
     priceTTC: validation.priceTTC
   });

@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
+import { logger } from '@/utils/logger';
 
 const Support = () => {
   const { user } = useAuth();
-  console.log('[Support] Rendu - user:', user);
+  logger.debug('[Support] Rendu - user:', user);
 
   return (
     <>

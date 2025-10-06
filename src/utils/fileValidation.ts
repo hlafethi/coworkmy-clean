@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 // Types de fichiers autorisés
 export const ALLOWED_FILE_TYPES = {
   images: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
@@ -104,7 +105,7 @@ export const validateFile = async (file: File): Promise<{ isValid: boolean; erro
 
     return { isValid: true };
   } catch (error) {
-    console.error('Erreur lors de la validation du fichier:', error);
+    logger.error('Erreur lors de la validation du fichier:', error);
     return {
       isValid: false,
       error: 'Erreur lors de la validation du fichier'
@@ -131,7 +132,7 @@ const validateFileSignature = async (file: File): Promise<boolean> => {
     
     return true;
   } catch (error) {
-    console.error('Erreur lors de la validation de la signature:', error);
+    logger.error('Erreur lors de la validation de la signature:', error);
     return false;
   }
 };
@@ -230,7 +231,7 @@ export const scanFileForVirus = async (file: File): Promise<{ isClean: boolean; 
       details: result.details
     };
   } catch (error) {
-    console.error('Erreur lors du scan antivirus:', error);
+    logger.error('Erreur lors du scan antivirus:', error);
     return {
       isClean: false,
       threat: 'Erreur lors du scan de sécurité'

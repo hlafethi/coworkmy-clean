@@ -1,6 +1,7 @@
 import { User, Phone, Mail, MapPin, Calendar, Camera } from "lucide-react";
 import { UserProfile } from "../hooks/useUsers";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { logger } from '@/utils/logger';
 
 interface UserPersonalInfoProps {
   user: UserProfile;
@@ -27,7 +28,7 @@ export const UserPersonalInfo = ({ user }: UserPersonalInfoProps) => {
               alt="Photo de profil"
               className="object-cover"
               onError={(e) => {
-                console.warn('Erreur de chargement de l\'avatar admin:', e);
+                logger.warn('Erreur de chargement de l\'avatar admin:', e);
               }}
             />
             <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-purple-600 text-white">

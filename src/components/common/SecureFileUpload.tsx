@@ -23,6 +23,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface SecureFileUploadProps {
   onFileUploaded: (fileData: {
@@ -105,7 +106,7 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
         
         // Log détaillé pour debug
         if (scanResult.details?.engines) {
-          console.warn('Moteurs antivirus ayant détecté des menaces:', scanResult.details.engines);
+          logger.warn('Moteurs antivirus ayant détecté des menaces:', scanResult.details.engines);
         }
         return;
       } else if (scanResult.details) {
@@ -118,7 +119,7 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
       await uploadFile(uploadingFile, index);
 
     } catch (error) {
-      console.error('Erreur lors du traitement du fichier:', error);
+      logger.error('Erreur lors du traitement du fichier:', error);
       updateFileStatus(index, 'error', 0, 'Erreur lors du traitement du fichier');
       toast.error('Erreur lors du traitement du fichier');
     }
@@ -134,7 +135,7 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
       const base64Data = await fileToBase64(file);
 
       // Appel API pour sauvegarder le document
-      console.log('🔍 SecureFileUpload - documentType reçu:', documentType, 'Type:', typeof documentType);
+      logger.debug('🔍 SecureFileUpload - documentType reçu:', documentType, 'Type:', typeof documentType);
       
       const response = await apiClient.post(`/users/${userId}/documents`, {
         file_name: file.name,
@@ -144,7 +145,7 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
         document_type: documentType
       });
       
-      console.log('🔍 SecureFileUpload - document_type envoyé:', documentType);
+      logger.debug('🔍 SecureFileUpload - document_type envoyé:', documentType);
 
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de l\'upload');
@@ -177,7 +178,7 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
       }
 
     } catch (error: any) {
-      console.error('Erreur lors de l\'upload:', error);
+      logger.error('Erreur lors de l\'upload:', error);
       
       // Diagnostic détaillé de l'erreur
       let errorMessage = 'Erreur lors de l\'upload';

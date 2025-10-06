@@ -1,5 +1,6 @@
+import { logger } from '@/utils/logger';
 export default function Invoices() {
-  console.log('🔍 Page Invoices chargée');
+  logger.debug('🔍 Page Invoices chargée');
   
   return (
     <div style={{ padding: '20px', backgroundColor: '#f0f0f0', minHeight: '100vh' }}>
@@ -37,7 +38,7 @@ export default function Invoices() {
         
         <button 
           onClick={() => {
-            console.log('🔄 Redirection vers Stripe...');
+            logger.debug('🔄 Redirection vers Stripe...');
             alert('Redirection vers Stripe (fonctionnalité à implémenter)');
           }}
           style={{

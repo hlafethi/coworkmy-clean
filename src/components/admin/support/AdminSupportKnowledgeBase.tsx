@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Edit, Trash2, Save, X, FileText, Plus, Eye, EyeOff } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 interface KBArticle {
   id: string;
@@ -74,12 +75,12 @@ export const AdminSupportKnowledgeBase = () => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('[AdminSupportKnowledgeBase] Chargement des articles...');
+      logger.debug('[AdminSupportKnowledgeBase] Chargement des articles...');
       const data = await AdminSupportService.getKBArticles();
-      console.log('[AdminSupportKnowledgeBase] Articles chargés:', data?.length || 0);
+      logger.debug('[AdminSupportKnowledgeBase] Articles chargés:', data?.length || 0);
       setArticles(data || []);
     } catch (err) {
-      console.error('[AdminSupportKnowledgeBase] Erreur inattendue:', err);
+      logger.error('[AdminSupportKnowledgeBase] Erreur inattendue:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       toast.error('Erreur inattendue');
     } finally {
@@ -101,7 +102,7 @@ export const AdminSupportKnowledgeBase = () => {
     
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Création article:', newArticle);
+      logger.debug('[AdminSupportKnowledgeBase] Création article:', newArticle);
       const result = await apiClient.post('/admin/support/kb-articles', {
         ...newArticle, 
         title: newArticle.title.trim(), 
@@ -109,7 +110,7 @@ export const AdminSupportKnowledgeBase = () => {
       });
       
       if (!result.success) {
-        console.error('[AdminSupportKnowledgeBase] Erreur création:', result.error);
+        logger.error('[AdminSupportKnowledgeBase] Erreur création:', result.error);
         setError(result.error || 'Erreur lors de la création');
         toast.error('Erreur lors de la création');
         return;
@@ -120,7 +121,7 @@ export const AdminSupportKnowledgeBase = () => {
       setNewArticle({ title: '', content: '', category: 'general', order_index: 0, is_active: true });
       await fetchArticles();
     } catch (err) {
-      console.error('[AdminSupportKnowledgeBase] Erreur inattendue création:', err);
+      logger.error('[AdminSupportKnowledgeBase] Erreur inattendue création:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       toast.error('Erreur inattendue');
     } finally {
@@ -138,7 +139,7 @@ export const AdminSupportKnowledgeBase = () => {
     
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Mise à jour article:', editing.id);
+      logger.debug('[AdminSupportKnowledgeBase] Mise à jour article:', editing.id);
       const result = await apiClient.put(`/admin/support/kb-articles/${editing.id}`, {
         title: editing.title.trim(),
         content: editing.content.trim(),
@@ -148,7 +149,7 @@ export const AdminSupportKnowledgeBase = () => {
       });
       
       if (!result.success) {
-        console.error('[AdminSupportKnowledgeBase] Erreur mise à jour:', result.error);
+        logger.error('[AdminSupportKnowledgeBase] Erreur mise à jour:', result.error);
         setError(result.error || 'Erreur lors de la mise à jour');
         toast.error('Erreur lors de la mise à jour');
         return;
@@ -158,7 +159,7 @@ export const AdminSupportKnowledgeBase = () => {
       setEditing(null);
       await fetchArticles();
     } catch (err) {
-      console.error('[AdminSupportKnowledgeBase] Erreur inattendue mise à jour:', err);
+      logger.error('[AdminSupportKnowledgeBase] Erreur inattendue mise à jour:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       toast.error('Erreur inattendue');
     } finally {
@@ -172,11 +173,11 @@ export const AdminSupportKnowledgeBase = () => {
     
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Suppression article:', id);
+      logger.debug('[AdminSupportKnowledgeBase] Suppression article:', id);
       const result = await apiClient.delete(`/admin/support/kb-articles/${id}`);
       
       if (!result.success) {
-        console.error('[AdminSupportKnowledgeBase] Erreur suppression:', result.error);
+        logger.error('[AdminSupportKnowledgeBase] Erreur suppression:', result.error);
         setError(result.error || 'Erreur lors de la suppression');
         toast.error('Erreur lors de la suppression');
         return;
@@ -185,7 +186,7 @@ export const AdminSupportKnowledgeBase = () => {
       toast.success('Article supprimé avec succès');
       await fetchArticles();
     } catch (err) {
-      console.error('[AdminSupportKnowledgeBase] Erreur inattendue suppression:', err);
+      logger.error('[AdminSupportKnowledgeBase] Erreur inattendue suppression:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       toast.error('Erreur inattendue');
     } finally {
@@ -197,13 +198,13 @@ export const AdminSupportKnowledgeBase = () => {
   const handleToggleActive = async (article: KBArticle) => {
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Changement statut article:', article.id);
+      logger.debug('[AdminSupportKnowledgeBase] Changement statut article:', article.id);
       const result = await apiClient.put(`/admin/support/kb-articles/${article.id}`, {
         is_active: !article.is_active
       });
       
       if (!result.success) {
-        console.error('[AdminSupportKnowledgeBase] Erreur changement statut:', result.error);
+        logger.error('[AdminSupportKnowledgeBase] Erreur changement statut:', result.error);
         setError(result.error || 'Erreur lors du changement de statut');
         toast.error('Erreur lors du changement de statut');
         return;
@@ -212,7 +213,7 @@ export const AdminSupportKnowledgeBase = () => {
       toast.success(`Article ${!article.is_active ? 'activé' : 'désactivé'} avec succès`);
       await fetchArticles();
     } catch (err) {
-      console.error('[AdminSupportKnowledgeBase] Erreur inattendue changement statut:', err);
+      logger.error('[AdminSupportKnowledgeBase] Erreur inattendue changement statut:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       toast.error('Erreur inattendue');
     } finally {

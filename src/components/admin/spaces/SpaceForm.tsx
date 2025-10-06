@@ -9,6 +9,7 @@ import { useSpaceForm, type SpaceFormValues } from "./hooks/useSpaceForm";
 import { type SpaceFormData, type PricingType } from "./types";
 import { useState } from "react";
 import { Form } from "@/components/ui/form";
+import { logger } from '@/utils/logger';
 
 interface SpaceFormProps {
   defaultValues?: SpaceFormData;
@@ -39,7 +40,7 @@ export function SpaceForm({ defaultValues, onSubmit, onCancel, isSubmitting }: S
 
   // Protection contre form null/undefined
   if (!form) {
-    console.error("[SpaceForm] form est null ou undefined !", form);
+    logger.error("[SpaceForm] form est null ou undefined !", form);
     return <div className="text-red-500">Erreur critique du formulaire. Veuillez recharger la page.</div>;
   }
 

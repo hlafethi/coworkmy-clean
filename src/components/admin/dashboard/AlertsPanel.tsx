@@ -14,6 +14,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/utils/logger';
 
 interface AlertItem {
   id: string;
@@ -46,11 +47,11 @@ export const AlertsPanel = ({ mode }: AlertsPanelProps) => {
           }));
           setAlerts(alertsWithDates);
         } else {
-          console.error('Erreur récupération alertes:', response.error);
+          logger.error('Erreur récupération alertes:', response.error);
           setAlerts([]);
         }
       } catch (error) {
-        console.error('Erreur chargement alertes:', error);
+        logger.error('Erreur chargement alertes:', error);
         setAlerts([]);
       } finally {
         setLoading(false);

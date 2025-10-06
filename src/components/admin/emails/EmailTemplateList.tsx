@@ -18,6 +18,7 @@ import {
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { EmailTemplateForm } from "./EmailTemplateForm";
+import { logger } from '@/utils/logger';
 
 interface EmailTemplate {
   id: string;
@@ -42,12 +43,12 @@ export const EmailTemplateList = () => {
       if (result.success && result.data) {
         setTemplates(result.data);
       } else {
-        console.error("Erreur lors de la récupération des modèles:", result.error);
+        logger.error("Erreur lors de la récupération des modèles:", result.error);
         toast.error("Erreur lors de la récupération des modèles");
         setTemplates([]);
       }
     } catch (error) {
-      console.error("Erreur lors de la récupération des modèles:", error);
+      logger.error("Erreur lors de la récupération des modèles:", error);
       toast.error("Erreur lors de la récupération des modèles");
       setTemplates([]);
     } finally {
@@ -70,7 +71,7 @@ export const EmailTemplateList = () => {
       toast.success("Modèle supprimé avec succès");
       fetchTemplates();
     } catch (error) {
-      console.error("Erreur lors de la suppression:", error);
+      logger.error("Erreur lors de la suppression:", error);
       toast.error("Erreur lors de la suppression du modèle");
     }
   };

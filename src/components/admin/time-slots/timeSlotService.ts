@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { type TimeSlot } from "../types";
+import { logger } from '@/utils/logger';
 
 export async function fetchTimeSlots(): Promise<TimeSlot[]> {
   try {
@@ -11,7 +12,7 @@ export async function fetchTimeSlots(): Promise<TimeSlot[]> {
     }
     return [];
   } catch (error) {
-    console.error('Error fetching time slots:', error);
+    logger.error('Error fetching time slots:', error);
     toast.error("Impossible de récupérer les créneaux horaires");
     return [];
   }
@@ -27,7 +28,7 @@ export async function createTimeSlot(timeSlot: Omit<TimeSlot, 'id' | 'created_at
     }
     return null;
   } catch (error) {
-    console.error('Error creating time slot:', error);
+    logger.error('Error creating time slot:', error);
     toast.error("Impossible de créer le créneau horaire");
     return null;
   }
@@ -43,7 +44,7 @@ export async function updateTimeSlot(id: string, updates: Partial<Omit<TimeSlot,
     }
     return null;
   } catch (error) {
-    console.error('Error updating time slot:', error);
+    logger.error('Error updating time slot:', error);
     toast.error("Impossible de mettre à jour le créneau horaire");
     return null;
   }
@@ -59,7 +60,7 @@ export async function deleteTimeSlot(id: string): Promise<boolean> {
     }
     return false;
   } catch (error) {
-    console.error('Error deleting time slot:', error);
+    logger.error('Error deleting time slot:', error);
     toast.error("Impossible de supprimer le créneau horaire");
     return false;
   }
@@ -86,7 +87,7 @@ export async function swapTimeSlotOrders(
     }
     return false;
   } catch (error) {
-    console.error('Error swapping time slot orders:', error);
+    logger.error('Error swapping time slot orders:', error);
     toast.error("Impossible de modifier l'ordre des créneaux");
     return false;
   }
@@ -95,10 +96,10 @@ export async function swapTimeSlotOrders(
 export function subscribeToTimeSlots(callback: (payload: any) => void) {
   // Pour PostgreSQL, on peut utiliser polling ou WebSockets
   // Pour l'instant, on retourne un objet avec une méthode unsubscribe
-  console.log('Subscription aux créneaux horaires (PostgreSQL)');
+  logger.debug('Subscription aux créneaux horaires (PostgreSQL)');
   return {
     unsubscribe: () => {
-      console.log('Unsubscribed from time slots');
+      logger.debug('Unsubscribed from time slots');
     }
   };
 }

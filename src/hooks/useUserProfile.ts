@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/utils/logger';
 
 interface UserProfile {
   id: string;
@@ -31,19 +32,19 @@ export function useUserProfile(userId?: string) {
         setLoading(true);
         setError(null);
         
-        console.log('👤 Récupération du profil utilisateur:', userId);
+        logger.debug('👤 Récupération du profil utilisateur:', userId);
         
         const result = await apiClient.get(`/users/${userId}`);
         
         if (result.success && result.data) {
-          console.log('✅ Profil utilisateur récupéré:', result.data);
+          logger.debug('✅ Profil utilisateur récupéré:', result.data);
           setProfile(result.data);
         } else {
-          console.warn('⚠️ Aucun profil utilisateur trouvé');
+          logger.warn('⚠️ Aucun profil utilisateur trouvé');
           setProfile(null);
         }
       } catch (err) {
-        console.error('❌ Erreur lors du chargement du profil utilisateur:', err);
+        logger.error('❌ Erreur lors du chargement du profil utilisateur:', err);
         setError('Erreur lors du chargement du profil');
         setProfile(null);
       } finally {
@@ -58,21 +59,21 @@ export function useUserProfile(userId?: string) {
     if (!userId) return false;
 
     try {
-      console.log('👤 Mise à jour du profil utilisateur:', userId, updateData);
+      logger.debug('👤 Mise à jour du profil utilisateur:', userId, updateData);
       
       const result = await apiClient.put(`/users/${userId}`, updateData);
       
       if (result.success && result.data) {
-        console.log('✅ Profil utilisateur mis à jour:', result.data);
+        logger.debug('✅ Profil utilisateur mis à jour:', result.data);
         setProfile(result.data);
         return true;
       } else {
-        console.error('❌ Erreur lors de la mise à jour du profil:', result.error);
+        logger.error('❌ Erreur lors de la mise à jour du profil:', result.error);
         setError(result.error || 'Erreur lors de la mise à jour');
         return false;
       }
     } catch (err) {
-      console.error('❌ Erreur lors de la mise à jour du profil utilisateur:', err);
+      logger.error('❌ Erreur lors de la mise à jour du profil utilisateur:', err);
       setError('Erreur lors de la mise à jour du profil');
       return false;
     }

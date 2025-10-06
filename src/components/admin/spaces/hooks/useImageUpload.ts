@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 export const useImageUpload = (initialImageUrl: string | null = null) => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -47,7 +48,7 @@ export const useImageUpload = (initialImageUrl: string | null = null) => {
       
       return base64String;
     } catch (error) {
-      console.error('Erreur lors de l\'upload de l\'image:', error);
+      logger.error('Erreur lors de l\'upload de l\'image:', error);
       toast.error("Impossible d'uploader l'image");
       throw error;
     } finally {

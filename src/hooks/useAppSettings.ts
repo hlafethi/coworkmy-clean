@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 export interface AppSettings {
   siteName: string;
@@ -30,16 +31,16 @@ export function useAppSettings() {
         .maybeSingle();
 
       if (error) {
-        console.error('Erreur lors du chargement des paramètres:', error);
+        logger.error('Erreur lors du chargement des paramètres:', error);
         throw error;
       }
 
-      console.log('📊 Paramètres récupérés depuis la DB:', data);
+      logger.debug('📊 Paramètres récupérés depuis la DB:', data);
 
       // Extraire les valeurs du JSONB homepage
       const homepageSettings = data?.value || {};
 
-      console.log('✅ Paramètres traités:', homepageSettings);
+      logger.debug('✅ Paramètres traités:', homepageSettings);
 
       // Retourner l'objet avec les valeurs de la DB ou les valeurs par défaut
       return {

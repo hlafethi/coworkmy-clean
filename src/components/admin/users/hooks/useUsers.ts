@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 export type UserProfile = {
   id: string;
@@ -36,7 +37,7 @@ export const useUsers = () => {
       setLoading(true);
       
       // Pour PostgreSQL, on utilise des données par défaut pour l'instant
-      console.log('Fetching users...');
+      logger.debug('Fetching users...');
       const response = await apiClient.get('/users');
       
       if (response.success && response.data) {
@@ -47,7 +48,7 @@ export const useUsers = () => {
         setUsers([]);
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération des profils:', error);
+      logger.error('Erreur lors de la récupération des profils:', error);
       toast.error("Impossible de récupérer les utilisateurs");
       setUsers([]);
     } finally {
@@ -97,7 +98,7 @@ export const useUsers = () => {
         phone_number: profile.phone_number || '',
       };
     } catch (error) {
-      console.error('Erreur lors de la récupération du profil:', error);
+      logger.error('Erreur lors de la récupération du profil:', error);
       toast.error("Impossible de récupérer les informations de l'utilisateur");
       return null;
     }
@@ -121,7 +122,7 @@ export const useUsers = () => {
         return false;
       }
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      logger.error('Erreur lors de la modification:', error);
       toast.error("Erreur lors de la modification de l'utilisateur");
       return false;
     }
@@ -141,7 +142,7 @@ export const useUsers = () => {
         return false;
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      logger.error('Erreur lors de la suppression:', error);
       toast.error("Erreur lors de la suppression de l'utilisateur");
       return false;
     }

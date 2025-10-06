@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/context/AuthContextPostgreSQL';
 import { useUserProfile } from './useUserProfile';
+import { logger } from '@/utils/logger';
 
 interface HomepageSettings {
   title?: string;
@@ -37,7 +38,7 @@ export function useHomepageSettings() {
   const fetchSettings = useCallback(async () => {
       setLoading(true);
       try {
-        console.log("🖼️ Chargement des paramètres homepage depuis l'API...");
+        logger.debug("🖼️ Chargement des paramètres homepage depuis l'API...");
         
         // Récupérer les paramètres de la page d'accueil
         const homepageResponse = await fetch('http://localhost:5000/api/homepage-settings');
@@ -48,8 +49,8 @@ export function useHomepageSettings() {
         const companyData = await companyResponse.json();
         
         if (homepageData.success && homepageData.data) {
-          console.log("✅ Paramètres homepage chargés depuis l'API:", homepageData.data);
-          console.log("✅ Paramètres entreprise chargés depuis l'API:", companyData.data);
+          logger.debug("✅ Paramètres homepage chargés depuis l'API:", homepageData.data);
+          logger.debug("✅ Paramètres entreprise chargés depuis l'API:", companyData.data);
           
           // Enrichir les paramètres avec les informations du profil utilisateur et de l'entreprise
           const enrichedSettings = {
@@ -80,7 +81,7 @@ export function useHomepageSettings() {
           
           setSettings(enrichedSettings);
         } else {
-          console.warn("⚠️ Aucun paramètre homepage trouvé, utilisation des paramètres par défaut");
+          logger.warn("⚠️ Aucun paramètre homepage trouvé, utilisation des paramètres par défaut");
           
           // Paramètres par défaut si l'API ne retourne rien
           const defaultSettings: HomepageSettings = {
@@ -123,7 +124,7 @@ export function useHomepageSettings() {
           setSettings(defaultSettings);
         }
       } catch (error) {
-        console.error("❌ Erreur lors du chargement des paramètres homepage:", error);
+        logger.error("❌ Erreur lors du chargement des paramètres homepage:", error);
         
         // En cas d'erreur, utiliser les paramètres par défaut
         const defaultSettings: HomepageSettings = {

@@ -3,6 +3,7 @@ import { isValidUserWishlistItemShare } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserWishlistItemShare } from "@/types/database";
+import { logger } from '@/utils/logger';
 
 type UserWishlistItemShareInsert = Omit<UserWishlistItemShare, "id" | "created_at" | "updated_at">;
 type UserWishlistItemShareUpdate = Partial<UserWishlistItemShareInsert>;
@@ -38,7 +39,7 @@ export function useUserWishlistItemShares(itemId: string) {
 
       setShares(validShares);
     } catch (err) {
-      console.error("Erreur lors de la récupération des partages:", err);
+      logger.error("Erreur lors de la récupération des partages:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des partages");
     } finally {
@@ -59,7 +60,7 @@ export function useUserWishlistItemShares(itemId: string) {
       setShares(prev => [data, ...prev]);
       toast.success("Partage ajouté avec succès");
     } catch (err) {
-      console.error("Erreur lors de l'ajout du partage:", err);
+      logger.error("Erreur lors de l'ajout du partage:", err);
       toast.error("Erreur lors de l'ajout du partage");
       throw err;
     }
@@ -79,7 +80,7 @@ export function useUserWishlistItemShares(itemId: string) {
       setShares(prev => prev.map(s => s.id === id ? data : s));
       toast.success("Partage mis à jour avec succès");
     } catch (err) {
-      console.error("Erreur lors de la mise à jour du partage:", err);
+      logger.error("Erreur lors de la mise à jour du partage:", err);
       toast.error("Erreur lors de la mise à jour du partage");
       throw err;
     }
@@ -97,7 +98,7 @@ export function useUserWishlistItemShares(itemId: string) {
       setShares(prev => prev.filter(s => s.id !== id));
       toast.success("Partage supprimé avec succès");
     } catch (err) {
-      console.error("Erreur lors de la suppression du partage:", err);
+      logger.error("Erreur lors de la suppression du partage:", err);
       toast.error("Erreur lors de la suppression du partage");
       throw err;
     }

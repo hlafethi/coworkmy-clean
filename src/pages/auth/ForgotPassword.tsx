@@ -9,6 +9,7 @@ import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -24,18 +25,18 @@ const ForgotPassword = () => {
     setSuccess(false);
 
     try {
-      console.log('🔄 Envoi de l\'email de réinitialisation...');
-      console.log('📧 Email:', email);
+      logger.debug('🔄 Envoi de l\'email de réinitialisation...');
+      logger.debug('📧 Email:', email);
 
       const redirectUrl = `${window.location.origin}/auth/reset-password`;
-      console.log('🔗 URL de redirection:', redirectUrl);
+      logger.debug('🔗 URL de redirection:', redirectUrl);
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
 
       if (error) {
-        console.error('❌ Erreur:', error);
+        logger.error('❌ Erreur:', error);
         if (error.message?.includes('rate limit')) {
           setError("Trop de tentatives. Veuillez attendre quelques minutes avant de réessayer.");
         } else if (error.message?.includes('invalid email')) {
@@ -46,11 +47,11 @@ const ForgotPassword = () => {
         return;
       }
 
-      console.log('✅ Email envoyé avec succès');
+      logger.debug('✅ Email envoyé avec succès');
       toast.success("Un email de réinitialisation a été envoyé à votre adresse email.");
       setSuccess(true);
     } catch (error: any) {
-      console.error('❌ Erreur complète:', error);
+      logger.error('❌ Erreur complète:', error);
       setError(`Erreur: ${error.message || 'Impossible d\'envoyer l\'email de réinitialisation'}`);
     } finally {
       setLoading(false);

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { withRetry } from "@/utils/supabaseUtils";
 
 import type { Space } from "@/components/admin/spaces/types";
+import { logger } from '@/utils/logger';
 
 interface DateSelectorProps {
   selected: Date | undefined;
@@ -29,7 +30,7 @@ export const DateSelector = ({
   spaceId,
   space
 }: DateSelectorProps) => {
-  console.log('🔍 DateSelector reçu:', { timeSlotsLength: timeSlots.length, timeSlots, selectedSlot });
+  logger.debug('🔍 DateSelector reçu:', { timeSlotsLength: timeSlots.length, timeSlots, selectedSlot });
   const [customHours, setCustomHours] = useState<string>("");
   const { setCustomDuration, getCurrentSlotDuration } = useTimeSlots();
   const { checkAvailability } = useSpaceAvailability(spaceId || "");
@@ -98,7 +99,7 @@ export const DateSelector = ({
 
       setAvailability(availabilityResult);
     } catch (error) {
-      console.error("Erreur lors de la vérification de disponibilité:", error);
+      logger.error("Erreur lors de la vérification de disponibilité:", error);
       setAvailability({
         isAvailable: true,
         availableCapacity: 1,

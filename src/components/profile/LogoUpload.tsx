@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Camera, Upload, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '@/utils/logger';
 
 interface LogoUploadProps {
   currentLogoUrl?: string;
@@ -109,7 +110,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
       setPreviewUrl(null);
 
     } catch (error: any) {
-      console.error("Erreur lors de l'upload du logo:", error);
+      logger.error("Erreur lors de l'upload du logo:", error);
       
       // Gestion d'erreur améliorée
       if (error?.statusCode === 415) {
@@ -143,7 +144,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
               alt="Logo de l'entreprise"
               className="max-w-full max-h-full object-contain p-2"
               onError={(e) => {
-                console.warn('Erreur de chargement du logo:', e);
+                logger.warn('Erreur de chargement du logo:', e);
                 e.currentTarget.style.display = 'none';
                 // Afficher l'icône par défaut
                 const fallback = e.currentTarget.nextElementSibling;

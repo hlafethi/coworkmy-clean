@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 /**
  * Analytics utilities for tracking user behavior and application usage
  */
@@ -28,7 +29,7 @@ export function initAnalytics() {
     const ANALYTICS_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
     
     if (!ANALYTICS_ID) {
-      console.warn('Analytics ID not provided. Analytics will not be initialized.');
+      logger.warn('Analytics ID not provided. Analytics will not be initialized.');
       return;
     }
     
@@ -57,7 +58,7 @@ export function initAnalytics() {
       cookie_flags: 'SameSite=None;Secure',
     });
     
-    console.log('Analytics initialized');
+    logger.debug('Analytics initialized');
   }
 }
 
@@ -76,7 +77,7 @@ export function trackPageView(path: string, title?: string) {
   }
   
   if (import.meta.env.DEV) {
-    console.log(`[Analytics] Page view: ${path}`);
+    logger.debug(`[Analytics] Page view: ${path}`);
   }
 }
 
@@ -93,7 +94,7 @@ export function trackEvent(category: string, action: string, label?: string, val
   window.gtag('send', 'event', category, action, label, value);
   
   if (import.meta.env.DEV) {
-    console.log(`[Analytics] Event: ${category} / ${action}${label ? ` / ${label}` : ''}${value !== undefined ? ` / ${value}` : ''}`);
+    logger.debug(`[Analytics] Event: ${category} / ${action}${label ? ` / ${label}` : ''}${value !== undefined ? ` / ${value}` : ''}`);
   }
 }
 
@@ -111,7 +112,7 @@ export function trackConversion(conversionId: string, label: string) {
     currency: 'EUR',
   });
   
-  console.log(`[Analytics] Conversion: ${conversionId} / ${label}`);
+  logger.debug(`[Analytics] Conversion: ${conversionId} / ${label}`);
 }
 
 /**
@@ -132,7 +133,7 @@ export function trackTiming(category: string, variable: string, value: number, l
   });
   
   if (import.meta.env.DEV) {
-    console.log(`[Analytics] Timing: ${category} / ${variable} / ${value}ms${label ? ` / ${label}` : ''}`);
+    logger.debug(`[Analytics] Timing: ${category} / ${variable} / ${value}ms${label ? ` / ${label}` : ''}`);
   }
 }
 
@@ -146,7 +147,7 @@ export function setUserProperties(properties: Record<string, any>) {
   window.gtag('set', 'user_properties', properties);
   
   if (import.meta.env.DEV) {
-    console.log(`[Analytics] User properties set: ${Object.keys(properties).join(', ')}`);
+    logger.debug(`[Analytics] User properties set: ${Object.keys(properties).join(', ')}`);
   }
 }
 
@@ -164,6 +165,6 @@ export function trackException(description: string, fatal: boolean = false) {
   });
   
   if (import.meta.env.DEV) {
-    console.log(`[Analytics] Exception: ${description} (fatal: ${fatal})`);
+    logger.debug(`[Analytics] Exception: ${description} (fatal: ${fatal})`);
   }
 }

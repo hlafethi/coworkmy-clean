@@ -3,6 +3,7 @@ import { isValidRole } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Role } from "@/types/database";
+import { logger } from '@/utils/logger';
 
 export interface RolePermissions {
   can_manage_users: boolean;
@@ -45,7 +46,7 @@ export function useRoles() {
 
       setRoles(validRoles);
     } catch (error) {
-      console.error('Erreur lors de la récupération des rôles:', error);
+      logger.error('Erreur lors de la récupération des rôles:', error);
       setError(error instanceof Error ? error.message : 'Une erreur est survenue');
       toast.error("Erreur lors de la récupération des rôles");
     } finally {
@@ -70,7 +71,7 @@ export function useRoles() {
       toast.success("Rôle créé avec succès");
       return data;
     } catch (error) {
-      console.error('Erreur création rôle:', error);
+      logger.error('Erreur création rôle:', error);
       toast.error("Erreur lors de la création du rôle");
       throw error;
     }
@@ -98,7 +99,7 @@ export function useRoles() {
       toast.success("Rôle mis à jour avec succès");
       return data;
     } catch (error) {
-      console.error('Erreur mise à jour rôle:', error);
+      logger.error('Erreur mise à jour rôle:', error);
       toast.error("Erreur lors de la mise à jour du rôle");
       throw error;
     }
@@ -118,7 +119,7 @@ export function useRoles() {
       );
       toast.success("Rôle supprimé avec succès");
     } catch (error) {
-      console.error('Erreur suppression rôle:', error);
+      logger.error('Erreur suppression rôle:', error);
       toast.error("Erreur lors de la suppression du rôle");
       throw error;
     }

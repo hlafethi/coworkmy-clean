@@ -11,6 +11,7 @@ import { BookingSummary } from "@/components/booking/BookingSummary";
 import { useBookingForm } from "@/hooks/useBookingForm";
 import { getTimeSlotTimes } from "@/utils/bookingUtils";
 import type { Booking, Space, TimeSlotOption } from "@/types/booking";
+import { logger } from '@/utils/logger';
 
 const EditBooking = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,7 +50,7 @@ const EditBooking = () => {
         }
 
         setBooking(response.data);
-        console.log('🔍 Données de réservation:', {
+        logger.debug('🔍 Données de réservation:', {
           space_id: response.data.space_id,
           start_date: response.data.start_date,
           end_date: response.data.end_date
@@ -57,7 +58,7 @@ const EditBooking = () => {
         setSpaceType(response.data.space_id);
         setDate(new Date(response.data.start_date));
       } catch (error) {
-        console.error("Error fetching booking:", error);
+        logger.error("Error fetching booking:", error);
         toast.error("Erreur lors du chargement de la réservation");
         navigate("/dashboard");
       } finally {
@@ -70,18 +71,18 @@ const EditBooking = () => {
 
   // Effet séparé pour sélectionner le créneau quand timeSlots est disponible
   useEffect(() => {
-    console.log('🔍 useEffect timeSlots:', { booking: !!booking, timeSlotsLength: timeSlots.length, timeSlots });
+    logger.debug('🔍 useEffect timeSlots:', { booking: !!booking, timeSlotsLength: timeSlots.length, timeSlots });
     
     // Si on a des créneaux mais pas de réservation chargée, sélectionner le premier créneau
     if (timeSlots.length > 0 && !booking && !timeSlot) {
-      console.log('🔍 Sélection automatique du premier créneau');
+      logger.debug('🔍 Sélection automatique du premier créneau');
       setTimeSlot(timeSlots[0].id);
       return;
     }
     
     if (!booking || timeSlots.length === 0) return;
     
-    console.log('🔍 Recherche du créneau correspondant:', {
+    logger.debug('🔍 Recherche du créneau correspondant:', {
       start_date: booking.start_date,
       end_date: booking.end_date,
       timeSlotsAvailable: timeSlots.length
@@ -97,7 +98,7 @@ const EditBooking = () => {
     const startHour = localStartTime.getHours();
     const endHour = localEndTime.getHours();
     
-    console.log('🔍 Heures locales:', { startHour, endHour });
+    logger.debug('🔍 Heures locales:', { startHour, endHour });
     
     // Chercher un créneau qui correspond à l'heure de début
     const matchingSlot = timeSlots.find(slot => {
@@ -105,13 +106,13 @@ const EditBooking = () => {
       return slotStartHour === startHour;
     });
     
-    console.log('🔍 Créneau trouvé:', matchingSlot);
+    logger.debug('🔍 Créneau trouvé:', matchingSlot);
     
     if (matchingSlot) {
       setTimeSlot(matchingSlot.id);
     } else {
       // Si aucun créneau ne correspond, sélectionner le premier créneau disponible
-      console.log('⚠️ Aucun créneau correspondant trouvé, sélection du premier créneau');
+      logger.debug('⚠️ Aucun créneau correspondant trouvé, sélection du premier créneau');
       if (timeSlots.length > 0) {
         setTimeSlot(timeSlots[0].id);
       }
@@ -119,25 +120,25 @@ const EditBooking = () => {
   }, [booking, timeSlots, setTimeSlot]);
 
   const handleSubmit = async () => {
-    console.log('🔍 handleSubmit appelé:', { booking: !!booking, spaceType, date, timeSlot });
+    logger.debug('🔍 handleSubmit appelé:', { booking: !!booking, spaceType, date, timeSlot });
     
     try {
       if (!booking || !spaceType || !date || !timeSlot) {
-        console.log('❌ Données manquantes pour la soumission');
+        logger.debug('❌ Données manquantes pour la soumission');
         toast.error("Veuillez remplir tous les champs");
         return;
       }
 
       const selectedSpace = spaces.find(space => space.id === spaceType);
       if (!selectedSpace) {
-        console.log('❌ Espace non trouvé');
+        logger.debug('❌ Espace non trouvé');
         toast.error("Espace non trouvé");
         return;
       }
 
       const selectedTimeSlotObj = timeSlots.find(slot => slot.id === timeSlot);
       if (!selectedTimeSlotObj) {
-        console.log('❌ Créneau horaire non trouvé');
+        logger.debug('❌ Créneau horaire non trouvé');
         toast.error("Créneau horaire non trouvé");
         return;
       }
@@ -153,23 +154,23 @@ const EditBooking = () => {
         status: 'pending'
       };
 
-      console.log('📝 Données de mise à jour:', updateData);
+      logger.debug('📝 Données de mise à jour:', updateData);
 
       const response = await apiClient.put(`/bookings/${booking.id}`, updateData);
-      console.log('📝 Réponse API:', response);
+      logger.debug('📝 Réponse API:', response);
 
       if (!response.success) {
-        console.log('❌ Erreur dans la réponse API:', response);
+        logger.debug('❌ Erreur dans la réponse API:', response);
         throw new Error(response.error || 'Erreur lors de la mise à jour');
       }
 
-      console.log('✅ Réservation modifiée avec succès, redirection vers /dashboard');
+      logger.debug('✅ Réservation modifiée avec succès, redirection vers /dashboard');
       toast.success("Réservation modifiée avec succès");
-      console.log('🚀 Tentative de redirection vers /dashboard...');
+      logger.debug('🚀 Tentative de redirection vers /dashboard...');
       navigate("/dashboard");
-      console.log('🚀 Redirection exécutée');
+      logger.debug('🚀 Redirection exécutée');
     } catch (error) {
-      console.error("❌ Error updating booking:", error);
+      logger.error("❌ Error updating booking:", error);
       toast.error("Erreur lors de la modification de la réservation");
     }
   };
@@ -202,7 +203,7 @@ const EditBooking = () => {
   const selectedTimeSlotObj = timeSlots.find(slot => slot.id === timeSlot);
   
   // Log permanent pour déboguer l'état du bouton
-  console.log('🔍 État du bouton:', {
+  logger.debug('🔍 État du bouton:', {
     isSubmitting,
     spaceType: !!spaceType,
     date: !!date,
@@ -294,15 +295,15 @@ const EditBooking = () => {
                 type="button"
                 disabled={isSubmitting || !spaceType || !date || !timeSlot}
                 onClick={() => {
-                  console.log('🔍 CLIC SUR LE BOUTON DÉTECTÉ !');
-                  console.log('🔍 État des variables:', {
+                  logger.debug('🔍 CLIC SUR LE BOUTON DÉTECTÉ !');
+                  logger.debug('🔍 État des variables:', {
                     isSubmitting,
                     spaceType,
                     date,
                     timeSlot,
                     disabled: isSubmitting || !spaceType || !date || !timeSlot
                   });
-                  console.log('🔍 Appel direct de handleSubmit...');
+                  logger.debug('🔍 Appel direct de handleSubmit...');
                   handleSubmit();
                 }}
               >

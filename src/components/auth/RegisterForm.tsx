@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { logger } from '@/utils/logger';
 
 interface RegisterFormValues {
   email: string;
@@ -80,7 +81,7 @@ export default function RegisterForm() {
         }
       }
     } catch (error) {
-      console.error("Erreur d'inscription:", error);
+      logger.error("Erreur d'inscription:", error);
       toast.error("Erreur lors de la création du compte.");
     } finally {
       setIsLoading(false);

@@ -3,6 +3,7 @@ import { isValidUserWishlistItemTag } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserWishlistItemTag } from "@/components/admin/types";
+import { logger } from '@/utils/logger';
 
 type UserWishlistItemTagInsert = Omit<UserWishlistItemTag, "id" | "created_at" | "updated_at">;
 type UserWishlistItemTagUpdate = Partial<UserWishlistItemTagInsert>;
@@ -28,7 +29,7 @@ export function useUserWishlistItemTags(userId: string, wishlistItemId: string) 
       const validTags = data.filter(isValidUserWishlistItemTag);
       setTags(validTags);
     } catch (err) {
-      console.error("Erreur lors de la récupération des tags:", err);
+      logger.error("Erreur lors de la récupération des tags:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des tags");
     } finally {
@@ -51,7 +52,7 @@ export function useUserWishlistItemTags(userId: string, wishlistItemId: string) 
       toast.success("Tag ajouté avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de l'ajout du tag:", err);
+      logger.error("Erreur lors de l'ajout du tag:", err);
       toast.error("Erreur lors de l'ajout du tag");
       throw err;
     }
@@ -73,7 +74,7 @@ export function useUserWishlistItemTags(userId: string, wishlistItemId: string) 
       toast.success("Tag mis à jour avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la mise à jour du tag:", err);
+      logger.error("Erreur lors de la mise à jour du tag:", err);
       toast.error("Erreur lors de la mise à jour du tag");
       throw err;
     }
@@ -91,7 +92,7 @@ export function useUserWishlistItemTags(userId: string, wishlistItemId: string) 
       setTags(prev => prev.filter(t => t.id !== id));
       toast.success("Tag supprimé avec succès");
     } catch (err) {
-      console.error("Erreur lors de la suppression du tag:", err);
+      logger.error("Erreur lors de la suppression du tag:", err);
       toast.error("Erreur lors de la suppression du tag");
       throw err;
     }

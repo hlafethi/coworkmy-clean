@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { handleApiResponse } from '@/utils/supabaseUtils';
+import { logger } from '@/utils/logger';
 
 export interface GoogleApiSettings {
   place_id: string;  // Requis, pas optionnel
@@ -52,7 +53,7 @@ interface GoogleReviewsResponse {
 
 const fetchGoogleReviews = async (): Promise<GoogleReview[]> => {
   if (import.meta.env.DEV) {
-    console.log('🔄 Mode développement: Google Reviews désactivé');
+    logger.debug('🔄 Mode développement: Google Reviews désactivé');
     return [];
   }
 
@@ -66,7 +67,7 @@ const fetchGoogleReviews = async (): Promise<GoogleReview[]> => {
       .single();
 
     if (keysError) {
-      console.error('Erreur lors de la récupération des clés:', keysError);
+      logger.error('Erreur lors de la récupération des clés:', keysError);
       throw new Error('Configuration Google Business non trouvée');
     }
 
@@ -83,12 +84,12 @@ const fetchGoogleReviews = async (): Promise<GoogleReview[]> => {
     });
 
     if (error) {
-      console.error('Erreur Edge Function:', error);
+      logger.error('Erreur Edge Function:', error);
       throw new Error(`Erreur serveur: ${error.message}`);
     }
 
     if (!data || data.status !== 'OK') {
-      console.error('Erreur Google Places:', {
+      logger.error('Erreur Google Places:', {
         status: data?.status,
         error_message: data?.error_message,
         placeId: keys.place_id
@@ -98,7 +99,7 @@ const fetchGoogleReviews = async (): Promise<GoogleReview[]> => {
 
     return data.result.reviews;
   } catch (error) {
-    console.error('Erreur lors de la récupération des avis:', error);
+    logger.error('Erreur lors de la récupération des avis:', error);
     throw error;
   }
 };
@@ -126,7 +127,7 @@ export function useTestGoogleApiConnection(placeId: string) {
       if (error) throw error;
       return { success: true, data };
     } catch (error: any) {
-      console.error("Connection test failed:", error);
+      logger.error("Connection test failed:", error);
       return { success: false, error: error.message || "Failed to connect to Google Places API" };
     }
   };
@@ -145,12 +146,12 @@ export function useGoogleApiSettings() {
           .maybeSingle();
           
         if (error) {
-          console.error("Error fetching Google API settings:", error);
+          logger.error("Error fetching Google API settings:", error);
           throw error;
         }
         
         if (!data) {
-          console.warn("No Google API settings found in database");
+          logger.warn("No Google API settings found in database");
           return null;
         }
         
@@ -160,7 +161,7 @@ export function useGoogleApiSettings() {
           max_reviews: data.max_reviews || 5
         };
       } catch (error) {
-        console.error("Failed to fetch Google API settings:", error);
+        logger.error("Failed to fetch Google API settings:", error);
         throw error;
       }
     }
@@ -203,7 +204,7 @@ export function useSaveGoogleApiSettings() {
       if (result.error) throw result.error;
       return { success: true };
     } catch (error: any) {
-      console.error("Failed to save Google API settings:", error);
+      logger.error("Failed to save Google API settings:", error);
       return { success: false, error: error.message };
     }
   };

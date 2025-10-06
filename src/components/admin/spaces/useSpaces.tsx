@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import type { Space } from "@/components/admin/types";
+import { logger } from '@/utils/logger';
 
 export interface SpaceFormData {
   id?: string;
@@ -42,17 +43,17 @@ export const useSpaces = () => {
   const fetchSpaces = async () => {
     try {
       setLoading(true);
-      console.log("Fetching spaces...");
+      logger.debug("Fetching spaces...");
       
       const response = await apiClient.get('/spaces');
       
       if (response.success && response.data) {
         const spacesData = Array.isArray(response.data) ? response.data : [];
-        console.log("Spaces fetched raw data:", spacesData);
+        logger.debug("Spaces fetched raw data:", spacesData);
 
         // Process and validate data for all spaces
         const processedSpaces = spacesData?.map(space => {
-          console.log(`Space ${space.name} pricing_type:`, space.pricing_type);
+          logger.debug(`Space ${space.name} pricing_type:`, space.pricing_type);
           return {
             ...space,
             pricing_type: space.pricing_type || 'hourly',
@@ -67,14 +68,14 @@ export const useSpaces = () => {
           };
         }) as Space[];
 
-        console.log("Processed spaces data:", processedSpaces);
+        logger.debug("Processed spaces data:", processedSpaces);
         setSpaces(processedSpaces);
       } else {
-        console.log("No spaces data available");
+        logger.debug("No spaces data available");
         setSpaces([]);
       }
     } catch (error) {
-      console.error('Error fetching spaces:', error);
+      logger.error('Error fetching spaces:', error);
       toast.error("Impossible de récupérer les espaces");
     } finally {
       setLoading(false);
@@ -96,7 +97,7 @@ export const useSpaces = () => {
 
   // Trigger a refresh
   const triggerRefresh = () => {
-    console.log("Triggering refresh of spaces list");
+    logger.debug("Triggering refresh of spaces list");
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -106,7 +107,7 @@ export const useSpaces = () => {
   }, [refreshTrigger]);
 
   const handleEditClick = (space: Space) => {
-    console.log("Editing space:", space);
+    logger.debug("Editing space:", space);
     setSelectedSpace({
       id: space.id,
       name: space.name,
@@ -129,7 +130,7 @@ export const useSpaces = () => {
   };
 
   const handleAddClick = () => {
-    console.log("Adding new space");
+    logger.debug("Adding new space");
     setSelectedSpace({
       name: '',
       description: '',
@@ -151,7 +152,7 @@ export const useSpaces = () => {
 
   const handleDeleteClick = async (spaceId: string) => {
     try {
-      console.log("Deleting space:", spaceId);
+      logger.debug("Deleting space:", spaceId);
       
       const response = await apiClient.delete(`/spaces/${spaceId}`);
       
@@ -162,7 +163,7 @@ export const useSpaces = () => {
         throw new Error(response.error || "Erreur lors de la suppression");
       }
     } catch (error) {
-      console.error('Error deleting space:', error);
+      logger.error('Error deleting space:', error);
       toast.error("Impossible de supprimer l'espace");
     }
   };

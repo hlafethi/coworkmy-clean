@@ -3,6 +3,7 @@ import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
+import { logger } from '@/utils/logger';
 
 interface DashboardStats {
   totalBookings: number;
@@ -106,7 +107,7 @@ export function useDashboard() {
       await signOut();
       toast.success("Déconnexion réussie");
     } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
+      logger.error("Erreur lors de la déconnexion:", error);
       toast.error("Une erreur s'est produite lors de la déconnexion");
     }
   };

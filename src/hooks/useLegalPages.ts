@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 export type LegalPageType = "terms" | "privacy" | "legal";
 
@@ -25,30 +26,30 @@ export function useLegalPages() {
   const fetchPages = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Chargement des pages légales...');
+      logger.debug('🔄 Chargement des pages légales...');
       
       const result = await apiClient.get('/legal-pages');
       const data = result.success ? result.data : null;
       const error = result.success ? null : { message: result.error };
 
       if (error) {
-        console.error('❌ Erreur SQL:', error);
+        logger.error('❌ Erreur SQL:', error);
         
         if (error.code === '42P01') {
-          console.log('📝 Table legal_pages inexistante, utilisation des données par défaut');
+          logger.debug('📝 Table legal_pages inexistante, utilisation des données par défaut');
           await createDefaultPages();
           return;
         }
         throw error;
       }
 
-      console.log('✅ Pages légales chargées:', data?.length || 0);
+      logger.debug('✅ Pages légales chargées:', data?.length || 0);
       
       // 🔧 CORRECTION : Vérifier que data est un tableau
       const pagesArray = Array.isArray(data) ? data : [];
       
       if (pagesArray.length === 0) {
-        console.log('📝 Aucune page trouvée, création des pages par défaut');
+        logger.debug('📝 Aucune page trouvée, création des pages par défaut');
         await createDefaultPages();
         return;
       }
@@ -63,7 +64,7 @@ export function useLegalPages() {
       });
       
     } catch (error) {
-      console.error("❌ Erreur lors du chargement des pages légales:", error);
+      logger.error("❌ Erreur lors du chargement des pages légales:", error);
       setPages(getDefaultPages());
       toast.error("Impossible de récupérer les pages légales - utilisation des données par défaut");
     } finally {
@@ -75,13 +76,13 @@ export function useLegalPages() {
   const fetchPageByType = useCallback(async (type: LegalPageType): Promise<LegalPage> => {
     // Si on a déjà la page en cache, la retourner
     if (cacheRef.current[type]) {
-      console.log(`✅ Page ${type} trouvée dans le cache`);
+      logger.debug(`✅ Page ${type} trouvée dans le cache`);
       return cacheRef.current[type]!; // ! car on a vérifié l'existence
     }
 
     // Si un chargement est déjà en cours, attendre
     if (loadingRef.current[type]) {
-      console.log(`⏳ Chargement de ${type} déjà en cours, attente...`);
+      logger.debug(`⏳ Chargement de ${type} déjà en cours, attente...`);
       return new Promise((resolve) => {
         const checkInterval = setInterval(() => {
           if (!loadingRef.current[type] && cacheRef.current[type]) {
@@ -100,7 +101,7 @@ export function useLegalPages() {
 
     try {
       loadingRef.current[type] = true;
-      console.log(`🔍 Recherche de la page ${type}...`);
+      logger.debug(`🔍 Recherche de la page ${type}...`);
       
       // Utiliser l'API client au lieu de Supabase
       const result = await apiClient.get('/legal-pages');
@@ -109,17 +110,17 @@ export function useLegalPages() {
       const page = pages.find((p: any) => p.type === type);
       
       if (!page) {
-        console.log(`📝 Page ${type} non trouvée, création...`);
+        logger.debug(`📝 Page ${type} non trouvée, création...`);
         const newPage = getDefaultPage(type);
         cacheRef.current[type] = newPage;
         return newPage;
       }
 
-      console.log(`✅ Page ${type} trouvée`);
+      logger.debug(`✅ Page ${type} trouvée`);
       cacheRef.current[type] = page;
       return page;
     } catch (error) {
-      console.error(`❌ Erreur lors du chargement de la page ${type}:`, error);
+      logger.error(`❌ Erreur lors du chargement de la page ${type}:`, error);
       const defaultPage = getDefaultPage(type);
       cacheRef.current[type] = defaultPage;
       return defaultPage;
@@ -131,7 +132,7 @@ export function useLegalPages() {
   const updatePage = async (page: LegalPage) => {
     try {
       setSaving(true);
-      console.log('💾 Sauvegarde de la page:', page.type);
+      logger.debug('💾 Sauvegarde de la page:', page.type);
       
       const updateData = {
         title: page.title,
@@ -146,7 +147,7 @@ export function useLegalPages() {
         throw new Error(result.error || 'Erreur lors de la mise à jour');
       }
       
-      console.log('✅ Page sauvegardée avec succès');
+      logger.debug('✅ Page sauvegardée avec succès');
       
       const updatedPage = { ...page, last_updated: updateData.last_updated };
       
@@ -159,7 +160,7 @@ export function useLegalPages() {
       toast.success("Page mise à jour avec succès");
       return true;
     } catch (error) {
-      console.error("❌ Erreur lors de la mise à jour:", error);
+      logger.error("❌ Erreur lors de la mise à jour:", error);
       toast.error("Impossible de mettre à jour la page");
       return false;
     } finally {
@@ -203,7 +204,7 @@ export function useLegalPages() {
         throw new Error(result.error || 'Erreur lors de la création');
       }
       
-      console.log('✅ Pages par défaut créées');
+      logger.debug('✅ Pages par défaut créées');
       const pagesData = Array.isArray(result.data) ? result.data : [];
       setPages(pagesData);
       
@@ -214,7 +215,7 @@ export function useLegalPages() {
         }
       });
     } catch (error) {
-      console.error('❌ Erreur création pages par défaut:', error);
+      logger.error('❌ Erreur création pages par défaut:', error);
       const defaultPages = getDefaultPages();
       setPages(defaultPages);
       defaultPages.forEach(page => {
@@ -239,11 +240,11 @@ export function useLegalPages() {
         throw new Error(result.error || 'Erreur lors de la création');
       }
       
-      console.log(`✅ Page ${type} créée`);
+      logger.debug(`✅ Page ${type} créée`);
       const pagesData = Array.isArray(result.data) ? result.data : [];
       return pagesData[0] || defaultPage;
     } catch (error) {
-      console.error(`❌ Erreur création page ${type}:`, error);
+      logger.error(`❌ Erreur création page ${type}:`, error);
       return getDefaultPage(type);
     }
   };

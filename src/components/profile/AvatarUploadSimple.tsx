@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface AvatarUploadSimpleProps {
   currentAvatarUrl?: string;
@@ -77,7 +78,7 @@ export const AvatarUploadSimple: React.FC<AvatarUploadSimpleProps> = ({
             updated_at: new Date().toISOString()
           });
 
-          console.log('Résultat update:', result);
+          logger.debug('Résultat update:', result);
 
           if (!result.success) {
             throw new Error(result.error || 'Erreur lors de la mise à jour');
@@ -88,7 +89,7 @@ export const AvatarUploadSimple: React.FC<AvatarUploadSimpleProps> = ({
           toast.success('Photo de profil mise à jour');
 
         } catch (error: any) {
-          console.error("Erreur technique :", error);
+          logger.error("Erreur technique :", error);
           toast.error(`Erreur technique : ${error?.message || 'Erreur inconnue'}`);
           
           // Nettoyer l'aperçu en cas d'erreur
@@ -108,7 +109,7 @@ export const AvatarUploadSimple: React.FC<AvatarUploadSimpleProps> = ({
       reader.readAsDataURL(file);
 
     } catch (error: any) {
-      console.error("Erreur technique :", error);
+      logger.error("Erreur technique :", error);
       toast.error(`Erreur technique : ${error?.message || 'Erreur inconnue'}`);
       setUploading(false);
     }
@@ -131,7 +132,7 @@ export const AvatarUploadSimple: React.FC<AvatarUploadSimpleProps> = ({
       setPreviewUrl(null);
       toast.success('Photo de profil supprimée');
     } catch (error: any) {
-      console.error("Erreur suppression :", error);
+      logger.error("Erreur suppression :", error);
       toast.error(`Erreur : ${error?.message || 'Erreur inconnue'}`);
     } finally {
       setUploading(false);

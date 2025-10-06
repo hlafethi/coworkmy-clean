@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { logger } from '@/utils/logger';
 
 export interface StripePayment {
   id: string;
@@ -30,21 +31,21 @@ export interface StripePayment {
 
 export async function fetchStripePayments(): Promise<StripePayment[]> {
   try {
-    console.log("💳 Récupération des paiements Stripe...");
+    logger.debug("💳 Récupération des paiements Stripe...");
     
     const response = await apiClient.get('/stripe/payments');
     
     if (!response.success) {
-      console.error("❌ Erreur lors de la récupération des paiements:", response.error);
+      logger.error("❌ Erreur lors de la récupération des paiements:", response.error);
       throw new Error(response.error || "Erreur lors de la récupération des paiements");
     }
 
     const payments = response.data || [];
-    console.log(`✅ ${payments.length} paiements récupérés`);
+    logger.debug(`✅ ${payments.length} paiements récupérés`);
     
     return payments;
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération des paiements:", error);
+    logger.error("❌ Erreur lors de la récupération des paiements:", error);
     throw error;
   }
 }
@@ -97,7 +98,7 @@ export function getPaymentStatusText(status: string): string {
 
 export async function refundStripePayment(paymentId: string, amount?: number, reason?: string): Promise<boolean> {
   try {
-    console.log(`💰 Remboursement du paiement: ${paymentId}`);
+    logger.debug(`💰 Remboursement du paiement: ${paymentId}`);
     
     const response = await apiClient.post(`/stripe/payments/${paymentId}/refund`, {
       amount,
@@ -105,14 +106,14 @@ export async function refundStripePayment(paymentId: string, amount?: number, re
     });
     
     if (!response.success) {
-      console.error("❌ Erreur lors du remboursement:", response.error);
+      logger.error("❌ Erreur lors du remboursement:", response.error);
       throw new Error(response.error || "Erreur lors du remboursement");
     }
 
-    console.log(`✅ Remboursement réussi: ${response.data.refund_id}`);
+    logger.debug(`✅ Remboursement réussi: ${response.data.refund_id}`);
     return true;
   } catch (error) {
-    console.error("❌ Erreur lors du remboursement:", error);
+    logger.error("❌ Erreur lors du remboursement:", error);
     throw error;
   }
 }

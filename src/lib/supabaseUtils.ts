@@ -1,5 +1,6 @@
 import { SupabaseClient, PostgrestError, AuthError, PostgrestSingleResponse } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { logger } from '@/utils/logger';
 
 export interface ApiResponse<T> {
   data: T | null;
@@ -24,7 +25,7 @@ export async function handleApiResponse<T>(
       
       // Vérifier si la réponse est HTML
       if (contentType?.includes('text/html')) {
-        console.error('[SUPABASE ERROR] Réponse HTML reçue au lieu de JSON');
+        logger.error('[SUPABASE ERROR] Réponse HTML reçue au lieu de JSON');
         return { 
           data: null, 
           error: 'Erreur serveur: Réponse HTML reçue au lieu de JSON' 
@@ -34,7 +35,7 @@ export async function handleApiResponse<T>(
       // Vérifier le statut HTTP
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[SUPABASE ERROR]', {
+        logger.error('[SUPABASE ERROR]', {
           status: response.status,
           statusText: response.statusText,
           body: errorText
@@ -50,7 +51,7 @@ export async function handleApiResponse<T>(
         const data = await response.json();
         return { data, error: null };
       } catch (parseError) {
-        console.error('[SUPABASE ERROR] Erreur de parsing JSON:', parseError);
+        logger.error('[SUPABASE ERROR] Erreur de parsing JSON:', parseError);
         return { 
           data: null, 
           error: 'Erreur de parsing de la réponse JSON' 
@@ -62,7 +63,7 @@ export async function handleApiResponse<T>(
     const { data, error } = response as PostgrestSingleResponse<T>;
     
     if (error) {
-      console.error('[SUPABASE ERROR]', {
+      logger.error('[SUPABASE ERROR]', {
         message: error.message,
         code: error.code,
         details: error.details
@@ -74,7 +75,7 @@ export async function handleApiResponse<T>(
   } catch (error) {
     // Gestion des erreurs réseau
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error('[SUPABASE ERROR] Erreur réseau:', error);
+      logger.error('[SUPABASE ERROR] Erreur réseau:', error);
       return { 
         data: null, 
         error: 'Erreur de connexion réseau. Vérifiez votre connexion internet.' 
@@ -83,7 +84,7 @@ export async function handleApiResponse<T>(
     
     // Gestion des erreurs JWT
     if (isJwtError(error)) {
-      console.error('[SUPABASE ERROR] Erreur JWT:', error);
+      logger.error('[SUPABASE ERROR] Erreur JWT:', error);
       return { 
         data: null, 
         error: 'Session expirée. Veuillez vous reconnecter.' 
@@ -92,7 +93,7 @@ export async function handleApiResponse<T>(
     
     // Gestion des erreurs de timeout
     if (error instanceof Error && error.message.includes('timeout')) {
-      console.error('[SUPABASE ERROR] Timeout:', error);
+      logger.error('[SUPABASE ERROR] Timeout:', error);
       return { 
         data: null, 
         error: 'La requête a expiré. Veuillez réessayer.' 
@@ -101,7 +102,7 @@ export async function handleApiResponse<T>(
     
     // Gestion des autres erreurs
     if (error instanceof Error) {
-      console.error('[SUPABASE ERROR]', error);
+      logger.error('[SUPABASE ERROR]', error);
       return { data: null, error: error.message };
     }
     

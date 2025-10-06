@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, TrendingUp, Calendar, DollarSign, Users, Building2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/utils/logger';
 
 interface DetailedStatsData {
   date: string;
@@ -41,7 +42,7 @@ export const DetailedStats = ({ mode, period }: DetailedStatsProps) => {
         
         setData(response.data || []);
       } catch (err) {
-        console.error('Erreur chargement stats détaillées:', err);
+        logger.error('Erreur chargement stats détaillées:', err);
         setError(err instanceof Error ? err.message : 'Erreur inconnue');
       } finally {
         setLoading(false);

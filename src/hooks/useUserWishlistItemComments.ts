@@ -3,6 +3,7 @@ import { isValidUserWishlistItemComment } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserWishlistItemComment } from "@/components/admin/types";
+import { logger } from '@/utils/logger';
 
 type UserWishlistItemCommentInsert = Omit<UserWishlistItemComment, "id" | "created_at" | "updated_at">;
 type UserWishlistItemCommentUpdate = Partial<UserWishlistItemCommentInsert>;
@@ -28,7 +29,7 @@ export function useUserWishlistItemComments(userId: string, wishlistItemId: stri
       const validComments = data.filter(isValidUserWishlistItemComment);
       setComments(validComments);
     } catch (err) {
-      console.error("Erreur lors de la récupération des commentaires:", err);
+      logger.error("Erreur lors de la récupération des commentaires:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des commentaires");
     } finally {
@@ -51,7 +52,7 @@ export function useUserWishlistItemComments(userId: string, wishlistItemId: stri
       toast.success("Commentaire ajouté avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de l'ajout du commentaire:", err);
+      logger.error("Erreur lors de l'ajout du commentaire:", err);
       toast.error("Erreur lors de l'ajout du commentaire");
       throw err;
     }
@@ -73,7 +74,7 @@ export function useUserWishlistItemComments(userId: string, wishlistItemId: stri
       toast.success("Commentaire mis à jour avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la mise à jour du commentaire:", err);
+      logger.error("Erreur lors de la mise à jour du commentaire:", err);
       toast.error("Erreur lors de la mise à jour du commentaire");
       throw err;
     }
@@ -91,7 +92,7 @@ export function useUserWishlistItemComments(userId: string, wishlistItemId: stri
       setComments(prev => prev.filter(c => c.id !== id));
       toast.success("Commentaire supprimé avec succès");
     } catch (err) {
-      console.error("Erreur lors de la suppression du commentaire:", err);
+      logger.error("Erreur lors de la suppression du commentaire:", err);
       toast.error("Erreur lors de la suppression du commentaire");
       throw err;
     }

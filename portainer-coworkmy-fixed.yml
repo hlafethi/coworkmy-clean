@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  backend:
+    image: node:20-alpine
+    container_name: coworkmy-backend
+    restart: unless-stopped
+    ports:
+      - "3002:5000"
+    environment:
+      NODE_ENV: production
+      API_PORT: 5000
+      DB_HOST: 147.93.58.155
+      DB_PORT: 5432
+      DB_NAME: coworkmy
+      DB_USER: vpshostinger
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL: true
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: https://coworkmy.fr,https://www.coworkmy.fr
+      FRONTEND_URL: https://coworkmy.fr
+    volumes:
+      - uploads_data:/app/uploads
+    working_dir: /app
+    command: >
+      sh -c "
+        apk add --no-cache git &&
+        rm -rf /tmp/repo &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/repo &&
+        cp -r /tmp/repo/* /app/ &&
+        npm install --omit=dev &&
+        echo 'Creating minimal server to avoid path-to-regexp error...' &&
+        cat > /app/minimal-server.js << 'EOF'
+        import express from 'express';
+        import cors from 'cors';
+        import dotenv from 'dotenv';
+        import { Pool } from 'pg';
+        
+        dotenv.config();
+        
+        const app = express();
+        const PORT = process.env.API_PORT || 5000;
+        
+        // Middleware
+        app.use(cors());
+        app.use(express.json());
+        
+        // Database connection
+        const pool = new Pool({
+          host: process.env.DB_HOST,
+          port: process.env.DB_PORT,
+          database: process.env.DB_NAME,
+          user: process.env.DB_USER,
+          password: process.env.DB_PASSWORD,
+          ssl: process.env.DB_SSL === 'true'
+        });
+        
+        // Health check
+        app.get('/api/health', (req, res) => {
+          res.json({
+            success: true,
+            data: {
+              status: 'OK',
+              timestamp: new Date().toISOString(),
+              version: '1.0.0'
+            },
+            error: null
+          });
+        });
+        
+        // Spaces endpoint
+        app.get('/api/spaces', async (req, res) => {
+          try {
+            const result = await pool.query('SELECT * FROM spaces WHERE is_active = true');
+            res.json({
+              success: true,
+              data: result.rows,
+              error: null
+            });
+          } catch (error) {
+            res.status(500).json({
+              success: false,
+              data: null,
+              error: error.message
+            });
+          }
+        });
+        
+        // Start server
+        app.listen(PORT, () => {
+          console.log('🚀 Minimal API CoworkMy démarrée sur le port', PORT);
+        });
+        EOF
+        echo 'Starting minimal API...' &&
+        node minimal-server.js
+      "
+    networks:
+      - proxy
+      - coworkmy-network
+
+  frontend:
+    image: node:20-alpine
+    container_name: coworkmy-frontend
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    volumes:
+      - uploads_data:/app/uploads
+    working_dir: /app
+    command: >
+      sh -c "
+        apk add --no-cache git &&
+        rm -rf /tmp/repo &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/repo &&
+        echo 'Copying frontend files...' &&
+        if [ -d /tmp/repo/dist ]; then
+          cp -r /tmp/repo/dist/* /app/;
+        else
+          echo 'Dist directory not found, creating minimal index.html';
+          echo '<!DOCTYPE html><html><head><title>COWORKMY</title></head><body><h1>Application en cours de déploiement...</h1></body></html>' > /app/index.html;
+        fi &&
+        echo 'Installing serve...' &&
+        npm install -g serve &&
+        echo 'Starting frontend server...' &&
+        serve -s . -l 3000
+      "
+    networks:
+      - proxy
+      - coworkmy-network
+    depends_on:
+      - backend
+
+volumes:
+  uploads_data:
+
+networks:
+  proxy:
+    external: true
+  coworkmy-network:
+    driver: bridge

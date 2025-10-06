@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { logger } from '@/utils/logger';
 
 /**
  * Hook pour persister les données d'un formulaire dans localStorage
@@ -20,11 +21,11 @@ export function usePersistedForm<T extends Record<string, any>>(
       const savedData = localStorage.getItem(`form-${key}`);
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        console.log(`🔄 Restauration du formulaire ${key}:`, parsedData);
+        logger.debug(`🔄 Restauration du formulaire ${key}:`, parsedData);
         form.reset(parsedData);
       }
     } catch (error) {
-      console.warn(`Erreur lors de la restauration du formulaire ${key}:`, error);
+      logger.warn(`Erreur lors de la restauration du formulaire ${key}:`, error);
     }
   }, [form, key, enabled]);
 
@@ -35,9 +36,9 @@ export function usePersistedForm<T extends Record<string, any>>(
     const subscription = form.watch((data) => {
       try {
         localStorage.setItem(`form-${key}`, JSON.stringify(data));
-        console.log(`💾 Sauvegarde automatique du formulaire ${key}`);
+        logger.debug(`💾 Sauvegarde automatique du formulaire ${key}`);
       } catch (error) {
-        console.warn(`Erreur lors de la sauvegarde du formulaire ${key}:`, error);
+        logger.warn(`Erreur lors de la sauvegarde du formulaire ${key}:`, error);
       }
     });
 
@@ -50,9 +51,9 @@ export function usePersistedForm<T extends Record<string, any>>(
     
     try {
       localStorage.removeItem(`form-${key}`);
-      console.log(`🗑️ Nettoyage des données persistées pour ${key}`);
+      logger.debug(`🗑️ Nettoyage des données persistées pour ${key}`);
     } catch (error) {
-      console.warn(`Erreur lors du nettoyage du formulaire ${key}:`, error);
+      logger.warn(`Erreur lors du nettoyage du formulaire ${key}:`, error);
     }
   };
 

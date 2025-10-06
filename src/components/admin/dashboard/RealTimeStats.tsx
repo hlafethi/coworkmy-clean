@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, RefreshCw, Activity, TrendingUp } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
+import { logger } from '@/utils/logger';
 
 interface RealTimeStatsProps {
   mode: 'test' | 'live';
@@ -29,7 +30,7 @@ export const RealTimeStats = ({
       await refreshStats();
       setLastUpdate(new Date());
     } catch (err) {
-      console.error('Erreur lors du rafraîchissement:', err);
+      logger.error('Erreur lors du rafraîchissement:', err);
     } finally {
       setIsRefreshing(false);
     }

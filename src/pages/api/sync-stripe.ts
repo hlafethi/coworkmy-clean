@@ -1,5 +1,6 @@
 // pages/api/sync-stripe.ts
 import { NextApiRequest, NextApiResponse } from 'next';
+import { logger } from '@/utils/logger';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { spaceId } = req.body;
@@ -25,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.status(200).json(await response.json());
   } catch (error) {
-    console.error('Erreur API sync-stripe:', error);
+    logger.error('Erreur API sync-stripe:', error);
     res.status(500).json({ error: error.message });
   }
 }

@@ -3,6 +3,7 @@ import { Plus, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logger } from '@/utils/logger';
 
 interface SpacesHeaderProps {
   onAddSpace: () => void;
@@ -23,14 +24,14 @@ export const SpacesHeader = ({ onAddSpace }: SpacesHeaderProps) => {
       });
       
       if (error) {
-        console.error('Erreur Supabase:', error);
+        logger.error('Erreur Supabase:', error);
         throw new Error(`Erreur Supabase: ${error.message}`);
       }
       
-      console.log('Résultat synchronisation:', data);
+      logger.debug('Résultat synchronisation:', data);
       toast.success("Synchronisation Stripe de tous les espaces lancée !");
     } catch (e: any) {
-      console.error('Erreur complète:', e);
+      logger.error('Erreur complète:', e);
       toast.error("Erreur lors de la synchronisation globale Stripe : " + e.message);
     } finally {
       setSyncingAll(false);

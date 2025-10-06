@@ -1,50 +1,65 @@
-/**
- * Utilitaire de logging qui désactive les logs en production
- */
-
+import { logger } from '@/utils/logger';
+// Logger utilitaire pour contrôler les logs en production
 const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
 
+// Configuration des logs par niveau
+const LOG_LEVELS = {
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3
+} as const;
+
+type LogLevel = keyof typeof LOG_LEVELS;
+
+// Niveau de log actuel (en production, on garde seulement ERROR et WARN)
+const CURRENT_LOG_LEVEL = isProduction ? LOG_LEVELS.WARN : LOG_LEVELS.DEBUG;
+
 class Logger {
-  private shouldLog(): boolean {
-    return isDevelopment || import.meta.env.VITE_ENABLE_LOGS === 'true';
+  private shouldLog(level: LogLevel): boolean {
+    return LOG_LEVELS[level] <= CURRENT_LOG_LEVEL;
   }
 
-  log(...args: any[]): void {
-    if (this.shouldLog()) {
-      console.log(...args);
+  error(...args: any[]): void {
+    if (this.shouldLog('ERROR')) {
+      logger.error(...args);
     }
   }
 
   warn(...args: any[]): void {
-    if (this.shouldLog()) {
-      console.warn(...args);
+    if (this.shouldLog('WARN')) {
+      logger.warn(...args);
     }
   }
 
-  error(...args: any[]): void {
-    // Les erreurs sont toujours loggées, même en production
-    console.error(...args);
-  }
-
   info(...args: any[]): void {
-    if (this.shouldLog()) {
-      console.info(...args);
+    if (this.shouldLog('INFO')) {
+      logger.debug(...args);
     }
   }
 
   debug(...args: any[]): void {
-    if (this.shouldLog()) {
-      console.debug(...args);
+    if (this.shouldLog('DEBUG')) {
+      logger.debug(...args);
+    }
+  }
+
+  // Méthode pour les logs de développement uniquement
+  dev(...args: any[]): void {
+    if (isDevelopment) {
+      logger.debug(...args);
     }
   }
 }
 
 export const logger = new Logger();
 
-// Fonction utilitaire pour remplacer console.log
-export const log = (...args: any[]) => logger.log(...args);
-export const warn = (...args: any[]) => logger.warn(...args);
-export const error = (...args: any[]) => logger.error(...args);
-export const info = (...args: any[]) => logger.info(...args);
-export const debug = (...args: any[]) => logger.debug(...args);
+// Export des méthodes pour un usage direct
+export const log = {
+  error: logger.error.bind(logger),
+  warn: logger.warn.bind(logger),
+  info: logger.info.bind(logger),
+  debug: logger.debug.bind(logger),
+  dev: logger.dev.bind(logger)
+};

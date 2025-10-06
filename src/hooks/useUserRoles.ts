@@ -3,6 +3,7 @@ import { isValidUserRole } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserRole } from "@/components/admin/types";
+import { logger } from '@/utils/logger';
 
 export function useUserRoles(userId: string) {
   const [roles, setRoles] = useState<UserRole[]>([]);
@@ -25,7 +26,7 @@ export function useUserRoles(userId: string) {
       const validRoles = data.filter(isValidUserRole);
       setRoles(validRoles);
     } catch (err) {
-      console.error("Erreur lors de la récupération des rôles utilisateur:", err);
+      logger.error("Erreur lors de la récupération des rôles utilisateur:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des rôles utilisateur");
     } finally {
@@ -48,7 +49,7 @@ export function useUserRoles(userId: string) {
       toast.success("Rôle assigné avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de l'assignation du rôle:", err);
+      logger.error("Erreur lors de l'assignation du rôle:", err);
       toast.error("Erreur lors de l'assignation du rôle");
       throw err;
     }
@@ -66,7 +67,7 @@ export function useUserRoles(userId: string) {
       setRoles(prev => prev.filter(r => r.id !== id));
       toast.success("Rôle retiré avec succès");
     } catch (err) {
-      console.error("Erreur lors du retrait du rôle:", err);
+      logger.error("Erreur lors du retrait du rôle:", err);
       toast.error("Erreur lors du retrait du rôle");
       throw err;
     }

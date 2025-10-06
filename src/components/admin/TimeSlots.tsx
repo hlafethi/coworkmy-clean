@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TimeSlotForm } from "./time-slots/TimeSlotForm";
 import { TimeSlotFormValues } from "./time-slots/timeSlotSchema";
+import { logger } from '@/utils/logger';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -35,12 +36,12 @@ async function fetchTimeSlots(): Promise<TimeSlot[]> {
     if (result.success && result.data) {
       return result.data;
     } else {
-      console.error('Error fetching time slots:', result.error);
+      logger.error('Error fetching time slots:', result.error);
       toast.error("Impossible de récupérer les créneaux horaires");
       return [];
     }
   } catch (error) {
-    console.error('Error fetching time slots:', error);
+    logger.error('Error fetching time slots:', error);
     toast.error("Impossible de récupérer les créneaux horaires");
     return [];
   }
@@ -55,12 +56,12 @@ async function createTimeSlot(
     if (result.success && result.data) {
       return result.data;
     } else {
-      console.error('Error creating time slot:', result.error);
+      logger.error('Error creating time slot:', result.error);
       toast.error("Impossible de créer le créneau horaire");
       return null;
     }
   } catch (error) {
-    console.error('Error creating time slot:', error);
+    logger.error('Error creating time slot:', error);
     toast.error("Impossible de créer le créneau horaire");
     return null;
   }
@@ -76,12 +77,12 @@ async function updateTimeSlot(
     if (result.success && result.data) {
       return result.data;
     } else {
-      console.error('Error updating time slot:', result.error);
+      logger.error('Error updating time slot:', result.error);
       toast.error("Impossible de mettre à jour le créneau horaire");
       return null;
     }
   } catch (error) {
-    console.error('Error updating time slot:', error);
+    logger.error('Error updating time slot:', error);
     toast.error("Impossible de mettre à jour le créneau horaire");
     return null;
   }
@@ -94,12 +95,12 @@ async function deleteTimeSlot(id: string): Promise<boolean> {
     if (result.success) {
       return true;
     } else {
-      console.error('Error deleting time slot:', result.error);
+      logger.error('Error deleting time slot:', result.error);
       toast.error("Impossible de supprimer le créneau horaire");
       return false;
     }
   } catch (error) {
-    console.error('Error deleting time slot:', error);
+    logger.error('Error deleting time slot:', error);
     toast.error("Impossible de supprimer le créneau horaire");
     return false;
   }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { LegalPageType, useLegalPages } from "@/hooks/useLegalPages";
+import { logger } from '@/utils/logger';
 
 const Terms = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Terms = () => {
           setTitle(page.title);
         }
       } catch (error) {
-        console.error("Error loading terms:", error);
+        logger.error("Error loading terms:", error);
       } finally {
         setLoading(false);
       }

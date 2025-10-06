@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/utils/logger';
 
 interface LegalPage {
   id: string;
@@ -73,11 +74,11 @@ const AdminLegalPagesManager = () => {
       if (result.success && Array.isArray(result.data)) {
         setPages(result.data);
       } else {
-        console.error('Erreur lors du chargement des pages:', result.error);
+        logger.error('Erreur lors du chargement des pages:', result.error);
         toast.error('Erreur lors du chargement des pages légales');
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des pages:', error);
+      logger.error('Erreur lors du chargement des pages:', error);
       toast.error('Erreur lors du chargement des pages légales');
     } finally {
       setLoading(false);
@@ -99,7 +100,7 @@ const AdminLegalPagesManager = () => {
         toast.error(result.error || 'Erreur lors de la création');
       }
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
+      logger.error('Erreur lors de la création:', error);
       toast.error('Erreur lors de la création de la page');
     } finally {
       setSaving(false);
@@ -124,7 +125,7 @@ const AdminLegalPagesManager = () => {
         toast.error(result.error || 'Erreur lors de la modification');
       }
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
+      logger.error('Erreur lors de la modification:', error);
       toast.error('Erreur lors de la modification de la page');
     } finally {
       setSaving(false);
@@ -148,7 +149,7 @@ const AdminLegalPagesManager = () => {
         toast.error(result.error || 'Erreur lors de la suppression');
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
+      logger.error('Erreur lors de la suppression:', error);
       toast.error('Erreur lors de la suppression de la page');
     } finally {
       setSaving(false);
@@ -171,7 +172,7 @@ const AdminLegalPagesManager = () => {
         toast.error(result.error || 'Erreur lors de l\'archivage');
       }
     } catch (error) {
-      console.error('Erreur lors de l\'archivage:', error);
+      logger.error('Erreur lors de l\'archivage:', error);
       toast.error('Erreur lors de l\'archivage de la page');
     } finally {
       setSaving(false);
@@ -194,7 +195,7 @@ const AdminLegalPagesManager = () => {
         toast.error(result.error || 'Erreur lors du changement de statut');
       }
     } catch (error) {
-      console.error('Erreur lors du changement de statut:', error);
+      logger.error('Erreur lors du changement de statut:', error);
       toast.error('Erreur lors du changement de statut');
     } finally {
       setSaving(false);

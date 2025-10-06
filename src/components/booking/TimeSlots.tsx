@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { initializeTimeSlots } from "@/utils/timeSlotsUtils";
+import { logger } from '@/utils/logger';
 
 interface TimeSlot {
     id: string;
@@ -33,13 +34,13 @@ export const TimeSlots = ({ spaceId }: { spaceId: string }) => {
                 .order('display_order', { ascending: true });
 
             if (error) {
-                console.error('Erreur Supabase:', error);
+                logger.error('Erreur Supabase:', error);
                 throw error;
             }
 
             setTimeSlots(data || []);
         } catch (error) {
-            console.error('Erreur lors du chargement des créneaux:', error);
+            logger.error('Erreur lors du chargement des créneaux:', error);
             setError('Erreur lors du chargement des créneaux horaires');
         } finally {
             setLoading(false);

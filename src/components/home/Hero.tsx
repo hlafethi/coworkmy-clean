@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useHomepageSettings } from "@/hooks/useHomepageSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { logger } from '@/utils/logger';
 
 const Hero = () => {
   const { settings, loading } = useHomepageSettings();
@@ -41,7 +42,7 @@ const Hero = () => {
     backgroundAttachment: isMobile ? 'scroll' : 'fixed',
   };
 
-  console.log('🖼️ Style appliqué:', backgroundStyle);
+  logger.debug('🖼️ Style appliqué:', backgroundStyle);
 
   return (
     <section className="relative py-16 md:py-20 overflow-hidden h-[600px] md:h-[700px]">

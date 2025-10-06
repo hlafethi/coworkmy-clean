@@ -16,6 +16,7 @@ import { updateBookingStatus } from "@/components/admin/bookings/bookingService"
 import { useUserBookings } from "@/hooks/useUserBookings";
 import { formatPrice } from "@/utils/bookingUtils";
 import { useState, useEffect } from "react";
+import { logger } from '@/utils/logger';
 
 interface CardTitleH2Props {
   children: React.ReactNode;
@@ -33,7 +34,7 @@ export function MyBookings() {
 
   // Debug: Log des changements de réservations
   useEffect(() => {
-    console.log(`🔄 MyBookings - Réservations mises à jour: ${bookings.length}`);
+    logger.debug(`🔄 MyBookings - Réservations mises à jour: ${bookings.length}`);
   }, [bookings]);
 
   const getStatusBadgeClass = (status: string) => {
@@ -76,14 +77,14 @@ export function MyBookings() {
         toast.error("Impossible d'annuler la réservation");
       }
     } catch (error) {
-      console.error("Erreur lors de l'annulation:", error);
+      logger.error("Erreur lors de l'annulation:", error);
       toast.error("Une erreur est survenue lors de l'annulation");
     }
   };
 
   const handleDelete = async (bookingId: string) => {
     try {
-      console.log(`🗑️ Suppression de la réservation: ${bookingId}`);
+      logger.debug(`🗑️ Suppression de la réservation: ${bookingId}`);
       
       const { error } = await supabase
           .from("bookings")
@@ -91,18 +92,18 @@ export function MyBookings() {
           .eq("id", bookingId);
 
       if (error) {
-        console.error("❌ Erreur Supabase:", error);
+        logger.error("❌ Erreur Supabase:", error);
         throw error;
       }
 
-      console.log("✅ Réservation supprimée de la base de données");
+      logger.debug("✅ Réservation supprimée de la base de données");
       
       // La suppression sera gérée automatiquement par le hook temps réel
-      console.log("✅ Suppression demandée, mise à jour automatique via WebSocket");
+      logger.debug("✅ Suppression demandée, mise à jour automatique via WebSocket");
 
       toast.success("Réservation supprimée avec succès");
     } catch (error) {
-      console.error("❌ Erreur lors de la suppression:", error);
+      logger.error("❌ Erreur lors de la suppression:", error);
       toast.error("Impossible de supprimer la réservation");
     }
   };
@@ -126,7 +127,7 @@ export function MyBookings() {
     return endTime > now;
   });
 
-  console.log(`📊 MyBookings - Total réservations: ${bookings.length}, Réservations à venir: ${upcomingBookings.length}`);
+  logger.debug(`📊 MyBookings - Total réservations: ${bookings.length}, Réservations à venir: ${upcomingBookings.length}`);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

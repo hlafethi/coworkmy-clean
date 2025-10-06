@@ -1,5 +1,6 @@
+import { logger } from '@/utils/logger';
 export default function Subscriptions() {
-  console.log('🔍 Page Subscriptions chargée');
+  logger.debug('🔍 Page Subscriptions chargée');
   
   return (
     <div style={{ padding: '20px', backgroundColor: '#f0f0f0', minHeight: '100vh' }}>
@@ -37,7 +38,7 @@ export default function Subscriptions() {
         
         <button 
           onClick={() => {
-            console.log('🔄 Redirection vers Stripe...');
+            logger.debug('🔄 Redirection vers Stripe...');
             alert('Redirection vers Stripe (fonctionnalité à implémenter)');
           }}
           style={{

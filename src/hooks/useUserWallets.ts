@@ -3,6 +3,7 @@ import { isValidUserWallet } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserWallet } from "@/components/admin/types";
+import { logger } from '@/utils/logger';
 
 type UserWalletInsert = Omit<UserWallet, "id" | "created_at" | "updated_at">;
 type UserWalletUpdate = Partial<UserWalletInsert>;
@@ -28,7 +29,7 @@ export function useUserWallets(userId: string) {
       const validWallets = data.filter(isValidUserWallet);
       setWallets(validWallets);
     } catch (err) {
-      console.error("Erreur lors de la récupération des portefeuilles:", err);
+      logger.error("Erreur lors de la récupération des portefeuilles:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des portefeuilles");
     } finally {
@@ -51,7 +52,7 @@ export function useUserWallets(userId: string) {
       toast.success("Portefeuille créé avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la création du portefeuille:", err);
+      logger.error("Erreur lors de la création du portefeuille:", err);
       toast.error("Erreur lors de la création du portefeuille");
       throw err;
     }
@@ -73,7 +74,7 @@ export function useUserWallets(userId: string) {
       toast.success("Portefeuille mis à jour avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la mise à jour du portefeuille:", err);
+      logger.error("Erreur lors de la mise à jour du portefeuille:", err);
       toast.error("Erreur lors de la mise à jour du portefeuille");
       throw err;
     }
@@ -95,7 +96,7 @@ export function useUserWallets(userId: string) {
       toast.success("Portefeuille fermé avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la fermeture du portefeuille:", err);
+      logger.error("Erreur lors de la fermeture du portefeuille:", err);
       toast.error("Erreur lors de la fermeture du portefeuille");
       throw err;
     }

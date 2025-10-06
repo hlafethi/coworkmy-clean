@@ -3,6 +3,7 @@ import { isValidUserSubscription } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserSubscription } from "@/components/admin/types";
+import { logger } from '@/utils/logger';
 
 type UserSubscriptionInsert = Omit<UserSubscription, "id" | "created_at" | "updated_at">;
 type UserSubscriptionUpdate = Partial<UserSubscriptionInsert>;
@@ -28,7 +29,7 @@ export function useUserSubscriptions(userId: string) {
       const validSubscriptions = data.filter(isValidUserSubscription);
       setSubscriptions(validSubscriptions);
     } catch (err) {
-      console.error("Erreur lors de la récupération des abonnements:", err);
+      logger.error("Erreur lors de la récupération des abonnements:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des abonnements");
     } finally {
@@ -51,7 +52,7 @@ export function useUserSubscriptions(userId: string) {
       toast.success("Abonnement créé avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la création de l'abonnement:", err);
+      logger.error("Erreur lors de la création de l'abonnement:", err);
       toast.error("Erreur lors de la création de l'abonnement");
       throw err;
     }
@@ -73,7 +74,7 @@ export function useUserSubscriptions(userId: string) {
       toast.success("Abonnement mis à jour avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la mise à jour de l'abonnement:", err);
+      logger.error("Erreur lors de la mise à jour de l'abonnement:", err);
       toast.error("Erreur lors de la mise à jour de l'abonnement");
       throw err;
     }
@@ -95,7 +96,7 @@ export function useUserSubscriptions(userId: string) {
       toast.success("Abonnement annulé avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de l'annulation de l'abonnement:", err);
+      logger.error("Erreur lors de l'annulation de l'abonnement:", err);
       toast.error("Erreur lors de l'annulation de l'abonnement");
       throw err;
     }

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 // Enregistrement du service worker désactivé temporairement pour debug
 // if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 //   window.addEventListener('load', async () => {
@@ -7,7 +8,7 @@
 //         scope: '/'
 //       });
 //
-//       console.log('Service Worker enregistré avec succès:', registration);
+//       logger.debug('Service Worker enregistré avec succès:', registration);
 //
 //       // Gestion des mises à jour
 //       registration.addEventListener('updatefound', () => {
@@ -41,7 +42,7 @@
 //       }, 60 * 60 * 1000);
 //
 //     } catch (error) {
-//       console.error('Erreur lors de l\'enregistrement du Service Worker:', error);
+//       logger.error('Erreur lors de l\'enregistrement du Service Worker:', error);
 //     }
 //   });
 // } 

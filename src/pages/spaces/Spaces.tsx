@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import type { Space } from "@/components/admin/types";
+import { logger } from '@/utils/logger';
 
 const Spaces = () => {
   const [loading, setLoading] = useState(true);
@@ -16,17 +17,17 @@ const Spaces = () => {
   useEffect(() => {
     const fetchSpaces = async () => {
       try {
-        console.log('🔄 Chargement des espaces depuis l\'API...');
+        logger.debug('🔄 Chargement des espaces depuis l\'API...');
         const response = await apiClient.get('/spaces/active');
         
         if (!response.success) {
           throw new Error(response.error || 'Erreur lors du chargement des espaces');
         }
 
-        console.log('✅ Espaces chargés:', response.data?.length || 0);
+        logger.debug('✅ Espaces chargés:', response.data?.length || 0);
         setSpaces(response.data || []);
       } catch (error) {
-        console.error("Erreur lors de la récupération des espaces:", error);
+        logger.error("Erreur lors de la récupération des espaces:", error);
         toast.error("Une erreur s'est produite lors du chargement des espaces");
       } finally {
         setLoading(false);

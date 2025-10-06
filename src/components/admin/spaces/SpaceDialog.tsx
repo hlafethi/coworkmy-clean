@@ -12,6 +12,7 @@ import {
 import { SpaceForm } from "./SpaceForm";
 import { type SpaceFormValues, type SpaceFormData } from "./types";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logger } from '@/utils/logger';
 
 interface SpaceDialogProps {
   open: boolean;
@@ -41,7 +42,7 @@ export const SpaceDialog = ({
 
   // Fonction pour synchroniser avec Stripe (désactivée temporairement)
   const syncWithStripe = async (spaceId: string) => {
-    console.log("⚠️ Synchronisation Stripe désactivée - clés non configurées");
+    logger.debug("⚠️ Synchronisation Stripe désactivée - clés non configurées");
     return { success: true, message: "Synchronisation Stripe désactivée" };
   };
 
@@ -105,11 +106,11 @@ export const SpaceDialog = ({
       // Synchroniser avec Stripe après la création/modification
       if (spaceId) {
         try {
-          console.log("🚀 Synchronisation automatique avec Stripe...");
+          logger.debug("🚀 Synchronisation automatique avec Stripe...");
           await syncWithStripe(spaceId);
           toast.success("Synchronisation avec Stripe réussie !");
         } catch (stripeError) {
-          console.error("⚠️ Erreur lors de la synchronisation Stripe:", stripeError);
+          logger.error("⚠️ Erreur lors de la synchronisation Stripe:", stripeError);
           toast.warning("Espace sauvegardé mais erreur Stripe. Vérifiez les logs.");
         }
       }
@@ -121,7 +122,7 @@ export const SpaceDialog = ({
       handleClose();
       onSuccess();
     } catch (error: any) {
-      console.error("Erreur:", error);
+      logger.error("Erreur:", error);
       
       let errorMessage = isEditMode 
         ? "Impossible de mettre à jour l'espace" 

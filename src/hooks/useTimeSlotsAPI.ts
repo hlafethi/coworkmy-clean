@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import type { TimeSlotOption } from "@/types/timeSlots";
+import { logger } from '@/utils/logger';
 
 export function useTimeSlotsAPI(spaceId?: string) {
   const [timeSlots, setTimeSlots] = useState<TimeSlotOption[]>([]);
@@ -8,11 +9,11 @@ export function useTimeSlotsAPI(spaceId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('🔍 useTimeSlotsAPI useEffect:', { spaceId });
+    logger.debug('🔍 useTimeSlotsAPI useEffect:', { spaceId });
     
     // Générer des créneaux même sans spaceId pour l'édition
     if (!spaceId) {
-      console.log('⚠️ Aucun spaceId, génération de créneaux par défaut');
+      logger.debug('⚠️ Aucun spaceId, génération de créneaux par défaut');
       const defaultSlots: TimeSlotOption[] = [
         { 
           id: '1', 
@@ -69,7 +70,7 @@ export function useTimeSlotsAPI(spaceId?: string) {
           value: '6'
         }
       ];
-      console.log('🔍 Créneaux par défaut générés:', defaultSlots);
+      logger.debug('🔍 Créneaux par défaut générés:', defaultSlots);
       setTimeSlots(defaultSlots);
       return;
     }
@@ -138,10 +139,10 @@ export function useTimeSlotsAPI(spaceId?: string) {
           }
         ];
         
-        console.log('🔍 Créneaux générés:', defaultSlots);
+        logger.debug('🔍 Créneaux générés:', defaultSlots);
         setTimeSlots(defaultSlots);
       } catch (err) {
-        console.error('Erreur chargement créneaux:', err);
+        logger.error('Erreur chargement créneaux:', err);
         setError('Erreur lors du chargement des créneaux');
       } finally {
         setLoading(false);

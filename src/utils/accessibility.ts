@@ -1,4 +1,5 @@
 import axe from 'axe-core';
+import { logger } from '@/utils/logger';
 
 /**
  * Accessibility testing utilities
@@ -28,26 +29,26 @@ export function initAccessibilityTesting() {
         }
       }, (err, results) => {
         if (err) {
-          console.error('Error running accessibility tests:', err);
+          logger.error('Error running accessibility tests:', err);
           return;
         }
         
         // Log results to console
         if (results.violations.length) {
-          console.warn('Accessibility issues found:');
+          logger.warn('Accessibility issues found:');
           
           results.violations.forEach((violation) => {
             const nodes = violation.nodes.map(node => node.html).join('\n');
-            console.warn(`${violation.impact} impact: ${violation.help}`);
-            console.warn(`WCAG: ${violation.tags.filter(tag => tag.includes('wcag')).join(', ')}`);
-            console.warn(`Affected elements:\n${nodes}`);
-            console.warn(`More info: ${violation.helpUrl}`);
-            console.warn('---');
+            logger.warn(`${violation.impact} impact: ${violation.help}`);
+            logger.warn(`WCAG: ${violation.tags.filter(tag => tag.includes('wcag')).join(', ')}`);
+            logger.warn(`Affected elements:\n${nodes}`);
+            logger.warn(`More info: ${violation.helpUrl}`);
+            logger.warn('---');
           });
           
-          console.warn(`${results.violations.length} accessibility issues found. See above for details.`);
+          logger.warn(`${results.violations.length} accessibility issues found. See above for details.`);
         } else {
-          console.log('No accessibility issues found!');
+          logger.debug('No accessibility issues found!');
         }
       });
     }, 3000); // Wait for the app to fully render
@@ -67,7 +68,7 @@ export function checkContrast(element: HTMLElement) {
       }
     }, (err, results) => {
       if (err) {
-        console.error('Error checking contrast:', err);
+        logger.error('Error checking contrast:', err);
         resolve({ passed: false, error: err });
         return;
       }

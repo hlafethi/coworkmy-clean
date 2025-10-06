@@ -3,6 +3,7 @@ import { isValidUserWishlist } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserWishlist } from "@/types/database";
+import { logger } from '@/utils/logger';
 
 type UserWishlistInsert = Omit<UserWishlist, "id" | "created_at" | "updated_at">;
 type UserWishlistUpdate = Partial<UserWishlistInsert>;
@@ -31,7 +32,7 @@ export function useUserWishlists(userId: string) {
       const validWishlists = data.filter(isValidUserWishlist);
       setWishlists(validWishlists);
     } catch (err) {
-      console.error("Erreur lors de la récupération des listes de souhaits:", err);
+      logger.error("Erreur lors de la récupération des listes de souhaits:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des listes de souhaits");
     } finally {
@@ -54,7 +55,7 @@ export function useUserWishlists(userId: string) {
       toast.success("Liste de souhaits créée avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la création de la liste de souhaits:", err);
+      logger.error("Erreur lors de la création de la liste de souhaits:", err);
       toast.error("Erreur lors de la création de la liste de souhaits");
       throw err;
     }
@@ -76,7 +77,7 @@ export function useUserWishlists(userId: string) {
       toast.success("Liste de souhaits mise à jour avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de la mise à jour de la liste de souhaits:", err);
+      logger.error("Erreur lors de la mise à jour de la liste de souhaits:", err);
       toast.error("Erreur lors de la mise à jour de la liste de souhaits");
       throw err;
     }
@@ -94,7 +95,7 @@ export function useUserWishlists(userId: string) {
       setWishlists(prev => prev.filter(w => w.id !== id));
       toast.success("Liste de souhaits supprimée avec succès");
     } catch (err) {
-      console.error("Erreur lors de la suppression de la liste de souhaits:", err);
+      logger.error("Erreur lors de la suppression de la liste de souhaits:", err);
       toast.error("Erreur lors de la suppression de la liste de souhaits");
       throw err;
     }
@@ -116,7 +117,7 @@ export function useUserWishlists(userId: string) {
       toast.success("Liste de souhaits archivée avec succès");
       return data;
     } catch (err) {
-      console.error("Erreur lors de l'archivage de la liste de souhaits:", err);
+      logger.error("Erreur lors de l'archivage de la liste de souhaits:", err);
       toast.error("Erreur lors de l'archivage de la liste de souhaits");
       throw err;
     }

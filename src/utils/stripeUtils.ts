@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { logger } from '@/utils/logger';
 
 /**
  * Crée une session de paiement Stripe et retourne l'URL de redirection
@@ -19,7 +20,7 @@ export const createStripeCheckoutSession = async (
   isAdmin: boolean = false
 ): Promise<{ url: string, mode: string }> => {
   try {
-    console.log("[Stripe] Création de session via backend API");
+    logger.debug("[Stripe] Création de session via backend API");
     
     // Utiliser l'API client qui gère automatiquement l'URL et l'authentification
     const response = await apiClient.post('/stripe/create-checkout-session', {
@@ -39,7 +40,7 @@ export const createStripeCheckoutSession = async (
     };
 
   } catch (error) {
-    console.error("[Stripe] Erreur dans createStripeCheckoutSession:", error);
+    logger.error("[Stripe] Erreur dans createStripeCheckoutSession:", error);
     throw error;
   }
 };
@@ -57,7 +58,7 @@ export const createStripeCustomerPortal = async (
   isAdmin: boolean = false
 ): Promise<{ url: string; mode: string; customerId: string }> => {
   try {
-    console.log('[Stripe] Appel create-customer-portal avec :', { customerEmail, returnUrl, isAdmin });
+    logger.debug('[Stripe] Appel create-customer-portal avec :', { customerEmail, returnUrl, isAdmin });
 
     // Récupérer le token d'authentification avec la même logique que AuthContext
     let accessToken = null;
@@ -89,7 +90,7 @@ export const createStripeCustomerPortal = async (
           
           if (parsed.access_token) {
             accessToken = parsed.access_token;
-            console.log('[Stripe] Token trouvé dans localStorage avec la clé:', key);
+            logger.debug('[Stripe] Token trouvé dans localStorage avec la clé:', key);
             break;
           }
         } catch (e) {
@@ -101,13 +102,13 @@ export const createStripeCustomerPortal = async (
     // 2. Si pas de token dans localStorage, utiliser l'API client
     if (!accessToken) {
       try {
-        console.log('[Stripe] Tentative de récupération du token via API client...');
+        logger.debug('[Stripe] Tentative de récupération du token via API client...');
         // L'API client gère automatiquement l'authentification
         // Pas besoin de récupérer le token manuellement
         accessToken = 'authenticated'; // Marqueur pour indiquer que l'utilisateur est authentifié
-        console.log('[Stripe] Utilisateur authentifié via API client');
+        logger.debug('[Stripe] Utilisateur authentifié via API client');
       } catch (error) {
-        console.warn('[Stripe] Erreur lors de la récupération du token via API client:', error);
+        logger.warn('[Stripe] Erreur lors de la récupération du token via API client:', error);
       }
     }
 
@@ -115,10 +116,10 @@ export const createStripeCustomerPortal = async (
       throw new Error('Utilisateur non authentifié - aucun token trouvé');
     }
 
-    console.log('[Stripe] Token d\'authentification récupéré avec succès');
+    logger.debug('[Stripe] Token d\'authentification récupéré avec succès');
 
     // Utiliser l'API backend avec authentification
-    console.log('[Stripe] Appel API backend pour créer le portail client...');
+    logger.debug('[Stripe] Appel API backend pour créer le portail client...');
     
     const response = await apiClient.post('/stripe/create-customer-portal', {
       customerEmail,
@@ -126,18 +127,18 @@ export const createStripeCustomerPortal = async (
       isAdmin
     });
 
-    console.log('[Stripe] Réponse de l\'API :', response);
+    logger.debug('[Stripe] Réponse de l\'API :', response);
 
     if (!response.success) {
       throw new Error(response.error || 'Erreur lors de la création du portail client');
     }
 
     const data = response.data;
-    console.log('[Stripe] Portail client créé avec succès :', data);
+    logger.debug('[Stripe] Portail client créé avec succès :', data);
     return data;
 
   } catch (error) {
-    console.error('[Stripe] Erreur dans createStripeCustomerPortal:', error);
+    logger.error('[Stripe] Erreur dans createStripeCustomerPortal:', error);
     throw error;
   }
 };
@@ -154,9 +155,9 @@ export const updateBookingStatus = async (bookingId: string, status: string): Pr
     if (!response.success) {
       throw new Error(response.error || "Failed to update booking status");
     }
-    console.log(`✅ Statut de la réservation ${bookingId} mis à jour à ${status}`);
+    logger.debug(`✅ Statut de la réservation ${bookingId} mis à jour à ${status}`);
   } catch (error) {
-    console.error(`❌ Erreur lors de la mise à jour du statut de la réservation ${bookingId}:`, error);
+    logger.error(`❌ Erreur lors de la mise à jour du statut de la réservation ${bookingId}:`, error);
     throw error;
   }
 };

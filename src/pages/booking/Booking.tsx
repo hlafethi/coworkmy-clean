@@ -176,7 +176,7 @@ export default function Booking() {
 
       const booking = bookingResponse.data;
 
-      console.log('✅ Réservation créée avec succès:', booking);
+      logger.debug('✅ Réservation créée avec succès:', booking);
       
       // Vérifier si l'utilisateur est admin
       const isAdmin = user?.is_admin;
@@ -204,7 +204,7 @@ export default function Booking() {
           window.location.href = url;
           return; // Arrêter l'exécution ici
         } catch (paymentError) {
-          console.error("Erreur lors de la création de la session de paiement:", paymentError);
+          logger.error("Erreur lors de la création de la session de paiement:", paymentError);
           toast.error("Impossible de créer la session de paiement. Réservation créée sans paiement.");
           
           // Rediriger vers le dashboard admin
@@ -233,14 +233,14 @@ export default function Booking() {
           window.location.href = url;
           return; // Arrêter l'exécution ici
         } catch (paymentError) {
-          console.error("Erreur lors de la création de la session de paiement:", paymentError);
+          logger.error("Erreur lors de la création de la session de paiement:", paymentError);
           toast.error("Impossible de créer la session de paiement. Veuillez réessayer.");
           
           // En cas d'erreur, mettre à jour le statut de la réservation à "cancelled"
           try {
             await updateBookingStatus(booking.id, 'cancelled');
           } catch (updateError) {
-            console.warn("Erreur lors de l'annulation de la réservation:", updateError);
+            logger.warn("Erreur lors de l'annulation de la réservation:", updateError);
           }
           
           return;
@@ -248,7 +248,7 @@ export default function Booking() {
       }
     } catch (error) {
       toast.error("Une erreur est survenue lors de la réservation ou du paiement.");
-      console.error("Erreur lors de la création de la réservation ou du paiement:", error);
+      logger.error("Erreur lors de la création de la réservation ou du paiement:", error);
     }
   };
 

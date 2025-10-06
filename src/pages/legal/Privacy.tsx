@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { LegalPageType, useLegalPages } from "@/hooks/useLegalPages";
+import { logger } from '@/utils/logger';
 
 const Privacy = () => {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Privacy = () => {
           setTitle(page.title);
         }
       } catch (error) {
-        console.error("Error loading privacy policy:", error);
+        logger.error("Error loading privacy policy:", error);
       } finally {
         setLoading(false);
       }

@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  coworkmy-api:
+    image: node:20-alpine
+    container_name: coworkmy-api-v2
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - API_PORT=5000
+      - DB_HOST=147.93.58.155
+      - DB_PORT=5432
+      - DB_NAME=coworkmy
+      - DB_USER=vpshostinger
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=true
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=https://coworkmy.fr,https://www.coworkmy.fr
+      - FRONTEND_URL=https://coworkmy.fr
+    command: >
+      sh -c "
+        set -e &&
+        apk add --no-cache git &&
+        echo 'Cloning repository for API...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/api-app &&
+        cp -r /tmp/api-app/* /app/ &&
+        rm -rf /tmp/api-app &&
+        echo 'Installing API dependencies...' &&
+        npm install --omit=dev &&
+        echo 'Creating minimal API server...' &&
+        echo 'import express from \"express\"; import cors from \"cors\"; import dotenv from \"dotenv\"; import { Pool } from \"pg\"; dotenv.config(); const app = express(); const PORT = process.env.API_PORT || 5000; app.use(cors()); app.use(express.json()); const pool = new Pool({ host: process.env.DB_HOST, port: process.env.DB_PORT, database: process.env.DB_NAME, user: process.env.DB_USER, password: process.env.DB_PASSWORD, ssl: process.env.DB_SSL === \"true\" }); app.get(\"/api/health\", (req, res) => { res.json({ success: true, data: { status: \"OK\", timestamp: new Date().toISOString(), version: \"1.0.0\" }, error: null }); }); app.get(\"/api/spaces\", async (req, res) => { try { const result = await pool.query(\"SELECT * FROM spaces WHERE is_active = true\"); res.json({ success: true, data: result.rows, error: null }); } catch (error) { res.status(500).json({ success: false, data: null, error: error.message }); } }); app.listen(PORT, () => { console.log(\"🚀 Minimal API CoworkMy démarrée sur le port\", PORT); });' > /app/minimal-server.js &&
+        echo 'Starting minimal API...' &&
+        node minimal-server.js
+      "
+    networks:
+      - coworkmy-network
+
+networks:
+  coworkmy-network:
+    driver: bridge

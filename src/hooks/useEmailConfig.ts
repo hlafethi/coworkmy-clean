@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/utils/logger';
 
 export interface EmailConfig {
   id: string;
@@ -45,7 +46,7 @@ export const useEmailConfig = () => {
       setIsAuthenticated(true);
       return true;
     } catch (err) {
-      console.error('❌ Erreur de vérification d\'authentification:', err);
+      logger.error('❌ Erreur de vérification d\'authentification:', err);
       setIsAuthenticated(false);
       return false;
     }
@@ -67,11 +68,11 @@ export const useEmailConfig = () => {
         setConfig(result.data);
       } else {
         // Aucune configuration trouvée, utiliser les valeurs par défaut
-        console.log('📧 Aucune configuration email trouvée, utilisation des valeurs par défaut');
+        logger.debug('📧 Aucune configuration email trouvée, utilisation des valeurs par défaut');
         setConfig(DEFAULT_CONFIG);
       }
     } catch (err: any) {
-      console.error('❌ Erreur lors du chargement de la config email:', err);
+      logger.error('❌ Erreur lors du chargement de la config email:', err);
       setError(err.message);
       setConfig(DEFAULT_CONFIG);
     } finally {
@@ -100,7 +101,7 @@ export const useEmailConfig = () => {
         throw new Error(result.message || 'Erreur lors de la mise à jour');
       }
     } catch (err: any) {
-      console.error('❌ Erreur lors de la mise à jour:', err);
+      logger.error('❌ Erreur lors de la mise à jour:', err);
       return { success: false, error: err.message };
     }
   };
@@ -125,7 +126,7 @@ export const useEmailConfig = () => {
         throw new Error(result.message || 'Erreur lors de la création');
       }
     } catch (err: any) {
-      console.error('❌ Erreur lors de la création:', err);
+      logger.error('❌ Erreur lors de la création:', err);
       return { success: false, error: err.message };
     }
   };

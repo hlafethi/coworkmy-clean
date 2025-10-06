@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 const googleApiKeysSchema = z.object({
   api_key: z.string().min(1, "La clé API est requise"),
@@ -47,7 +48,7 @@ export function GoogleApiKeysForm() {
         description: "Les clés API ont été enregistrées avec succès.",
       });
     } catch (error) {
-      console.error("Erreur lors de l'enregistrement des clés:", error);
+      logger.error("Erreur lors de l'enregistrement des clés:", error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de l'enregistrement des clés.",

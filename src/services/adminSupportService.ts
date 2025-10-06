@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 export interface AdminTicket {
   id: string;
   user_id: string;
@@ -16,7 +17,7 @@ export class AdminSupportService {
   static async getTickets(): Promise<AdminTicket[]> {
     try {
       // Utilisation temporaire de l'endpoint sans authentification pour contourner le problème de token
-      console.log('🔍 AdminSupportService: Utilisation de l\'endpoint temporaire /admin/support/tickets-no-auth');
+      logger.debug('🔍 AdminSupportService: Utilisation de l\'endpoint temporaire /admin/support/tickets-no-auth');
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
       const response = await fetch('http://localhost:5000/api/admin/support/tickets-no-auth', {
@@ -31,7 +32,7 @@ export class AdminSupportService {
       }
       
       const result = await response.json();
-      console.log('📝 Tickets API admin:', result);
+      logger.debug('📝 Tickets API admin:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Erreur lors de la récupération des tickets');
@@ -39,7 +40,7 @@ export class AdminSupportService {
       
       return result.data || [];
     } catch (error) {
-      console.error('Erreur récupération tickets admin:', error);
+      logger.error('Erreur récupération tickets admin:', error);
       throw error;
     }
   }
@@ -48,8 +49,8 @@ export class AdminSupportService {
   static async getTicketResponses(ticketId: string): Promise<any[]> {
     try {
       // Utilisation temporaire de l'endpoint sans authentification pour contourner le problème de token
-      console.log('🔍 AdminSupportService: Utilisation de l\'endpoint temporaire /admin/support/tickets/:id/responses-no-auth');
-      console.log('📝 Ticket ID:', ticketId);
+      logger.debug('🔍 AdminSupportService: Utilisation de l\'endpoint temporaire /admin/support/tickets/:id/responses-no-auth');
+      logger.debug('📝 Ticket ID:', ticketId);
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
       const response = await fetch(`http://localhost:5000/api/admin/support/tickets/${ticketId}/responses-no-auth`, {
@@ -64,7 +65,7 @@ export class AdminSupportService {
       }
       
       const result = await response.json();
-      console.log('📝 Réponses ticket API admin:', result);
+      logger.debug('📝 Réponses ticket API admin:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Erreur lors de la récupération des réponses');
@@ -72,7 +73,7 @@ export class AdminSupportService {
       
       return result.data || [];
     } catch (error) {
-      console.error('Erreur récupération réponses ticket admin:', error);
+      logger.error('Erreur récupération réponses ticket admin:', error);
       throw error;
     }
   }
@@ -81,8 +82,8 @@ export class AdminSupportService {
   static async addTicketResponse(ticketId: string, message: string): Promise<any> {
     try {
       // Utilisation temporaire de l'endpoint sans authentification pour contourner le problème de token
-      console.log('🔍 AdminSupportService: Utilisation de l\'endpoint temporaire /admin/support/tickets/:id/responses-no-auth');
-      console.log('📝 Données envoyées:', { ticketId, message });
+      logger.debug('🔍 AdminSupportService: Utilisation de l\'endpoint temporaire /admin/support/tickets/:id/responses-no-auth');
+      logger.debug('📝 Données envoyées:', { ticketId, message });
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
       const response = await fetch(`http://localhost:5000/api/admin/support/tickets/${ticketId}/responses-no-auth`, {
@@ -100,7 +101,7 @@ export class AdminSupportService {
       }
       
       const result = await response.json();
-      console.log('📝 Réponse admin ajoutée API:', result);
+      logger.debug('📝 Réponse admin ajoutée API:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Erreur lors de l\'ajout de la réponse');
@@ -108,7 +109,7 @@ export class AdminSupportService {
       
       return result.data;
     } catch (error) {
-      console.error('Erreur ajout réponse admin:', error);
+      logger.error('Erreur ajout réponse admin:', error);
       throw error;
     }
   }
@@ -116,7 +117,7 @@ export class AdminSupportService {
   // Récupérer les articles de la base de connaissances
   static async getKBArticles(): Promise<any[]> {
     try {
-      console.log('🔍 AdminSupportService: Récupération des articles de la base de connaissances');
+      logger.debug('🔍 AdminSupportService: Récupération des articles de la base de connaissances');
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
       const response = await fetch('http://localhost:5000/api/admin/support/kb-articles', {
@@ -131,7 +132,7 @@ export class AdminSupportService {
       }
       
       const result = await response.json();
-      console.log('📝 Articles KB API admin:', result);
+      logger.debug('📝 Articles KB API admin:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Erreur lors de la récupération des articles');
@@ -139,7 +140,7 @@ export class AdminSupportService {
       
       return result.data || [];
     } catch (error) {
-      console.error('Erreur récupération articles KB admin:', error);
+      logger.error('Erreur récupération articles KB admin:', error);
       throw error;
     }
   }
@@ -147,7 +148,7 @@ export class AdminSupportService {
   // Récupérer les FAQ
   static async getFAQs(): Promise<any[]> {
     try {
-      console.log('🔍 AdminSupportService: Récupération des FAQ');
+      logger.debug('🔍 AdminSupportService: Récupération des FAQ');
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
       const response = await fetch('http://localhost:5000/api/admin/support/faqs', {
@@ -162,7 +163,7 @@ export class AdminSupportService {
       }
       
       const result = await response.json();
-      console.log('📝 FAQ API admin:', result);
+      logger.debug('📝 FAQ API admin:', result);
       
       if (!result.success) {
         throw new Error(result.error || 'Erreur lors de la récupération des FAQ');
@@ -170,7 +171,7 @@ export class AdminSupportService {
       
       return result.data || [];
     } catch (error) {
-      console.error('Erreur récupération FAQ admin:', error);
+      logger.error('Erreur récupération FAQ admin:', error);
       throw error;
     }
   }

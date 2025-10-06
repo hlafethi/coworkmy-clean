@@ -12,6 +12,7 @@ import './service-worker-registration'
 // Autres initialisations
 // import { initMonitoring } from './utils/monitoring';
 import { initAnalytics } from './utils/analytics';
+import { logger } from '@/utils/logger';
 // import { initAccessibilityTesting } from './utils/accessibility'; // Temporairement désactivé
 
 // initMonitoring();
@@ -19,10 +20,10 @@ initAnalytics();
 // initAccessibilityTesting(); // Temporairement désactivé
 
 // Configuration de l'application
-console.log('🚀 Démarrage de CoworkMy');
-console.log('📊 Mode:', import.meta.env.MODE);
-console.log('🔧 Base de données: PostgreSQL VPS');
-console.log('🌐 API: http://localhost:5000');
+logger.debug('🚀 Démarrage de CoworkMy');
+logger.debug('📊 Mode:', import.meta.env.MODE);
+logger.debug('🔧 Base de données: PostgreSQL VPS');
+logger.debug('🌐 API: http://localhost:5000');
 
 // Render React root
 ReactDOM.createRoot(document.getElementById('root')!).render(

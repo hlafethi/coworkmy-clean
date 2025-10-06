@@ -3,6 +3,7 @@ import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface LogoUploadSimpleProps {
   currentLogoUrl?: string;
@@ -77,7 +78,7 @@ export const LogoUploadSimple: React.FC<LogoUploadSimpleProps> = ({
             updated_at: new Date().toISOString()
           });
 
-          console.log('Résultat update logo:', result);
+          logger.debug('Résultat update logo:', result);
 
           if (!result.success) {
             throw new Error(result.error || 'Erreur lors de la mise à jour');
@@ -88,7 +89,7 @@ export const LogoUploadSimple: React.FC<LogoUploadSimpleProps> = ({
           toast.success('Logo mis à jour');
 
         } catch (error: any) {
-          console.error("Erreur technique logo :", error);
+          logger.error("Erreur technique logo :", error);
           toast.error(`Erreur technique : ${error?.message || 'Erreur inconnue'}`);
           
           // Nettoyer l'aperçu en cas d'erreur
@@ -108,7 +109,7 @@ export const LogoUploadSimple: React.FC<LogoUploadSimpleProps> = ({
       reader.readAsDataURL(file);
 
     } catch (error: any) {
-      console.error("Erreur technique logo :", error);
+      logger.error("Erreur technique logo :", error);
       toast.error(`Erreur technique : ${error?.message || 'Erreur inconnue'}`);
       setUploading(false);
     }
@@ -131,7 +132,7 @@ export const LogoUploadSimple: React.FC<LogoUploadSimpleProps> = ({
       setPreviewUrl(null);
       toast.success('Logo supprimé');
     } catch (error: any) {
-      console.error("Erreur suppression logo :", error);
+      logger.error("Erreur suppression logo :", error);
       toast.error(`Erreur : ${error?.message || 'Erreur inconnue'}`);
     } finally {
       setUploading(false);

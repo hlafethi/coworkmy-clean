@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({
@@ -27,7 +28,7 @@ const ContactForm = () => {
     // TODO: Remplacer par un vrai appel API
     try {
       // const response = await apiClient.post('/contact', formData);
-      console.log("Form submitted:", formData);
+      logger.debug("Form submitted:", formData);
       toast.success("Message envoyé avec succès ! Nous vous contacterons bientôt.");
       setFormData({
         name: "",

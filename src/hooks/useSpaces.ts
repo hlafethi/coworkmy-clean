@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { Space } from "@/components/admin/types";
 import { isValidSpace } from "@/utils/typeGuards";
 import type { PricingType } from "@/components/admin/spaces/types";
+import { logger } from '@/utils/logger';
 
 // Types simplifiés pour PostgreSQL
 interface SpaceRow {
@@ -79,7 +80,7 @@ export function useSpaces(spaceId?: string) {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching space...');
+      logger.debug('Fetching space...');
       const response = await apiClient.get(`/spaces/${spaceId}`);
       
       if (response.success && response.data) {
@@ -93,7 +94,7 @@ export function useSpaces(spaceId?: string) {
         throw new Error(response.error || "Erreur lors de la récupération de l'espace");
       }
     } catch (err) {
-      console.error('Error fetching space:', err);
+      logger.error('Error fetching space:', err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
     } finally {
       setLoading(false);
@@ -105,7 +106,7 @@ export function useSpaces(spaceId?: string) {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching spaces...');
+      logger.debug('Fetching spaces...');
       const response = await apiClient.get('/spaces/active');
       
       if (response.success && response.data) {
@@ -116,7 +117,7 @@ export function useSpaces(spaceId?: string) {
         throw new Error(response.error || "Erreur lors de la récupération des espaces");
       }
     } catch (err) {
-      console.error('Error fetching spaces:', err);
+      logger.error('Error fetching spaces:', err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
     } finally {
       setLoading(false);
@@ -143,7 +144,7 @@ export function useSpaces(spaceId?: string) {
         throw new Error(response.error || "Erreur lors de la création de l'espace");
       }
     } catch (err) {
-      console.error('Error creating space:', err);
+      logger.error('Error creating space:', err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la création de l'espace");
       return null;
@@ -175,7 +176,7 @@ export function useSpaces(spaceId?: string) {
         throw new Error(response.error || "Erreur lors de la mise à jour de l'espace");
       }
     } catch (err) {
-      console.error('Error updating space:', err);
+      logger.error('Error updating space:', err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la mise à jour de l'espace");
       return null;
@@ -202,7 +203,7 @@ export function useSpaces(spaceId?: string) {
         throw new Error(response.error || "Erreur lors de la suppression de l'espace");
       }
     } catch (err) {
-      console.error('Error deleting space:', err);
+      logger.error('Error deleting space:', err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la suppression de l'espace");
       return false;

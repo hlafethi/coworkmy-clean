@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import type { TimeSlotOption } from "@/types/booking";
+import { logger } from '@/utils/logger';
 
 export function useBooking(spaceId: string | undefined) {
   const [space, setSpace] = useState<any>(null);
@@ -20,7 +21,7 @@ export function useBooking(spaceId: string | undefined) {
           setSpace(response.data);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement de l\'espace:', error);
+        logger.error('Erreur lors du chargement de l\'espace:', error);
       } finally {
         setLoading(false);
       }

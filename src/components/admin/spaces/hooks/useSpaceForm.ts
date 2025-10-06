@@ -4,6 +4,7 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { SpaceFormData } from "../types";
 import { useEffect } from "react";
+import { logger } from '@/utils/logger';
 
 const spaceFormSchema = z.object({
   id: z.string().optional(),
@@ -151,7 +152,7 @@ export const useSpaceForm = ({ defaultValues, onSubmit, onSuccess }: UseSpaceFor
       form.reset();
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error submitting space form:", error);
+      logger.error("Error submitting space form:", error);
       toast.error("Une erreur est survenue lors de l'enregistrement de l'espace");
     }
   };

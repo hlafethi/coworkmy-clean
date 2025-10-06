@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export default function Callback() {
     const navigate = useNavigate();
@@ -26,7 +27,7 @@ export default function Callback() {
                     navigate('/auth/login');
                 }
             } catch (error) {
-                console.error('Erreur lors de la connexion:', error);
+                logger.error('Erreur lors de la connexion:', error);
                 toast.error('Erreur lors de la connexion');
                 navigate('/auth/login');
             }

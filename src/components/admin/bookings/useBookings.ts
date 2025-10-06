@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { type Booking } from "./types";
 import { fetchBookings, updateBookingStatus, deleteBooking } from "./bookingService";
 import { toast } from "sonner";
+import { logger } from '@/utils/logger';
 
 export function useBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -14,7 +15,7 @@ export function useBookings() {
     if (!isMountedRef.current) return;
     
     try {
-      console.log("🔄 Chargement des réservations dans useBookings hook...");
+      logger.debug("🔄 Chargement des réservations dans useBookings hook...");
       setLoading(true);
       setError(null);
       
@@ -23,16 +24,16 @@ export function useBookings() {
       if (!isMountedRef.current) return;
       
       if (data.length === 0) {
-        console.log("ℹ️ Aucune réservation trouvée");
+        logger.debug("ℹ️ Aucune réservation trouvée");
       } else {
-        console.log(`✅ Chargement réussi: ${data.length} réservations trouvées`);
-        console.log("📋 Exemples de réservations:", data.slice(0, 2));
+        logger.debug(`✅ Chargement réussi: ${data.length} réservations trouvées`);
+        logger.debug("📋 Exemples de réservations:", data.slice(0, 2));
       }
       
       setBookings(data);
     } catch (error: any) {
       if (!isMountedRef.current) return;
-      console.error("❌ Erreur lors du chargement des réservations:", error);
+      logger.error("❌ Erreur lors du chargement des réservations:", error);
       setError(error?.message || "Une erreur est survenue lors du chargement des réservations");
       toast.error("Impossible de charger les réservations. Veuillez réessayer.");
     } finally {
@@ -45,14 +46,14 @@ export function useBookings() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    console.log("🔌 Initialisation du hook useBookings...");
+    logger.debug("🔌 Initialisation du hook useBookings...");
     
     // Charger les réservations immédiatement
     loadBookings();
 
     // Cleanup
     return () => {
-      console.log("🧹 Nettoyage du hook useBookings...");
+      logger.debug("🧹 Nettoyage du hook useBookings...");
       isMountedRef.current = false;
     };
   }, []);
@@ -61,7 +62,7 @@ export function useBookings() {
     if (!isMountedRef.current) return;
     
     setRefreshing(true);
-    console.log(`🔄 Mise à jour du statut de la réservation: ${id} vers ${newStatus}`);
+    logger.debug(`🔄 Mise à jour du statut de la réservation: ${id} vers ${newStatus}`);
     try {
       const success = await updateBookingStatus(id, newStatus);
       if (success) {
@@ -73,7 +74,7 @@ export function useBookings() {
         setRefreshing(false);
       }
     } catch (error) {
-      console.error("❌ Erreur lors de la mise à jour du statut:", error);
+      logger.error("❌ Erreur lors de la mise à jour du statut:", error);
       toast.error("Erreur lors de la mise à jour du statut");
       setRefreshing(false);
     }
@@ -82,7 +83,7 @@ export function useBookings() {
   const handleRefresh = () => {
     if (!isMountedRef.current) return;
     
-    console.log("🔄 Actualisation manuelle demandée");
+    logger.debug("🔄 Actualisation manuelle demandée");
     setRefreshing(true);
     loadBookings();
   };
@@ -97,7 +98,7 @@ export function useBookings() {
         await loadBookings();
       }
     } catch (error) {
-      console.error("❌ Erreur lors de la suppression:", error);
+      logger.error("❌ Erreur lors de la suppression:", error);
       toast.error("Erreur lors de la suppression de la réservation");
       setRefreshing(false);
     }

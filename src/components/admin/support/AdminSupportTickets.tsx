@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useRealtimeSubscription } from '../../../hooks/useRealtimeSubscription';
+import { logger } from '@/utils/logger';
 
 interface Ticket {
     id: string;
@@ -45,12 +46,12 @@ export const AdminSupportTickets = () => {
         try {
             setIsLoadingTickets(true);
             setError(null);
-            console.log('[AdminSupportTickets] Chargement des tickets');
+            logger.debug('[AdminSupportTickets] Chargement des tickets');
             const data = await AdminSupportService.getTickets();
-            console.log('[AdminSupportTickets] Tickets récupérés:', data);
+            logger.debug('[AdminSupportTickets] Tickets récupérés:', data);
             setTickets(data);
         } catch (err) {
-            console.error('[AdminSupportTickets] Erreur inattendue:', err);
+            logger.error('[AdminSupportTickets] Erreur inattendue:', err);
             setError(`Erreur inattendue: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
             toast.error('Erreur inattendue');
         } finally {
@@ -63,12 +64,12 @@ export const AdminSupportTickets = () => {
         try {
             setIsLoadingResponses(true);
             setError(null);
-            console.log('[AdminSupportTickets] Chargement des réponses pour ticket:', ticketId);
+            logger.debug('[AdminSupportTickets] Chargement des réponses pour ticket:', ticketId);
             const data = await AdminSupportService.getTicketResponses(ticketId);
-            console.log('[AdminSupportTickets] Réponses récupérées:', data);
+            logger.debug('[AdminSupportTickets] Réponses récupérées:', data);
             setResponses(data);
         } catch (err) {
-            console.error('[AdminSupportTickets] Erreur inattendue:', err);
+            logger.error('[AdminSupportTickets] Erreur inattendue:', err);
             setError(`Erreur inattendue: ${err instanceof Error ? err.message : 'Erreur inconnue'}`);
             toast.error('Erreur inattendue');
         } finally {
@@ -94,19 +95,19 @@ export const AdminSupportTickets = () => {
         setIsReplying(true);
         try {
             setError(null);
-            console.log('[AdminSupportTickets] Envoi de réponse pour ticket:', selectedTicket.id);
+            logger.debug('[AdminSupportTickets] Envoi de réponse pour ticket:', selectedTicket.id);
             
             await AdminSupportService.addTicketResponse(selectedTicket.id, reply);
             
             setReply('');
             toast.success("Réponse envoyée avec succès");
-            console.log('[AdminSupportTickets] Réponse envoyée avec succès');
+            logger.debug('[AdminSupportTickets] Réponse envoyée avec succès');
             
             // Rafraîchir les réponses immédiatement
             const data = await AdminSupportService.getTicketResponses(selectedTicket.id);
             setResponses(data);
         } catch (error) {
-            console.error('[AdminSupportTickets] Erreur inattendue lors de l\'envoi de la réponse:', error);
+            logger.error('[AdminSupportTickets] Erreur inattendue lors de l\'envoi de la réponse:', error);
             setError(`Erreur inattendue: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
             toast.error("Impossible d'envoyer la réponse");
         } finally {
@@ -120,15 +121,15 @@ export const AdminSupportTickets = () => {
         setLoading(true);
         try {
             setError(null);
-            console.log('[AdminSupportTickets] Changement de statut pour ticket:', selectedTicket.id, '->', newStatus);
+            logger.debug('[AdminSupportTickets] Changement de statut pour ticket:', selectedTicket.id, '->', newStatus);
             
             await AdminSupportService.updateTicketStatus(selectedTicket.id, newStatus);
             
             setStatus(newStatus);
             toast.success('Statut mis à jour avec succès');
-            console.log('[AdminSupportTickets] Statut mis à jour avec succès');
+            logger.debug('[AdminSupportTickets] Statut mis à jour avec succès');
         } catch (error) {
-            console.error('[AdminSupportTickets] Erreur inattendue lors du changement de statut:', error);
+            logger.error('[AdminSupportTickets] Erreur inattendue lors du changement de statut:', error);
             setError(`Erreur inattendue: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
             toast.error('Erreur lors du changement de statut');
         } finally {
@@ -167,7 +168,7 @@ export const AdminSupportTickets = () => {
         table: 'support_tickets',
         event: 'INSERT',
         onMessage: (payload) => {
-            console.log('[AdminSupportTickets] Nouveau ticket reçu:', payload.new);
+            logger.debug('[AdminSupportTickets] Nouveau ticket reçu:', payload.new);
             toast.info('🎫 Nouveau ticket reçu !', {
                 description: `Sujet: ${payload.new.subject}`,
                 duration: 0, // Le toast reste jusqu'à validation manuelle
@@ -180,11 +181,11 @@ export const AdminSupportTickets = () => {
             });
         },
         onError: (error) => {
-            console.error('[AdminSupportTickets] Erreur abonnement tickets:', error);
+            logger.error('[AdminSupportTickets] Erreur abonnement tickets:', error);
             toast.error('Erreur de configuration des notifications tickets');
         },
         onStatusChange: (status) => {
-            console.log('[AdminSupportTickets] Statut abonnement tickets:', status);
+            logger.debug('[AdminSupportTickets] Statut abonnement tickets:', status);
         }
     });
 
@@ -193,7 +194,7 @@ export const AdminSupportTickets = () => {
         table: 'support_tickets',
         event: 'UPDATE',
         onMessage: (payload) => {
-            console.log('[AdminSupportTickets] Ticket mis à jour:', payload.new);
+            logger.debug('[AdminSupportTickets] Ticket mis à jour:', payload.new);
             toast.info('📝 Ticket mis à jour', {
                 description: `Statut: ${payload.new.status}`,
                 duration: 0, // Le toast reste jusqu'à validation manuelle
@@ -206,10 +207,10 @@ export const AdminSupportTickets = () => {
             });
         },
         onError: (error) => {
-            console.error('[AdminSupportTickets] Erreur abonnement mises à jour tickets:', error);
+            logger.error('[AdminSupportTickets] Erreur abonnement mises à jour tickets:', error);
         },
         onStatusChange: (status) => {
-            console.log('[AdminSupportTickets] Statut abonnement mises à jour tickets:', status);
+            logger.debug('[AdminSupportTickets] Statut abonnement mises à jour tickets:', status);
         }
     });
 
@@ -218,11 +219,11 @@ export const AdminSupportTickets = () => {
         table: 'support_ticket_responses',
         event: 'INSERT',
         onMessage: (payload) => {
-            console.log('[AdminSupportTickets] Nouvelle réponse reçue:', payload.new);
+            logger.debug('[AdminSupportTickets] Nouvelle réponse reçue:', payload.new);
             
             // Ne pas notifier si c'est l'admin qui a envoyé la réponse
             if (payload.new.is_admin) {
-                console.log('[AdminSupportTickets] Réponse admin - pas de notification');
+                logger.debug('[AdminSupportTickets] Réponse admin - pas de notification');
                 return;
             }
             
@@ -234,7 +235,7 @@ export const AdminSupportTickets = () => {
                     onClick: () => {
                         // Recharge les réponses si le ticket sélectionné est concerné
                         if (selectedTicket && payload.new.ticket_id === selectedTicket.id) {
-                            console.log('[AdminSupportTickets] Rechargement des réponses pour le ticket sélectionné');
+                            logger.debug('[AdminSupportTickets] Rechargement des réponses pour le ticket sélectionné');
                             fetchResponses(selectedTicket.id);
                         }
                     }
@@ -242,11 +243,11 @@ export const AdminSupportTickets = () => {
             });
         },
         onError: (error) => {
-            console.error('[AdminSupportTickets] Erreur abonnement réponses:', error);
+            logger.error('[AdminSupportTickets] Erreur abonnement réponses:', error);
             toast.error('Erreur de configuration des notifications réponses');
         },
         onStatusChange: (status) => {
-            console.log('[AdminSupportTickets] Statut abonnement réponses:', status);
+            logger.debug('[AdminSupportTickets] Statut abonnement réponses:', status);
         }
     });
 

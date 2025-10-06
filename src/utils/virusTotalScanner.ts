@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 // Service d'analyse antivirus avec VirusTotal API
 // VirusTotal offre 500 requêtes gratuites par jour
 
@@ -54,7 +55,7 @@ class VirusTotalScanner {
     this.apiKey = import.meta.env.VITE_VIRUSTOTAL_API_KEY || '';
     
     if (!this.apiKey) {
-      console.warn('⚠️ Clé API VirusTotal non configurée. Utilisation du scanner basique.');
+      logger.warn('⚠️ Clé API VirusTotal non configurée. Utilisation du scanner basique.');
     }
   }
 
@@ -106,7 +107,7 @@ class VirusTotalScanner {
       return this.parseVirusTotalResponse(report);
 
     } catch (error) {
-      console.error('Erreur lors du scan VirusTotal:', error);
+      logger.error('Erreur lors du scan VirusTotal:', error);
       
       // Fallback vers le scanner basique
       return await this.basicScan(file);
@@ -136,7 +137,7 @@ class VirusTotalScanner {
       const data = await response.json();
       return data.data?.id || null;
     } catch (error) {
-      console.error('Erreur upload VirusTotal:', error);
+      logger.error('Erreur upload VirusTotal:', error);
       return null;
     }
   }
@@ -162,7 +163,7 @@ class VirusTotalScanner {
 
       return await response.json();
     } catch (error) {
-      console.error('Erreur récupération rapport:', error);
+      logger.error('Erreur récupération rapport:', error);
       return null;
     }
   }
@@ -196,7 +197,7 @@ class VirusTotalScanner {
         // Attendre avant le prochain essai
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
-        console.error(`Tentative ${attempt + 1} échouée:`, error);
+        logger.error(`Tentative ${attempt + 1} échouée:`, error);
       }
     }
 
@@ -283,7 +284,7 @@ class VirusTotalScanner {
       
       return { isClean: true };
     } catch (error) {
-      console.error('Erreur scan basique:', error);
+      logger.error('Erreur scan basique:', error);
       return {
         isClean: false,
         threat: 'Erreur lors de l\'analyse de sécurité'

@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 /**
  * Utilitaires pour la gestion des taxes Stripe
  * Gère le calcul automatique des taxes et la conformité fiscale
@@ -71,7 +72,7 @@ export function isStripeTaxEnabled(): boolean {
  * @param taxConfig Configuration des taxes utilisée
  */
 export function logTaxInfo(sessionId: string, taxConfig: StripeTaxConfig): void {
-  console.log(`[Stripe Tax] Session ${sessionId}:`, {
+  logger.debug(`[Stripe Tax] Session ${sessionId}:`, {
     enabled: taxConfig.enabled,
     taxBehavior: taxConfig.taxBehavior,
     environment: process.env.NODE_ENV

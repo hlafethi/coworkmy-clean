@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { logger } from '@/utils/logger';
 
 
 interface EmailFormLayoutProps {
@@ -21,7 +22,7 @@ export const EmailFormLayout = ({
   onSubmit,
   footer,
 }: EmailFormLayoutProps) => {
-  console.log('EmailFormLayout utilisé');
+  logger.debug('EmailFormLayout utilisé');
   return (
     <>
       <Alert className="mb-6">

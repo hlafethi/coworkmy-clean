@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import DatabaseConfig from "./DatabaseConfig";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 
 const SupabaseConfig = () => {
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ const SupabaseConfig = () => {
       if (error) throw error;
       toast.success("Connexion Supabase réussie");
     } catch (error) {
-      console.error("Erreur de connexion Supabase:", error);
+      logger.error("Erreur de connexion Supabase:", error);
       toast.error("Impossible de se connecter à Supabase");
     } finally {
       setLoading(false);
@@ -44,7 +45,7 @@ const SupabaseConfig = () => {
       localStorage.setItem('supabase_key', config.key);
       toast.success("Configuration Supabase sauvegardée");
     } catch (error) {
-      console.error("Erreur de sauvegarde:", error);
+      logger.error("Erreur de sauvegarde:", error);
       toast.error("Impossible de sauvegarder la configuration");
     } finally {
       setLoading(false);

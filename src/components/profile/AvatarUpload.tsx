@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '@/utils/logger';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string;
@@ -92,14 +93,14 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
         .getPublicUrl(uploadData.path);
 
       // Log pour vérifier la valeur de userId
-      console.log('userId utilisé pour update:', userId);
+      logger.debug('userId utilisé pour update:', userId);
       // Mettre à jour le profil dans la base de données avec l'API client
       const result = await apiClient.put(`/users/${userId}`, { 
         avatar_url: publicUrl,
         updated_at: new Date().toISOString()
       });
 
-      console.log('Résultat update:', result);
+      logger.debug('Résultat update:', result);
 
       if (!result.success) {
         throw new Error(result.error || 'Erreur lors de la mise à jour');
@@ -114,7 +115,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
       setPreviewUrl(null);
 
     } catch (error: any) {
-      console.error("Erreur technique :", {
+      logger.error("Erreur technique :", {
         code: error.code,
         status: error.status,
         message: error.message,
@@ -163,7 +164,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
             alt="Photo de profil"
             className="object-cover"
             onError={(e) => {
-              console.warn('Erreur de chargement de l\'avatar:', e);
+              logger.warn('Erreur de chargement de l\'avatar:', e);
               // L'AvatarFallback s'affichera automatiquement
             }}
           />

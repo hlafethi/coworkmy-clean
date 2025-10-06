@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, TestTube, Zap } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
+import { logger } from '@/utils/logger';
 
 interface StripeConfig {
   mode?: 'test' | 'live';
@@ -17,7 +18,7 @@ export const StripeModeIndicator = () => {
         // Mode par défaut en test pour PostgreSQL
         setMode('test');
       } catch (error) {
-        console.error("Erreur lors de la récupération du mode Stripe:", error);
+        logger.error("Erreur lors de la récupération du mode Stripe:", error);
         setMode('test'); // Fallback en mode test
       } finally {
         setLoading(false);

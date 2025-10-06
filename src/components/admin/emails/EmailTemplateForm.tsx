@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
+import { logger } from '@/utils/logger';
 
 // Définition du schéma du formulaire avec des champs requis
 const templateSchema = z.object({
@@ -113,7 +114,7 @@ export const EmailTemplateForm = ({
       if (onSuccess) onSuccess();
       if (mode === "create") form.reset();
     } catch (error: any) {
-      console.error("Erreur lors de l'opération:", error);
+      logger.error("Erreur lors de l'opération:", error);
       toast.error("Erreur lors de l'opération");
     } finally {
       setIsSubmitting(false);

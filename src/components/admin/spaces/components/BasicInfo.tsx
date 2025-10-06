@@ -6,6 +6,7 @@ import { SpaceFormValues } from "../types";
 import { ImageUpload } from "./ImageUpload";
 import { useImageUpload } from "../hooks/useImageUpload";
 import { useState } from "react";
+import { logger } from '@/utils/logger';
 
 interface BasicInfoProps {
   form: UseFormReturn<SpaceFormValues>;
@@ -39,7 +40,7 @@ export const BasicInfo = ({ form }: BasicInfoProps) => {
       // Déclencher la validation du formulaire
       trigger('image_url');
     } catch (error) {
-      console.error('Erreur lors de l\'upload de l\'image:', error);
+      logger.error('Erreur lors de l\'upload de l\'image:', error);
     } finally {
       setIsUploading(false);
     }

@@ -9,6 +9,7 @@ import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Booking } from "./types";
 import { BookingStatusBadge } from "./BookingStatusBadge";
+import { logger } from '@/utils/logger';
 
 // Setup localization for the calendar
 const locales = {
@@ -164,7 +165,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         popup
         onSelectEvent={(event: CalendarEvent) => {
           // Show event details in a modal or popover
-          console.log("Selected event:", event);
+          logger.debug("Selected event:", event);
         }}
         eventPropGetter={(event: CalendarEvent) => {
           const booking = event.resource;

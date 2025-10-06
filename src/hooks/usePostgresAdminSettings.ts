@@ -8,6 +8,7 @@ import { AdminSettingsService } from "@/integrations/postgres/services";
 import { AdminSettings } from "@/integrations/postgres/types";
 import { usePostgresAuth } from "./usePostgresAuth";
 import { SettingsFormValues } from "@/types/settings";
+import { logger } from '@/utils/logger';
 
 // Schéma de validation pour les paramètres d'administration
 export const settingsFormSchema = z.object({
@@ -91,7 +92,7 @@ export function usePostgresAdminSettings() {
         form.reset(data);
       }
     } catch (err) {
-      console.error("Erreur lors de la récupération des paramètres d'administration:", err);
+      logger.error("Erreur lors de la récupération des paramètres d'administration:", err);
       setError(err as Error);
       toast.error("Impossible de charger les paramètres");
     } finally {
@@ -116,7 +117,7 @@ export function usePostgresAdminSettings() {
       setSettings(data);
       return { success: true, data };
     } catch (err) {
-      console.error("Erreur lors de la mise à jour des paramètres d'administration:", err);
+      logger.error("Erreur lors de la mise à jour des paramètres d'administration:", err);
       setError(err as Error);
       return { success: false, error: err };
     } finally {
@@ -162,7 +163,7 @@ export function usePostgresAdminSettings() {
         return false;
       }
     } catch (err) {
-      console.error("Erreur lors de la mise à jour des clés API Stripe:", err);
+      logger.error("Erreur lors de la mise à jour des clés API Stripe:", err);
       toast.error("Erreur lors de la mise à jour des clés API Stripe");
       return false;
     }
@@ -189,7 +190,7 @@ export function usePostgresAdminSettings() {
         toast.error("Erreur lors de l'enregistrement des paramètres");
       }
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde des paramètres:", error);
+      logger.error("Erreur lors de la sauvegarde des paramètres:", error);
       toast.error("Erreur lors de l'enregistrement des paramètres");
     } finally {
       setIsSaving(false);

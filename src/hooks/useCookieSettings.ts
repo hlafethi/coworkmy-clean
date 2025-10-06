@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { AdminCookieSettings } from '@/types/cookies';
+import { logger } from '@/utils/logger';
 
 export function useCookieSettings() {
   const [settings, setSettings] = useState<AdminCookieSettings | null>(null);
@@ -17,11 +18,11 @@ export function useCookieSettings() {
       }
 
       setLoading(true);
-      console.log('🔄 Chargement des paramètres cookies...');
+      logger.debug('🔄 Chargement des paramètres cookies...');
       
       const response = await apiClient.get('/cookie-settings');
       if (response.success) {
-        console.log('✅ Paramètres cookies chargés:', response.data);
+        logger.debug('✅ Paramètres cookies chargés:', response.data);
         
         // Toujours mettre à jour les paramètres si forceRefresh ou si les données ont changé
         const newData = JSON.stringify(response.data);
@@ -31,16 +32,16 @@ export function useCookieSettings() {
           setSettings(response.data);
           // Mettre en cache dans localStorage pour un accès rapide
           localStorage.setItem('cookie-settings-cache', newData);
-          console.log('🎨 Paramètres cookies mis à jour');
+          logger.debug('🎨 Paramètres cookies mis à jour');
         } else {
-          console.log('📦 Paramètres cookies inchangés');
+          logger.debug('📦 Paramètres cookies inchangés');
         }
         hasLoadedFromAPI.current = true;
       } else {
         throw new Error(response.error || 'Erreur lors du chargement');
       }
     } catch (err) {
-      console.error('❌ Erreur lors du chargement des paramètres cookies:', err);
+      logger.error('❌ Erreur lors du chargement des paramètres cookies:', err);
       setError(err instanceof Error ? err : new Error('Failed to load cookie settings'));
       
       // En cas d'erreur, essayer de charger depuis le cache seulement si pas encore fait
@@ -50,11 +51,11 @@ export function useCookieSettings() {
           if (cached) {
             const cachedSettings = JSON.parse(cached);
             setSettings(cachedSettings);
-            console.log('📦 Utilisation du cache pour les paramètres cookies');
+            logger.debug('📦 Utilisation du cache pour les paramètres cookies');
             hasLoadedFromCache.current = true;
           }
         } catch (cacheErr) {
-          console.error('❌ Erreur lors du chargement du cache:', cacheErr);
+          logger.error('❌ Erreur lors du chargement du cache:', cacheErr);
         }
       }
     } finally {
@@ -70,11 +71,11 @@ export function useCookieSettings() {
         if (cached) {
           const cachedSettings = JSON.parse(cached);
           setSettings(cachedSettings);
-          console.log('📦 Paramètres cookies chargés depuis le cache');
+          logger.debug('📦 Paramètres cookies chargés depuis le cache');
           hasLoadedFromCache.current = true;
         }
       } catch (err) {
-        console.error('❌ Erreur lors du chargement du cache:', err);
+        logger.error('❌ Erreur lors du chargement du cache:', err);
       }
     }
     
@@ -91,9 +92,9 @@ export function useCookieSettings() {
         try {
           const newSettings = JSON.parse(e.newValue);
           setSettings(newSettings);
-          console.log('🔄 Paramètres cookies mis à jour depuis le cache');
+          logger.debug('🔄 Paramètres cookies mis à jour depuis le cache');
         } catch (err) {
-          console.error('❌ Erreur lors de la mise à jour du cache:', err);
+          logger.error('❌ Erreur lors de la mise à jour du cache:', err);
         }
       }
     };
