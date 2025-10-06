@@ -17,12 +17,13 @@ services:
         set -e &&
         apk add --no-cache git nginx &&
         echo 'Cloning repository...' &&
+        rm -rf /tmp/app &&
         git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
         echo 'Installing dependencies...' &&
         cd /tmp/app &&
         npm install &&
         echo 'Building frontend...' &&
-        npm run build &&
+        npx vite build --emptyOutDir &&
         echo 'Copying built files...' &&
         cp -r dist/* /usr/share/nginx/html/ &&
         cd / &&
