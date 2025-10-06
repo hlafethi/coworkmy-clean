@@ -49,7 +49,7 @@ services:
     networks:
       - coworkmy-network
     ports:
-      - "3003:80"
+      - "8080:80"
 
   coworkmy-api:
     image: node:20-alpine
@@ -143,7 +143,7 @@ services:
     networks:
       - coworkmy-network
     ports:
-      - "6380:6379"
+      - "6381:6379"
 
 networks:
   coworkmy-network:
