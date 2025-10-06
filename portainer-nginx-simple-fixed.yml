@@ -23,7 +23,7 @@ services:
         cd /tmp/app &&
         npm install &&
         echo 'Building frontend...' &&
-        npx vite build --emptyOutDir &&
+        npm run build &&
         echo 'Copying built files...' &&
         cp -r dist/* /usr/share/nginx/html/ &&
         cd / &&
