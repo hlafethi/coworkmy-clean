@@ -1,4 +1,3 @@
-import { logger } from '@/utils/logger';
 // Logger utilitaire pour contrôler les logs en production
 const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
@@ -23,32 +22,32 @@ class Logger {
 
   error(...args: any[]): void {
     if (this.shouldLog('ERROR')) {
-      logger.error(...args);
+      console.error(...args);
     }
   }
 
   warn(...args: any[]): void {
     if (this.shouldLog('WARN')) {
-      logger.warn(...args);
+      console.warn(...args);
     }
   }
 
   info(...args: any[]): void {
     if (this.shouldLog('INFO')) {
-      logger.debug(...args);
+      console.log(...args);
     }
   }
 
   debug(...args: any[]): void {
     if (this.shouldLog('DEBUG')) {
-      logger.debug(...args);
+      console.log(...args);
     }
   }
 
   // Méthode pour les logs de développement uniquement
   dev(...args: any[]): void {
     if (isDevelopment) {
-      logger.debug(...args);
+      console.log(...args);
     }
   }
 }
