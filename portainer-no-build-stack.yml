@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  coworkmy-app:
+    image: node:20-alpine
+    container_name: coworkmy-app
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - API_PORT=5000
+      - DB_HOST=147.93.58.155
+      - DB_PORT=5432
+      - DB_NAME=coworkmy
+      - DB_USER=vpshostinger
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=true
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=587
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - ALLOWED_ORIGINS=https://coworkmy.fr,https://www.coworkmy.fr
+      - FRONTEND_URL=https://coworkmy.fr
+    command: >
+      sh -c "
+        set -e &&
+        apk add --no-cache git &&
+        echo 'Cloning repository...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
+        cd /tmp/app &&
+        git checkout master &&
+        echo 'Copying files to /app...' &&
+        cp -r . /app/ &&
+        cd /app &&
+        rm -rf /tmp/app &&
+        echo 'Installing production dependencies...' &&
+        npm ci --only=production &&
+        echo 'Starting application...' &&
+        npm start
+      "
+    networks:
+      - coworkmy-network
+    ports:
+      - "3002:5000"
+
+  redis:
+    image: redis:7-alpine
+    container_name: coworkmy-redis
+    restart: unless-stopped
+    networks:
+      - coworkmy-network
+    ports:
+      - "6380:6379"
+
+networks:
+  coworkmy-network:
+    driver: bridge
