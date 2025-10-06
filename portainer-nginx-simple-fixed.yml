@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   coworkmy-frontend:
-    image: nginx:alpine
+    image: node:20-alpine
     container_name: coworkmy-frontend
     restart: unless-stopped
     ports:
@@ -15,7 +15,7 @@ services:
     command: >
       sh -c "
         set -e &&
-        apk add --no-cache git node npm &&
+        apk add --no-cache git nginx &&
         echo 'Cloning repository...' &&
         git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
         echo 'Installing dependencies...' &&
