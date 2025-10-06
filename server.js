@@ -829,10 +829,10 @@ app.post('/api/users/:id/documents', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/users/:id/documents/:documentId
-app.delete('/api/users/:id/documents/:documentId', authenticateToken, async (req, res) => {
+app.delete('/api/users/:id/documents/:docId', authenticateToken, async (req, res) => {
   try {
     const userId = req.params.id;
-    const documentId = req.params.documentId;
+    const documentId = req.params.docId;
     const requestingUserId = req.user.id;
     
     // Vérifier que l'utilisateur peut supprimer le document (admin ou son propre profil)

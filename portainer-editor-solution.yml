@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  coworkmy-app:
+    image: node:20-alpine
+    container_name: coworkmy-app
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - API_PORT=5000
+      - DB_HOST=147.93.58.155
+      - DB_PORT=5432
+      - DB_NAME=coworkmy
+      - DB_USER=vpshostinger
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=true
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=587
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - ALLOWED_ORIGINS=https://coworkmy.fr,https://www.coworkmy.fr
+      - FRONTEND_URL=https://coworkmy.fr
+    command: >
+      sh -c "
+        set -e &&
+        apk add --no-cache git &&
+        echo 'Cloning repository...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
+        cd /tmp/app &&
+        git checkout master &&
+        echo 'Copying files to /app...' &&
+        cp -r . /app/ &&
+        cd /app &&
+        rm -rf /tmp/app &&
+        echo 'Installing dependencies...' &&
+        npm install &&
+        echo 'Building application...' &&
+        npm run build &&
+        echo 'Creating simplified server...' &&
+        cat > server.js << 'EOF'
+        import express from 'express';
+        import cors from 'cors';
+        import helmet from 'helmet';
+        import { Pool } from 'pg';
+        
+        const app = express();
+        
+        app.use(helmet());
+        app.use(cors({
+          origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+          credentials: true
+        }));
+        app.use(express.json());
+        app.use(express.static('dist'));
+        
+        const pool = new Pool({
+          host: process.env.DB_HOST,
+          port: process.env.DB_PORT,
+          database: process.env.DB_NAME,
+          user: process.env.DB_USER,
+          password: process.env.DB_PASSWORD,
+          ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+        });
+        
+        app.get('/api/health', (req, res) => {
+          res.json({ success: true, data: { status: 'OK', timestamp: new Date().toISOString() } });
+        });
+        
+        app.get('/api/spaces', async (req, res) => {
+          try {
+            const result = await pool.query('SELECT * FROM spaces ORDER BY created_at DESC');
+            res.json({ success: true, data: result.rows });
+          } catch (error) {
+            res.json({ success: false, error: 'Erreur serveur' });
+          }
+        });
+        
+        app.get('/*', (req, res) => {
+          if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ success: false, error: 'Endpoint non trouvé' });
+          }
+          res.sendFile('index.html', { root: 'dist' });
+        });
+        
+        const PORT = process.env.API_PORT || 5000;
+        app.listen(PORT, () => {
+          console.log('🚀 API CoworkMy démarrée sur le port', PORT);
+        });
+        EOF
+        echo 'Removing dev dependencies...' &&
+        npm prune --production &&
+        echo 'Starting application...' &&
+        node server.js
+      "
+    networks:
+      - coworkmy-network
+    ports:
+      - "3002:5000"
+
+  redis:
+    image: redis:7-alpine
+    container_name: coworkmy-redis
+    restart: unless-stopped
+    networks:
+      - coworkmy-network
+    ports:
+      - "6380:6379"
+
+networks:
+  coworkmy-network:
+    driver: bridge
