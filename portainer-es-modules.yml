@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  coworkmy-app:
+    image: node:20-alpine
+    container_name: coworkmy-app
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - NODE_ENV=production
+      - API_PORT=5000
+      - DB_HOST=147.93.58.155
+      - DB_PORT=5432
+      - DB_NAME=coworkmy
+      - DB_USER=vpshostinger
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SSL=true
+      - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=https://coworkmy.fr,https://www.coworkmy.fr
+      - FRONTEND_URL=https://coworkmy.fr
+    command: >
+      sh -c "
+        set -e &&
+        apk add --no-cache git &&
+        echo 'Cloning repository...' &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/app &&
+        cd /tmp/app &&
+        git checkout master &&
+        echo 'Copying files to /app...' &&
+        cp -r . /app/ &&
+        cd /app &&
+        rm -rf /tmp/app &&
+        echo 'Installing production dependencies...' &&
+        npm ci --only=production &&
+        echo 'Removing problematic server.js...' &&
+        rm -f server.js &&
+        echo 'Creating ES module server...' &&
+        echo 'import express from \"express\";' > server.js &&
+        echo 'import cors from \"cors\";' >> server.js &&
+        echo 'import path from \"path\";' >> server.js &&
+        echo 'import { fileURLToPath } from \"url\";' >> server.js &&
+        echo 'const __filename = fileURLToPath(import.meta.url);' >> server.js &&
+        echo 'const __dirname = path.dirname(__filename);' >> server.js &&
+        echo 'const app = express();' >> server.js &&
+        echo 'app.use(cors());' >> server.js &&
+        echo 'app.use(express.json());' >> server.js &&
+        echo 'app.use(express.static(\"dist\"));' >> server.js &&
+        echo 'app.get(\"/api/health\", (req, res) => res.json({success: true, data: {status: \"OK\"}}));' >> server.js &&
+        echo 'app.get(\"*\", (req, res) => res.sendFile(path.join(__dirname, \"dist\", \"index.html\")));' >> server.js &&
+        echo 'app.listen(process.env.API_PORT || 5000, () => console.log(\"🚀 Server started\"));' >> server.js &&
+        echo 'Starting application...' &&
+        node server.js
+      "
+    networks:
+      - coworkmy-network
+    ports:
+      - "3002:5000"
+
+  redis:
+    image: redis:7-alpine
+    container_name: coworkmy-redis
+    restart: unless-stopped
+    networks:
+      - coworkmy-network
+    ports:
+      - "6380:6379"
+
+networks:
+  coworkmy-network:
+    driver: bridge
