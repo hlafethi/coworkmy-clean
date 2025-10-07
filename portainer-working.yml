@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  backend:
+    image: node:20-alpine
+    container_name: coworkmy-backend
+    restart: unless-stopped
+    ports:
+      - "3003:5000"
+    environment:
+      NODE_ENV: production
+      API_PORT: 5000
+      DB_HOST: 147.93.58.155
+      DB_PORT: 5432
+      DB_NAME: coworkmy
+      DB_USER: vpshostinger
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSL: true
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: https://coworkmy.fr,https://www.coworkmy.fr
+      FRONTEND_URL: https://coworkmy.fr
+      CORS_ORIGIN: https://coworkmy.fr
+      CORS_CREDENTIALS: true
+    volumes:
+      - uploads_data:/app/uploads
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🚀 Démarrage du backend CoworkMy...' &&
+        apk add --no-cache git &&
+        rm -rf /tmp/repo &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/repo &&
+        cp -r /tmp/repo/* /app/ &&
+        npm install --omit=dev &&
+        echo '✅ Dépendances installées' &&
+        echo '🔧 Configuration du serveur...' &&
+        sed -i '/const app = express();/a app.set(\"trust proxy\", true);' /app/server.js &&
+        echo '🚀 Démarrage du serveur...' &&
+        node /app/server.js
+      "
+    networks:
+      - proxy
+      - coworkmy-network
+
+  frontend:
+    image: node:20-alpine
+    container_name: coworkmy-frontend
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    volumes:
+      - uploads_data:/app/uploads
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🚀 Démarrage du frontend CoworkMy...' &&
+        apk add --no-cache git &&
+        rm -rf /tmp/repo &&
+        git clone https://github.com/hlafethi/coworkmy-clean.git /tmp/repo &&
+        echo '📁 Copie des fichiers frontend...' &&
+        if [ -d /tmp/repo/dist ]; then
+          cp -r /tmp/repo/dist/* /app/;
+          echo '✅ Fichiers dist copiés';
+        else
+          echo \"⚠️ Dossier dist non trouvé, création d'un index.html minimal\" &&
+          printf '%s\n' '<!DOCTYPE html><html><head><title>COWORKMY</title></head><body><h1>Application en cours de déploiement...</h1></body></html>' > /app/index.html;
+        fi &&
+        echo '📦 Installation de serve...' &&
+        npm install -g serve &&
+        echo '🚀 Démarrage du serveur frontend...' &&
+        serve -s . -l 3000
+      "
+    networks:
+      - proxy
+      - coworkmy-network
+    depends_on:
+      - backend
+
+volumes:
+  uploads_data:
+
+networks:
+  proxy:
+    external: true
+  coworkmy-network:
+    driver: bridge
