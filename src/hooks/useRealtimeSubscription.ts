@@ -56,11 +56,9 @@ export const useRealtimeSubscription = ({
     cleanup();
 
     try {
-      console.log(`[useRealtimeSubscription] Création du canal ${channelName}...`);
       
       // Vérifier que Supabase est configuré
       if (!isSupabaseConfigured() || !supabase) {
-        console.log(`[useRealtimeSubscription] Supabase non configuré - souscription temps réel désactivée pour ${channelName}`);
         if (onStatusChange) {
           onStatusChange('disconnected');
         }
@@ -136,7 +134,6 @@ export const useRealtimeSubscription = ({
   }, [channelName, table, event, onMessage, onError, onStatusChange, retryAttempts, retryDelay, cleanup]);
 
   useEffect(() => {
-    console.log(`[useRealtimeSubscription] Initialisation du canal ${channelName}...`);
     
     // Démarrer l'abonnement avec un délai pour éviter les conflits
     timeoutRef.current = setTimeout(() => {
@@ -144,7 +141,6 @@ export const useRealtimeSubscription = ({
     }, 1000);
 
     return () => {
-      console.log(`[useRealtimeSubscription] Nettoyage du canal ${channelName}...`);
       cleanup();
     };
   }, [channelName, setupSubscription, cleanup]);

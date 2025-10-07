@@ -4,7 +4,6 @@ import { toast } from "sonner";
 // Logger supprimé - utilisation de console directement
 export async function fetchBookings(): Promise<Booking[]> {
   try {
-    console.log("🔍 Début de la récupération des réservations admin...");
     
     // Utiliser l'endpoint admin pour récupérer TOUTES les réservations
     const response = await apiClient.get('/admin/bookings');
@@ -15,7 +14,6 @@ export async function fetchBookings(): Promise<Booking[]> {
     }
 
     const bookingsData = response.data || [];
-    console.log(`📊 Réservations récupérées depuis l'API admin: ${bookingsData.length}`);
     
 
     // Vérifier que bookingsData est un tableau
@@ -41,7 +39,6 @@ export async function fetchBookings(): Promise<Booking[]> {
       space_pricing_type: booking.space_pricing_type || "hourly"
     }));
     
-    console.log(`✅ Récupération terminée: ${bookings.length} réservations formatées`);
     return bookings;
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des réservations:", error);

@@ -70,7 +70,6 @@ export const AdminSupportFaqs = () => {
         table: 'support_faqs',
         event: '*',
         onMessage: (payload) => {
-            console.log('[AdminSupportFaqs] Changement FAQ reçu:', payload);
             toast.info('📝 FAQ mise à jour', {
                 description: 'Les FAQ ont été modifiées',
                 duration: 3000,
@@ -86,7 +85,6 @@ export const AdminSupportFaqs = () => {
             console.error('[AdminSupportFaqs] Erreur abonnement FAQ:', error);
         },
         onStatusChange: (status) => {
-            console.log('[AdminSupportFaqs] Statut abonnement FAQ:', status);
         }
     });
 

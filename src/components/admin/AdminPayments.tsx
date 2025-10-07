@@ -98,13 +98,6 @@ const AdminPayments = () => {
       if (result.success && result.data) {
         // Convertir les données Stripe vers notre format
         const paymentsData = Array.isArray(result.data) ? result.data.map((stripePayment: any) => {
-          // Debug: Log des données Stripe pour comprendre la structure
-          console.log('🔍 Debug paiement Stripe:', {
-            id: stripePayment.id,
-            status: stripePayment.status,
-            charges: stripePayment.charges?.data?.length || 0,
-            chargesData: stripePayment.charges?.data
-          });
           
           // Vérifier si le paiement a des remboursements
           let hasRefunds = false;
@@ -112,17 +105,10 @@ const AdminPayments = () => {
           // Utiliser la nouvelle propriété has_refunds du backend
           if (stripePayment.has_refunds === true) {
             hasRefunds = true;
-            console.log('✅ Remboursements détectés via has_refunds:', stripePayment.id);
           } else {
             // Fallback: vérifier les charges (ancienne méthode)
             if (stripePayment.charges?.data) {
               for (const charge of stripePayment.charges.data) {
-                console.log('🔍 Debug charge:', {
-                  id: charge.id,
-                  refunded: charge.refunded,
-                  refunds: charge.refunds?.data?.length || 0,
-                  refundsData: charge.refunds?.data
-                });
                 
                 // Vérifier si la charge est remboursée
                 if (charge.refunded === true) {
@@ -143,7 +129,6 @@ const AdminPayments = () => {
           let finalStatus = stripePayment.status;
           if (hasRefunds) {
             finalStatus = 'refunded';
-            console.log('✅ Paiement remboursé détecté:', stripePayment.id);
           }
           
           return {
@@ -164,7 +149,6 @@ const AdminPayments = () => {
           };
         }) : [];
         setPayments(paymentsData);
-        console.log(`✅ ${paymentsData.length} paiements Stripe récupérés`);
       } else {
         console.error('Error fetching payments:', result.error);
         toast.error("Impossible de récupérer les paiements");

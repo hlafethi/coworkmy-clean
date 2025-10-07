@@ -36,7 +36,6 @@ export const useUsers = () => {
       setLoading(true);
       
       // Pour PostgreSQL, on utilise des données par défaut pour l'instant
-      console.log('Fetching users...');
       const response = await apiClient.get('/users');
       
       if (response.success && response.data) {

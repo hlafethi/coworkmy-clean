@@ -120,7 +120,6 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
               e.currentTarget.style.display = 'none';
             }}
             onLoad={() => {
-              console.log('Image chargée avec succès:', space.name);
             }}
           />
         </div>

@@ -8,7 +8,6 @@ import { useAuth } from "@/context/AuthContextPostgreSQL";
 
 const Support = () => {
   const { user } = useAuth();
-  console.log('[Support] Rendu - user:', user);
 
   return (
     <>

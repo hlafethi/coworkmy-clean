@@ -60,7 +60,6 @@ export const useAdminStats = (mode: 'test' | 'live' = 'test') => {
         updateState({ loading: true, error: null });
       }
 
-      console.log(`📊 Chargement des statistiques admin (mode: ${mode})...`);
       
       const response = await apiClient.get(`/admin/stats?mode=${mode}`);
       
@@ -84,7 +83,6 @@ export const useAdminStats = (mode: 'test' | 'live' = 'test') => {
       
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++;
-        console.log(`🔄 Tentative de reconnexion ${retryCountRef.current}/${maxRetries}...`);
         
         // Retry avec délai exponentiel
         setTimeout(() => {

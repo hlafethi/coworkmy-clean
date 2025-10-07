@@ -74,9 +74,7 @@ export const AdminSupportKnowledgeBase = () => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('[AdminSupportKnowledgeBase] Chargement des articles...');
       const data = await AdminSupportService.getKBArticles();
-      console.log('[AdminSupportKnowledgeBase] Articles chargés:', data?.length || 0);
       setArticles(data || []);
     } catch (err) {
       console.error('[AdminSupportKnowledgeBase] Erreur inattendue:', err);
@@ -101,7 +99,6 @@ export const AdminSupportKnowledgeBase = () => {
     
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Création article:', newArticle);
       const result = await apiClient.post('/admin/support/kb-articles', {
         ...newArticle, 
         title: newArticle.title.trim(), 
@@ -138,7 +135,6 @@ export const AdminSupportKnowledgeBase = () => {
     
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Mise à jour article:', editing.id);
       const result = await apiClient.put(`/admin/support/kb-articles/${editing.id}`, {
         title: editing.title.trim(),
         content: editing.content.trim(),
@@ -172,7 +168,6 @@ export const AdminSupportKnowledgeBase = () => {
     
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Suppression article:', id);
       const result = await apiClient.delete(`/admin/support/kb-articles/${id}`);
       
       if (!result.success) {
@@ -197,7 +192,6 @@ export const AdminSupportKnowledgeBase = () => {
   const handleToggleActive = async (article: KBArticle) => {
     setIsLoading(true);
     try {
-      console.log('[AdminSupportKnowledgeBase] Changement statut article:', article.id);
       const result = await apiClient.put(`/admin/support/kb-articles/${article.id}`, {
         is_active: !article.is_active
       });

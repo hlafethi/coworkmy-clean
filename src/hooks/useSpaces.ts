@@ -105,7 +105,6 @@ export function useSpaces(spaceId?: string) {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching spaces...');
       const response = await apiClient.get('/spaces/active');
       
       if (response.success && response.data) {

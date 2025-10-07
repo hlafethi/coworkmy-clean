@@ -14,7 +14,6 @@ export function useBookings() {
     if (!isMountedRef.current) return;
     
     try {
-      console.log("🔄 Chargement des réservations dans useBookings hook...");
       setLoading(true);
       setError(null);
       
@@ -23,10 +22,7 @@ export function useBookings() {
       if (!isMountedRef.current) return;
       
       if (data.length === 0) {
-        console.log("ℹ️ Aucune réservation trouvée");
       } else {
-        console.log(`✅ Chargement réussi: ${data.length} réservations trouvées`);
-        console.log("📋 Exemples de réservations:", data.slice(0, 2));
       }
       
       setBookings(data);
@@ -45,14 +41,12 @@ export function useBookings() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    console.log("🔌 Initialisation du hook useBookings...");
     
     // Charger les réservations immédiatement
     loadBookings();
 
     // Cleanup
     return () => {
-      console.log("🧹 Nettoyage du hook useBookings...");
       isMountedRef.current = false;
     };
   }, []);
@@ -61,7 +55,6 @@ export function useBookings() {
     if (!isMountedRef.current) return;
     
     setRefreshing(true);
-    console.log(`🔄 Mise à jour du statut de la réservation: ${id} vers ${newStatus}`);
     try {
       const success = await updateBookingStatus(id, newStatus);
       if (success) {
@@ -82,7 +75,6 @@ export function useBookings() {
   const handleRefresh = () => {
     if (!isMountedRef.current) return;
     
-    console.log("🔄 Actualisation manuelle demandée");
     setRefreshing(true);
     loadBookings();
   };

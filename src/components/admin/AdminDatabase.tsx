@@ -60,7 +60,7 @@ const SupabaseConfig = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
+        <form className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="supabase_url">URL Supabase</Label>
             <Input
@@ -68,6 +68,7 @@ const SupabaseConfig = () => {
               placeholder="https://votre-projet.supabase.co"
               value={config.url}
               onChange={(e) => handleChange("url", e.target.value)}
+              autoComplete="url"
             />
           </div>
 
@@ -78,9 +79,10 @@ const SupabaseConfig = () => {
               type="password"
               value={config.key}
               onChange={(e) => handleChange("key", e.target.value)}
+              autoComplete="new-password"
             />
           </div>
-        </div>
+        </form>
 
         <div className="flex space-x-4">
           <Button

@@ -86,8 +86,6 @@ export class SupportService {
     priority?: string;
   }): Promise<SupportTicket> {
     try {
-      console.log('🔍 SupportService: Création d\'un ticket avec authentification');
-      console.log('📝 Données envoyées:', ticketData);
       
       const response = await apiClient.post('/support/tickets', ticketData);
       
@@ -95,7 +93,6 @@ export class SupportService {
         throw new Error(response.error || 'Erreur lors de la création du ticket');
       }
       
-      console.log('📝 Ticket créé avec succès:', response.data);
       return response.data;
     } catch (error) {
       console.error('Erreur création ticket:', error);
@@ -107,8 +104,6 @@ export class SupportService {
 
   static async getTicketResponses(ticketId: string): Promise<any[]> {
     try {
-      console.log('🔍 SupportService: Récupération des réponses avec authentification');
-      console.log('📝 Ticket ID:', ticketId);
       
       const response = await apiClient.get(`/support/tickets/${ticketId}/responses`);
       
@@ -116,7 +111,6 @@ export class SupportService {
         throw new Error(response.error || 'Erreur lors de la récupération des réponses');
       }
       
-      console.log('📝 Réponses récupérées:', response.data);
       return response.data || [];
     } catch (error) {
       console.error('Erreur récupération réponses ticket:', error);
@@ -126,8 +120,6 @@ export class SupportService {
 
   static async addTicketResponse(ticketId: string, message: string): Promise<any> {
     try {
-      console.log('🔍 SupportService: Ajout d\'une réponse avec authentification');
-      console.log('📝 Données envoyées:', { ticketId, message });
       
       const response = await apiClient.post(`/support/tickets/${ticketId}/responses`, { message });
       
@@ -135,7 +127,6 @@ export class SupportService {
         throw new Error(response.error || 'Erreur lors de l\'ajout de la réponse');
       }
       
-      console.log('📝 Réponse ajoutée avec succès:', response.data);
       return response.data;
     } catch (error) {
       console.error('Erreur ajout réponse ticket:', error);

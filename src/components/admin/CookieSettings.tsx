@@ -48,15 +48,12 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        console.log('🔄 Chargement des paramètres cookies...');
         
         const result = await apiClient.get('/cookie-settings');
         
         if (result.success && result.data) {
-          console.log('✅ Paramètres cookies chargés:', result.data);
           setSettings(result.data);
         } else {
-          console.log('📝 Aucun paramètre trouvé, utilisation des valeurs par défaut');
           setSettings({
             id: 'default',
             title: 'Paramètres de Cookies',
@@ -68,7 +65,6 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
         }
       } catch (error) {
         console.error('❌ Erreur lors du chargement des paramètres:', error);
-        console.log('📝 Erreur API, utilisation des valeurs par défaut');
         setSettings({
           id: 'default',
           title: 'Paramètres de Cookies',
@@ -91,14 +87,12 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
 
     setSaving(true);
     try {
-      console.log('💾 Sauvegarde des paramètres cookies...');
       
       const response = await apiClient.post('/cookie-settings', settings);
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de la sauvegarde');
       }
       
-      console.log('✅ Paramètres cookies sauvegardés');
       
       // Mettre à jour le cache pour que les changements soient visibles immédiatement
       localStorage.setItem('cookie-settings-cache', JSON.stringify(response.data));

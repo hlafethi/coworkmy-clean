@@ -42,17 +42,14 @@ export const useSpaces = () => {
   const fetchSpaces = async () => {
     try {
       setLoading(true);
-      console.log("Fetching spaces...");
       
       const response = await apiClient.get('/spaces');
       
       if (response.success && response.data) {
         const spacesData = Array.isArray(response.data) ? response.data : [];
-        console.log("Spaces fetched raw data:", spacesData);
 
         // Process and validate data for all spaces
         const processedSpaces = spacesData?.map(space => {
-          console.log(`Space ${space.name} pricing_type:`, space.pricing_type);
           return {
             ...space,
             pricing_type: space.pricing_type || 'hourly',
@@ -67,10 +64,8 @@ export const useSpaces = () => {
           };
         }) as Space[];
 
-        console.log("Processed spaces data:", processedSpaces);
         setSpaces(processedSpaces);
       } else {
-        console.log("No spaces data available");
         setSpaces([]);
       }
     } catch (error) {
@@ -96,7 +91,6 @@ export const useSpaces = () => {
 
   // Trigger a refresh
   const triggerRefresh = () => {
-    console.log("Triggering refresh of spaces list");
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -106,7 +100,6 @@ export const useSpaces = () => {
   }, [refreshTrigger]);
 
   const handleEditClick = (space: Space) => {
-    console.log("Editing space:", space);
     setSelectedSpace({
       id: space.id,
       name: space.name,
@@ -129,7 +122,6 @@ export const useSpaces = () => {
   };
 
   const handleAddClick = () => {
-    console.log("Adding new space");
     setSelectedSpace({
       name: '',
       description: '',
@@ -151,7 +143,6 @@ export const useSpaces = () => {
 
   const handleDeleteClick = async (spaceId: string) => {
     try {
-      console.log("Deleting space:", spaceId);
       
       const response = await apiClient.delete(`/spaces/${spaceId}`);
       
