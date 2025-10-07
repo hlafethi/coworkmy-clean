@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export default function Callback() {
     const navigate = useNavigate();
     const { checkSession } = useAuth();
@@ -27,7 +26,7 @@ export default function Callback() {
                     navigate('/auth/login');
                 }
             } catch (error) {
-                logger.error('Erreur lors de la connexion:', error);
+                console.error('Erreur lors de la connexion:', error);
                 toast.error('Erreur lors de la connexion');
                 navigate('/auth/login');
             }

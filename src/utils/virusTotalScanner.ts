@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 // Service d'analyse antivirus avec VirusTotal API
 // VirusTotal offre 500 requêtes gratuites par jour
 
@@ -55,7 +55,7 @@ class VirusTotalScanner {
     this.apiKey = import.meta.env.VITE_VIRUSTOTAL_API_KEY || '';
     
     if (!this.apiKey) {
-      logger.warn('⚠️ Clé API VirusTotal non configurée. Utilisation du scanner basique.');
+      console.warn('⚠️ Clé API VirusTotal non configurée. Utilisation du scanner basique.');
     }
   }
 
@@ -107,7 +107,7 @@ class VirusTotalScanner {
       return this.parseVirusTotalResponse(report);
 
     } catch (error) {
-      logger.error('Erreur lors du scan VirusTotal:', error);
+      console.error('Erreur lors du scan VirusTotal:', error);
       
       // Fallback vers le scanner basique
       return await this.basicScan(file);
@@ -137,7 +137,7 @@ class VirusTotalScanner {
       const data = await response.json();
       return data.data?.id || null;
     } catch (error) {
-      logger.error('Erreur upload VirusTotal:', error);
+      console.error('Erreur upload VirusTotal:', error);
       return null;
     }
   }
@@ -163,7 +163,7 @@ class VirusTotalScanner {
 
       return await response.json();
     } catch (error) {
-      logger.error('Erreur récupération rapport:', error);
+      console.error('Erreur récupération rapport:', error);
       return null;
     }
   }
@@ -197,7 +197,7 @@ class VirusTotalScanner {
         // Attendre avant le prochain essai
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
-        logger.error(`Tentative ${attempt + 1} échouée:`, error);
+        console.error(`Tentative ${attempt + 1} échouée:`, error);
       }
     }
 
@@ -284,7 +284,7 @@ class VirusTotalScanner {
       
       return { isClean: true };
     } catch (error) {
-      logger.error('Erreur scan basique:', error);
+      console.error('Erreur scan basique:', error);
       return {
         isClean: false,
         threat: 'Erreur lors de l\'analyse de sécurité'

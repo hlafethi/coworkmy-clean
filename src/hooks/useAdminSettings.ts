@@ -4,8 +4,7 @@ import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import type { SettingsFormValues } from "@/types/settings";
 import { usePersistedForm } from "./usePersistedForm";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export function useAdminSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -66,7 +65,7 @@ export function useAdminSettings() {
   const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
-      logger.debug('🔄 Chargement des paramètres...');
+      console.log('🔄 Chargement des paramètres...');
       
       // Vérifier si l'utilisateur est admin via l'API
       const userResult = await apiClient.getCurrentUser();
@@ -76,12 +75,12 @@ export function useAdminSettings() {
       
       // Ne charger les données du serveur que si on ne les a pas encore chargées
       if (!hasLoadedFromServer) {
-        logger.debug('📡 Récupération des paramètres depuis l\'API...');
+        console.log('📡 Récupération des paramètres depuis l\'API...');
         const settingsResult = await apiClient.get('/admin/settings');
-        logger.debug('📡 Résultat settings:', settingsResult);
+        console.log('📡 Résultat settings:', settingsResult);
       
       if (settingsResult.success && Array.isArray(settingsResult.data)) {
-        logger.debug('✅ Données reçues:', settingsResult.data);
+        console.log('✅ Données reçues:', settingsResult.data);
         
         // Fusionner les settings dans le form
         const homepage = settingsResult.data.find((row: any) => row.key === 'homepage')?.value || {};
@@ -89,8 +88,8 @@ export function useAdminSettings() {
         const stripe = settingsResult.data.find((row: any) => row.key === 'stripe')?.value || {};
         const googleReviews = settingsResult.data.find((row: any) => row.key === 'google_reviews')?.value || {};
         
-        logger.debug('🏠 Données homepage:', homepage);
-        logger.debug('🏢 Données company:', company);
+        console.log('🏠 Données homepage:', homepage);
+        console.log('🏢 Données company:', company);
         
         const formData = {
           homepage: {
@@ -135,15 +134,15 @@ export function useAdminSettings() {
           }
         };
         
-        logger.debug('📝 Données du formulaire:', formData);
+        console.log('📝 Données du formulaire:', formData);
         form.reset(formData);
         setHasLoadedFromServer(true);
       }
       } else {
-        logger.debug('📋 Utilisation des données persistées localement');
+        console.log('📋 Utilisation des données persistées localement');
       }
     } catch (error) {
-      logger.error("Erreur lors du chargement des paramètres:", error);
+      console.error("Erreur lors du chargement des paramètres:", error);
       toast.error("Impossible de charger les paramètres");
     } finally {
       setIsLoading(false);
@@ -174,26 +173,26 @@ export function useAdminSettings() {
         }
       ];
 
-      logger.debug('[ADMIN_SETTINGS UPSERT]', settingsToUpsert);
+      console.log('[ADMIN_SETTINGS UPSERT]', settingsToUpsert);
 
       // Sauvegarder les paramètres homepage via l'endpoint spécifique
       if (values.homepage) {
         const homepageResult = await apiClient.post('/homepage-settings', values.homepage);
         if (!homepageResult.success) {
-          logger.error('[HOMEPAGE_SETTINGS SAVE ERROR]', homepageResult.error);
+          console.error('[HOMEPAGE_SETTINGS SAVE ERROR]', homepageResult.error);
           throw new Error(homepageResult.error || 'Erreur lors de la sauvegarde des paramètres homepage');
         }
-        logger.debug("✅ Paramètres homepage sauvegardés:", homepageResult.data);
+        console.log("✅ Paramètres homepage sauvegardés:", homepageResult.data);
       }
 
       // Sauvegarder les paramètres company via l'endpoint spécifique
       if (values.company) {
         const companyResult = await apiClient.post('/company-settings', values.company);
         if (!companyResult.success) {
-          logger.error('[COMPANY_SETTINGS SAVE ERROR]', companyResult.error);
+          console.error('[COMPANY_SETTINGS SAVE ERROR]', companyResult.error);
           throw new Error(companyResult.error || 'Erreur lors de la sauvegarde des paramètres company');
         }
-        logger.debug("✅ Paramètres company sauvegardés:", companyResult.data);
+        console.log("✅ Paramètres company sauvegardés:", companyResult.data);
       }
 
       // Sauvegarder les autres paramètres via l'API générale
@@ -205,7 +204,7 @@ export function useAdminSettings() {
         });
         
         if (!result.success) {
-          logger.error('[ADMIN_SETTINGS SAVE ERROR]', result.error);
+          console.error('[ADMIN_SETTINGS SAVE ERROR]', result.error);
           throw new Error(result.error || 'Erreur lors de la sauvegarde');
         }
       }
@@ -215,7 +214,7 @@ export function useAdminSettings() {
       // Nettoyer les données persistées après sauvegarde réussie
       clearPersistedData();
     } catch (error) {
-      logger.error("Erreur lors de la sauvegarde des paramètres:", error);
+      console.error("Erreur lors de la sauvegarde des paramètres:", error);
       toast.error("Erreur lors de l'enregistrement des paramètres");
     } finally {
       setIsSaving(false);

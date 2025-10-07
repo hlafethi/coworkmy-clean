@@ -9,14 +9,13 @@ import Contact from "@/components/home/Contact";
 import CallToAction from "@/components/home/CallToAction";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const Index = () => {
   const { hash, pathname } = useLocation();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    logger.log('[ENV CHECK]', {
+    console.log('[ENV CHECK]', {
       VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? '✅' : '❌',
       VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅' : '❌',
       VITE_STRIPE_PUBLISHABLE_KEY: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? '✅' : '❌',

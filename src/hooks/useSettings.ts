@@ -3,8 +3,7 @@ import { isValidSetting } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Setting } from "@/components/admin/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type SettingInsert = Omit<Setting, "id" | "created_at" | "updated_at">;
 type SettingUpdate = Partial<SettingInsert>;
 
@@ -28,7 +27,7 @@ export function useSettings() {
       const validSettings = data.filter(isValidSetting);
       setSettings(validSettings);
     } catch (err) {
-      logger.error("Erreur lors de la récupération des paramètres:", err);
+      console.error("Erreur lors de la récupération des paramètres:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des paramètres");
     } finally {
@@ -51,7 +50,7 @@ export function useSettings() {
       toast.success("Paramètre créé avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la création du paramètre:", err);
+      console.error("Erreur lors de la création du paramètre:", err);
       toast.error("Erreur lors de la création du paramètre");
       throw err;
     }
@@ -73,7 +72,7 @@ export function useSettings() {
       toast.success("Paramètre mis à jour avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la mise à jour du paramètre:", err);
+      console.error("Erreur lors de la mise à jour du paramètre:", err);
       toast.error("Erreur lors de la mise à jour du paramètre");
       throw err;
     }
@@ -91,7 +90,7 @@ export function useSettings() {
       setSettings(prev => prev.filter(s => s.id !== id));
       toast.success("Paramètre supprimé avec succès");
     } catch (err) {
-      logger.error("Erreur lors de la suppression du paramètre:", err);
+      console.error("Erreur lors de la suppression du paramètre:", err);
       toast.error("Erreur lors de la suppression du paramètre");
       throw err;
     }

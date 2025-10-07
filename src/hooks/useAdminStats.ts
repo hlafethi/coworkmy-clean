@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { logger } from "@/utils/logger";
-
+// Logger supprimé - utilisation de console directement
 export interface AdminStats {
   total_users: number;
   active_users: number;
@@ -61,7 +60,7 @@ export const useAdminStats = (mode: 'test' | 'live' = 'test') => {
         updateState({ loading: true, error: null });
       }
 
-      logger.log(`📊 Chargement des statistiques admin (mode: ${mode})...`);
+      console.log(`📊 Chargement des statistiques admin (mode: ${mode})...`);
       
       const response = await apiClient.get(`/admin/stats?mode=${mode}`);
       
@@ -79,13 +78,13 @@ export const useAdminStats = (mode: 'test' | 'live' = 'test') => {
       retryCountRef.current = 0; // Reset du compteur en cas de succès
 
     } catch (error) {
-      logger.error('❌ Erreur lors du chargement des statistiques:', error);
+      console.error('❌ Erreur lors du chargement des statistiques:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       
       if (retryCountRef.current < maxRetries) {
         retryCountRef.current++;
-        logger.log(`🔄 Tentative de reconnexion ${retryCountRef.current}/${maxRetries}...`);
+        console.log(`🔄 Tentative de reconnexion ${retryCountRef.current}/${maxRetries}...`);
         
         // Retry avec délai exponentiel
         setTimeout(() => {

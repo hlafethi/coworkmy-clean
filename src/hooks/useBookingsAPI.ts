@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export interface Booking {
   id: string;
   user_id: string;
@@ -30,14 +29,14 @@ export const useBookings = () => {
       
       if (result.data) {
         setBookings(result.data);
-        logger.log('✅ Réservations chargées:', result.data.length);
+        console.log('✅ Réservations chargées:', result.data.length);
       } else {
         setError(result.error || 'Erreur lors du chargement des réservations');
-        logger.error('❌ Erreur chargement réservations:', result.error);
+        console.error('❌ Erreur chargement réservations:', result.error);
       }
     } catch (err) {
       setError('Erreur de connexion');
-      logger.error('❌ Erreur chargement réservations:', err);
+      console.error('❌ Erreur chargement réservations:', err);
     } finally {
       setLoading(false);
     }
@@ -49,14 +48,14 @@ export const useBookings = () => {
       
       if (result.data) {
         setBookings(prev => [result.data, ...prev]);
-        logger.log('✅ Réservation créée:', result.data.id);
+        console.log('✅ Réservation créée:', result.data.id);
         return { success: true, data: result.data };
       } else {
-        logger.error('❌ Erreur création réservation:', result.error);
+        console.error('❌ Erreur création réservation:', result.error);
         return { success: false, error: result.error };
       }
     } catch (err) {
-      logger.error('❌ Erreur création réservation:', err);
+      console.error('❌ Erreur création réservation:', err);
       return { success: false, error: 'Erreur de connexion' };
     }
   };

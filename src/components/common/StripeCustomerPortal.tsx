@@ -6,8 +6,7 @@ import { CreditCard, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import { createStripeCustomerPortal } from "@/utils/stripeUtils";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface StripeCustomerPortalProps {
   className?: string;
   variant?: "default" | "compact";
@@ -34,14 +33,14 @@ export const StripeCustomerPortal = ({ className = "", variant = "default" }: St
         isAdmin
       );
 
-      logger.debug(`[Stripe] Portail client ouvert en mode ${mode}: ${url}`);
+      console.log(`[Stripe] Portail client ouvert en mode ${mode}: ${url}`);
       
       // Ouvrir le portail dans un nouvel onglet
       window.open(url, '_blank', 'noopener,noreferrer');
       
       toast.success("Portail client Stripe ouvert");
     } catch (error) {
-      logger.error("[Stripe] Erreur lors de l'ouverture du portail client:", error);
+      console.error("[Stripe] Erreur lors de l'ouverture du portail client:", error);
       
       const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
       

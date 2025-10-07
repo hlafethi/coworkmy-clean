@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Booking } from "@/components/admin/types";
 import { withRetry } from "@/utils/supabaseUtils";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export interface SpaceAvailability {
   id: string;
   space_id: string;
@@ -119,7 +118,7 @@ export function useSpaceAvailability(spaceId: string) {
 
       return result;
     } catch (err: any) {
-      logger.error('❌ Erreur lors de la vérification de disponibilité:', err);
+      console.error('❌ Erreur lors de la vérification de disponibilité:', err);
       setError(err.message);
       return {
         isAvailable: false,
@@ -157,7 +156,7 @@ export function useSpaceAvailability(spaceId: string) {
 
       return result;
     } catch (err: any) {
-      logger.error('❌ Erreur lors de la vérification de disponibilité:', err);
+      console.error('❌ Erreur lors de la vérification de disponibilité:', err);
       setError(err.message);
       return [];
     } finally {

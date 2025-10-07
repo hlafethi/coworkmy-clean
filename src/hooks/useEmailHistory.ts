@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export interface EmailHistory {
   id: string;
   to_email: string;
@@ -28,7 +27,7 @@ export const useEmailHistory = (limit: number = 50) => {
       setIsAuthenticated(!!user);
       return !!user;
     } catch (err) {
-      logger.error('❌ Erreur de vérification d\'authentification:', err);
+      console.error('❌ Erreur de vérification d\'authentification:', err);
       setIsAuthenticated(false);
       return false;
     }
@@ -65,7 +64,7 @@ export const useEmailHistory = (limit: number = 50) => {
       if (error) throw error;
       setEmails(data || []);
     } catch (err: any) {
-      logger.error('❌ Erreur lors du chargement de l\'historique:', err);
+      console.error('❌ Erreur lors du chargement de l\'historique:', err);
       setError(err.message);
       setEmails([]);
     } finally {
@@ -97,7 +96,7 @@ export const useEmailHistory = (limit: number = 50) => {
 
       return { success: true, data };
     } catch (err: any) {
-      logger.error('❌ Erreur lors de l\'ajout de l\'email:', err);
+      console.error('❌ Erreur lors de l\'ajout de l\'email:', err);
       return { success: false, error: err.message };
     }
   };
@@ -129,7 +128,7 @@ export const useEmailHistory = (limit: number = 50) => {
 
       return { success: true, data };
     } catch (err: any) {
-      logger.error('❌ Erreur lors de la mise à jour du statut:', err);
+      console.error('❌ Erreur lors de la mise à jour du statut:', err);
       return { success: false, error: err.message };
     }
   };

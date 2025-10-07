@@ -4,8 +4,7 @@ import { Link } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface Space {
   id: string;
   name: string;
@@ -89,18 +88,18 @@ const Services = () => {
   const { data: spaces, isLoading } = useQuery({
     queryKey: ["available-spaces"],
     queryFn: async () => {
-      logger.debug('🔄 Chargement des espaces...');
+      console.log('🔄 Chargement des espaces...');
       
       const response = await apiClient.get('/spaces/active');
       
       if (!response.success) {
-        logger.error('❌ Erreur chargement espaces:', response.error);
+        console.error('❌ Erreur chargement espaces:', response.error);
         throw new Error(response.error || 'Erreur lors du chargement des espaces');
       }
       
       // Les espaces sont déjà filtrés (actifs uniquement)
       const activeSpaces = response.data.filter((space: Space) => space.is_active);
-      logger.debug('✅ Espaces chargés:', activeSpaces);
+      console.log('✅ Espaces chargés:', activeSpaces);
       return activeSpaces as Space[];
     },
   });

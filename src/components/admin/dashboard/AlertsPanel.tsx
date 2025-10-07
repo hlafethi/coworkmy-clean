@@ -14,8 +14,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface AlertItem {
   id: string;
   type: 'error' | 'warning' | 'success' | 'info';
@@ -47,11 +46,11 @@ export const AlertsPanel = ({ mode }: AlertsPanelProps) => {
           }));
           setAlerts(alertsWithDates);
         } else {
-          logger.error('Erreur récupération alertes:', response.error);
+          console.error('Erreur récupération alertes:', response.error);
           setAlerts([]);
         }
       } catch (error) {
-        logger.error('Erreur chargement alertes:', error);
+        console.error('Erreur chargement alertes:', error);
         setAlerts([]);
       } finally {
         setLoading(false);

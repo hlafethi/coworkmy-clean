@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export interface AppSettings {
   siteName: string;
   contactEmail: string;
@@ -31,16 +30,16 @@ export function useAppSettings() {
         .maybeSingle();
 
       if (error) {
-        logger.error('Erreur lors du chargement des paramètres:', error);
+        console.error('Erreur lors du chargement des paramètres:', error);
         throw error;
       }
 
-      logger.debug('📊 Paramètres récupérés depuis la DB:', data);
+      console.log('📊 Paramètres récupérés depuis la DB:', data);
 
       // Extraire les valeurs du JSONB homepage
       const homepageSettings = data?.value || {};
 
-      logger.debug('✅ Paramètres traités:', homepageSettings);
+      console.log('✅ Paramètres traités:', homepageSettings);
 
       // Retourner l'objet avec les valeurs de la DB ou les valeurs par défaut
       return {

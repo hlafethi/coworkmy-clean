@@ -50,11 +50,11 @@ export const withCache = <T extends (...args: any[]) => Promise<any>>(
     const cached = cache.get(key);
     
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
-      logger.log(`📦 Cache hit for key: ${key}`);
+      console.log(`📦 Cache hit for key: ${key}`);
       return cached.data;
     }
     
-    logger.log(`🔄 Cache miss for key: ${key}`);
+    console.log(`🔄 Cache miss for key: ${key}`);
     const data = await func(...args);
     
     cache.set(key, {
@@ -81,7 +81,7 @@ export const withRetry = <T extends (...args: any[]) => Promise<any>>(
         return await func(...args);
       } catch (error) {
         lastError = error as Error;
-        logger.warn(`🔄 Attempt ${attempt}/${maxRetries} failed:`, error);
+        console.warn(`🔄 Attempt ${attempt}/${maxRetries} failed:`, error);
         
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, delay * attempt));
@@ -103,11 +103,11 @@ export const measurePerformance = <T extends (...args: any[]) => any>(
     try {
       const result = await func(...args);
       const duration = performance.now() - start;
-      logger.log(`⏱️ ${name} took ${duration.toFixed(2)}ms`);
+      console.log(`⏱️ ${name} took ${duration.toFixed(2)}ms`);
       return result;
     } catch (error) {
       const duration = performance.now() - start;
-      logger.error(`❌ ${name} failed after ${duration.toFixed(2)}ms:`, error);
+      console.error(`❌ ${name} failed after ${duration.toFixed(2)}ms:`, error);
       throw error;
     }
   }) as T;
@@ -121,7 +121,7 @@ export const logMemoryUsage = () => {
     const total = (memory.totalJSHeapSize / 1024 / 1024).toFixed(1);
     const limit = (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(1);
     
-    logger.log(`🧠 Memory: ${used}MB / ${total}MB (limit: ${limit}MB)`);
+    console.log(`🧠 Memory: ${used}MB / ${total}MB (limit: ${limit}MB)`);
   }
 };
 
@@ -133,10 +133,10 @@ export const clearCache = (pattern?: string) => {
         cache.delete(key);
       }
     }
-    logger.log(`🗑️ Cleared cache for pattern: ${pattern}`);
+    console.log(`🗑️ Cleared cache for pattern: ${pattern}`);
   } else {
     cache.clear();
-    logger.log('🗑️ Cleared all cache');
+    console.log('🗑️ Cleared all cache');
   }
 };
 
@@ -156,7 +156,7 @@ export const preloadResources = () => {
     document.head.appendChild(link);
   });
   
-  logger.log('🚀 Preloaded critical resources');
+  console.log('🚀 Preloaded critical resources');
 };
 
 // Lazy load images
@@ -174,5 +174,5 @@ export const lazyLoadImages = () => {
   });
   
   images.forEach(img => imageObserver.observe(img));
-  logger.log('🖼️ Lazy loading images initialized');
+  console.log('🖼️ Lazy loading images initialized');
 }; 

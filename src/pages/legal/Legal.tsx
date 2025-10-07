@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { LegalPageType, useLegalPages } from "@/hooks/useLegalPages";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const Legal = () => {
   const navigate = useNavigate();
   const { fetchPageByType } = useLegalPages();
@@ -24,7 +23,7 @@ const Legal = () => {
           setTitle(page.title);
         }
       } catch (error) {
-        logger.error("Error loading legal notice:", error);
+        console.error("Error loading legal notice:", error);
       } finally {
         setLoading(false);
       }

@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
-import { logger } from "@/utils/logger";
-
+// Logger supprimé - utilisation de console directement
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +36,7 @@ export const useAuth = () => {
             localStorage.removeItem('coworkmy-auth-token');
             await supabase.auth.signOut();
           } else {
-            logger.error("[useAuth] Error getting initial user:", initialError);
+            console.error("[useAuth] Error getting initial user:", initialError);
           }
           
           if (mounted.current) {
@@ -62,7 +61,7 @@ export const useAuth = () => {
           setLoading(false);
         }
       } catch (error) {
-        logger.error("[useAuth] Error during initialization:", error);
+        console.error("[useAuth] Error during initialization:", error);
         if (mounted.current) {
           setUser(null);
           setIsAdmin(false);
@@ -171,7 +170,7 @@ export const useAuth = () => {
       }
 
     } catch (error) {
-      logger.error("[useAuth] Error fetching profile:", error);
+      console.error("[useAuth] Error fetching profile:", error);
       
       // Gérer les erreurs spécifiques
       if (error && typeof error === 'object' && 'message' in error) {
@@ -186,7 +185,7 @@ export const useAuth = () => {
       // Retry logic pour les erreurs temporaires
       if (profileFetchAttempts.current < 3) {
         profileFetchAttempts.current++;
-        logger.log(`[useAuth] Retry ${profileFetchAttempts.current}/3 - Profile fetch failed`);
+        console.log(`[useAuth] Retry ${profileFetchAttempts.current}/3 - Profile fetch failed`);
         setTimeout(() => {
           if (mounted.current && user) {
             fetchProfileAndSetState(user);
@@ -216,7 +215,7 @@ export const useAuth = () => {
       localStorage.removeItem('coworkmy-auth-token');
       navigate('/auth/login');
     } catch (error) {
-      logger.error('Erreur lors de la déconnexion:', error);
+      console.error('Erreur lors de la déconnexion:', error);
       toast.error('Erreur lors de la déconnexion');
     }
   };

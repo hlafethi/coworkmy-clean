@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 // WebSocket Manager pour PostgreSQL (version simplifiée)
 // Note: Les WebSockets en temps réel ne sont pas disponibles avec PostgreSQL direct
 
@@ -22,13 +22,13 @@ export function createChannel(
   event: string = '*'
 ): void {
   if (channels.has(channelName)) {
-    logger.debug(`⚠️ Canal ${channelName} existe déjà. Il ne sera pas recréé.`);
+    console.log(`⚠️ Canal ${channelName} existe déjà. Il ne sera pas recréé.`);
     return;
   }
 
   try {
     // Pour PostgreSQL direct, les WebSockets en temps réel ne sont pas disponibles
-    logger.debug(`ℹ️ WebSocket temps réel non disponible avec PostgreSQL direct (${channelName})`);
+    console.log(`ℹ️ WebSocket temps réel non disponible avec PostgreSQL direct (${channelName})`);
     
     // TODO: Implémenter une vraie connexion WebSocket
     const mockChannel = {
@@ -44,11 +44,11 @@ export function createChannel(
       event 
     });
     
-    logger.debug(`✅ Canal ${channelName} configuré (PostgreSQL mode)`);
+    console.log(`✅ Canal ${channelName} configuré (PostgreSQL mode)`);
     _isInitialized = true;
 
   } catch (error) {
-    logger.error(`❌ Erreur non interceptée lors de la création du canal ${channelName}:`, error);
+    console.error(`❌ Erreur non interceptée lors de la création du canal ${channelName}:`, error);
   }
 }
 
@@ -58,13 +58,13 @@ export function removeChannel(channelName: string): void {
   if (channelConfig) {
     try {
       // Déconnexion du canal
-      logger.debug(`🔌 Déconnexion du canal ${channelName} (PostgreSQL mode)`);
+      console.log(`🔌 Déconnexion du canal ${channelName} (PostgreSQL mode)`);
       channels.delete(channelName);
     } catch (error) {
-      logger.error(`❌ Erreur lors de la suppression du canal ${channelName}:`, error);
+      console.error(`❌ Erreur lors de la suppression du canal ${channelName}:`, error);
     }
   } else {
-    logger.debug(`⚠️ Canal ${channelName} non trouvé pour suppression`);
+    console.log(`⚠️ Canal ${channelName} non trouvé pour suppression`);
   }
 }
 
@@ -77,7 +77,7 @@ export function isInitialized(): boolean {
 }
 
 export function cleanupAllChannels(): void {
-  logger.debug('🧹 Nettoyage des canaux WebSocket admin');
+  console.log('🧹 Nettoyage des canaux WebSocket admin');
   
   for (const [channelName] of channels) {
     removeChannel(channelName);

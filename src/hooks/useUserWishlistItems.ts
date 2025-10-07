@@ -3,8 +3,7 @@ import { isValidUserWishlistItem } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserWishlistItem } from "@/types/database";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type UserWishlistItemInsert = Omit<UserWishlistItem, "id" | "created_at" | "updated_at">;
 type UserWishlistItemUpdate = Partial<UserWishlistItemInsert>;
 
@@ -37,7 +36,7 @@ export function useUserWishlistItems(wishlistId: string) {
 
       setItems(validItems);
     } catch (err) {
-      logger.error("Erreur lors de la récupération des éléments:", err);
+      console.error("Erreur lors de la récupération des éléments:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des éléments");
     } finally {
@@ -58,7 +57,7 @@ export function useUserWishlistItems(wishlistId: string) {
       setItems(prev => [...prev, data]);
       toast.success("Élément ajouté avec succès");
     } catch (err) {
-      logger.error("Erreur lors de l'ajout de l'élément:", err);
+      console.error("Erreur lors de l'ajout de l'élément:", err);
       toast.error("Erreur lors de l'ajout de l'élément");
       throw err;
     }
@@ -78,7 +77,7 @@ export function useUserWishlistItems(wishlistId: string) {
       setItems(prev => prev.map(i => i.id === id ? data : i));
       toast.success("Élément mis à jour avec succès");
     } catch (err) {
-      logger.error("Erreur lors de la mise à jour de l'élément:", err);
+      console.error("Erreur lors de la mise à jour de l'élément:", err);
       toast.error("Erreur lors de la mise à jour de l'élément");
       throw err;
     }
@@ -96,7 +95,7 @@ export function useUserWishlistItems(wishlistId: string) {
       setItems(prev => prev.filter(i => i.id !== id));
       toast.success("Élément supprimé avec succès");
     } catch (err) {
-      logger.error("Erreur lors de la suppression de l'élément:", err);
+      console.error("Erreur lors de la suppression de l'élément:", err);
       toast.error("Erreur lors de la suppression de l'élément");
       throw err;
     }

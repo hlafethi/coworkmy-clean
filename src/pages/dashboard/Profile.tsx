@@ -14,8 +14,7 @@ import { AvatarUploadSimple } from "@/components/profile/AvatarUploadSimple";
 import { LogoUploadSimple } from "@/components/profile/LogoUploadSimple";
 import { Edit, Building2, User, FileText } from "lucide-react";
 import { StripeCustomerPortal } from "@/components/common/StripeCustomerPortal";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const Profile = () => {
     const { user, profile: authProfile, loading: authLoading, profileLoaded } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -42,7 +41,7 @@ const Profile = () => {
                     updated_at: new Date().toISOString()
                 });
             } catch (error) {
-                logger.error('Erreur lors de la mise à jour du profil:', error);
+                console.error('Erreur lors de la mise à jour du profil:', error);
             }
         }
     };
@@ -65,13 +64,13 @@ const Profile = () => {
                     updated_at: new Date().toISOString()
                 });
             } catch (error) {
-                logger.error('Erreur lors de la mise à jour du profil:', error);
+                console.error('Erreur lors de la mise à jour du profil:', error);
             }
         }
     };
 
     useEffect(() => {
-        logger.debug('🔍 Profile useEffect', { 
+        console.log('🔍 Profile useEffect', { 
             userId: user?.id, 
             hasAuthProfile: !!authProfile, 
             authLoading, 
@@ -80,13 +79,13 @@ const Profile = () => {
         
         // Attendre que l'authentification soit terminée
         if (typeof user === 'undefined' || authLoading) {
-            logger.debug('⏳ En attente de l\'authentification');
+            console.log('⏳ En attente de l\'authentification');
             return;
         }
         
         // Si pas d'utilisateur, rediriger
         if (user === null) {
-            logger.debug('❌ Utilisateur non connecté - redirection');
+            console.log('❌ Utilisateur non connecté - redirection');
             navigate("/auth/login");
             return;
         }
@@ -103,7 +102,7 @@ const Profile = () => {
         toast.error("Erreur lors du chargement du profil");
       }
     } catch (error) {
-      logger.error('Erreur lors du chargement du profil:', error);
+      console.error('Erreur lors du chargement du profil:', error);
       toast.error("Erreur lors du chargement du profil");
     } finally {
       setLoading(false);
@@ -118,7 +117,7 @@ const Profile = () => {
     setForceRender(prev => prev + 1);
   };
 
-    logger.debug('PROFILE render', { 
+    console.log('PROFILE render', { 
         profile: profile ? {
             first_name: profile.first_name,
             last_name: profile.last_name,

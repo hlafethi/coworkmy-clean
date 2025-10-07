@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export interface Space {
   id: string;
   name: string;
@@ -37,14 +36,14 @@ export const useSpaces = () => {
       
       if (result.data) {
         setSpaces(result.data);
-        logger.log('✅ Espaces chargés:', result.data.length);
+        console.log('✅ Espaces chargés:', result.data.length);
       } else {
         setError(result.error || 'Erreur lors du chargement des espaces');
-        logger.error('❌ Erreur chargement espaces:', result.error);
+        console.error('❌ Erreur chargement espaces:', result.error);
       }
     } catch (err) {
       setError('Erreur de connexion');
-      logger.error('❌ Erreur chargement espaces:', err);
+      console.error('❌ Erreur chargement espaces:', err);
     } finally {
       setLoading(false);
     }
@@ -56,14 +55,14 @@ export const useSpaces = () => {
       
       if (result.data) {
         setSpaces(prev => [result.data, ...prev]);
-        logger.log('✅ Espace créé:', result.data.id);
+        console.log('✅ Espace créé:', result.data.id);
         return { success: true, data: result.data };
       } else {
-        logger.error('❌ Erreur création espace:', result.error);
+        console.error('❌ Erreur création espace:', result.error);
         return { success: false, error: result.error };
       }
     } catch (err) {
-      logger.error('❌ Erreur création espace:', err);
+      console.error('❌ Erreur création espace:', err);
       return { success: false, error: 'Erreur de connexion' };
     }
   };

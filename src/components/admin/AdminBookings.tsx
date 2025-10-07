@@ -18,8 +18,7 @@ import { Grid2X2, List, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { createChannel, removeChannel } from "@/lib";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const AdminBookings = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table" | "calendar">("grid");
   const { user } = useAuth();
@@ -40,7 +39,7 @@ const AdminBookings = () => {
           toast.error("Vous devez être connecté pour accéder à cette page");
         }
       } catch (error) {
-        logger.error("Error checking admin access:", error);
+        console.error("Error checking admin access:", error);
       }
     };
 
@@ -50,7 +49,7 @@ const AdminBookings = () => {
   // WebSocket setup for real-time updates
   useEffect(() => {
     const handleBookingUpdate = (payload: any) => {
-      logger.debug('Changement détecté dans les réservations:', payload);
+      console.log('Changement détecté dans les réservations:', payload);
       toast.info("Nouvelle mise à jour des réservations, rafraîchissement...");
       handleRefresh();
     };

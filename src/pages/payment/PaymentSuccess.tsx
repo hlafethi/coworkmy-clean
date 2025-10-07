@@ -6,8 +6,7 @@ import { CheckCircle, Calendar, MapPin } from "lucide-react";
 import { updateBookingStatus } from "@/utils/stripeUtils";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -51,7 +50,7 @@ const PaymentSuccess = () => {
         setBookingDetails(booking);
         toast.success("Paiement confirmé avec succès !");
       } catch (error) {
-        logger.error("Erreur lors du traitement du paiement:", error);
+        console.error("Erreur lors du traitement du paiement:", error);
         toast.error("Une erreur est survenue lors de la confirmation du paiement");
         
         // En cas d'erreur, rediriger vers le tableau de bord après un délai

@@ -1,8 +1,7 @@
 // hooks/usePublicSettings.ts
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export interface PublicSettings {
   site_name?: string;
   hero_title?: string;
@@ -29,7 +28,7 @@ export const usePublicSettings = () => {
         .select('setting_key, value');
 
       if (error) {
-        logger.error('Erreur lors du chargement des paramètres:', error);
+        console.error('Erreur lors du chargement des paramètres:', error);
         return;
       }
 
@@ -43,7 +42,7 @@ export const usePublicSettings = () => {
         setSettings(settingsObject);
       }
     } catch (err) {
-      logger.error('Erreur:', err);
+      console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }

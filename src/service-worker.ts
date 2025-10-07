@@ -5,8 +5,7 @@ import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 declare const self: ServiceWorkerGlobalScope;
 
 // Précache des ressources statiques
@@ -80,7 +79,7 @@ registerRoute(
 
 // Gestion des événements du service worker
 self.addEventListener('install', (event: ExtendableEvent) => {
-  logger.debug('[Service Worker] Installation...');
+  console.log('[Service Worker] Installation...');
   self.skipWaiting();
   event.waitUntil(
     Promise.all([
@@ -104,7 +103,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 });
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
-  logger.debug('[Service Worker] Activation...');
+  console.log('[Service Worker] Activation...');
   self.clients.claim();
   event.waitUntil(
     Promise.all([
@@ -184,7 +183,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
         }
         return response;
       } catch (error) {
-        logger.error('[Service Worker] Erreur de fetch:', error);
+        console.error('[Service Worker] Erreur de fetch:', error);
         // Essayer de servir index.html en cas d'erreur
         try {
           const cache = await caches.open('app-routes');
@@ -193,7 +192,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
             return cachedResponse;
           }
         } catch (cacheError) {
-          logger.error('[Service Worker] Erreur de cache:', cacheError);
+          console.error('[Service Worker] Erreur de cache:', cacheError);
         }
         return new Response('Erreur de réseau', {
           status: 500,

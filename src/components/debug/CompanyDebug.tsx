@@ -1,6 +1,5 @@
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export const CompanyDebug = () => {
   const { settings, loading } = useHomepageSettings();
 
@@ -36,10 +35,10 @@ export const CompanyDebug = () => {
             className="h-16 w-auto border border-gray-300 rounded"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
-              logger.error('Erreur chargement logo:', settings.company_logo_url);
+              console.error('Erreur chargement logo:', settings.company_logo_url);
             }}
             onLoad={() => {
-              logger.debug('✅ Logo chargé avec succès:', settings.company_logo_url);
+              console.log('✅ Logo chargé avec succès:', settings.company_logo_url);
             }}
           />
         </div>

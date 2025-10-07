@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface PerformanceMetrics {
   loadTime: number;
   domContentLoaded: number;
@@ -67,7 +66,7 @@ const PerformanceMonitor = () => {
       }
 
       setMetrics(metrics);
-      logger.log('📊 Performance metrics:', metrics);
+      console.log('📊 Performance metrics:', metrics);
     };
 
     // Mesurer après le chargement complet

@@ -18,8 +18,7 @@ import { SpacesFilter } from "./spaces/SpacesFilter";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Grid2X2, List } from "lucide-react";
 import StripeDebugPanel from "./spaces/StripeDebugPanel";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const AdminSpaces = () => {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const {
@@ -44,7 +43,7 @@ const AdminSpaces = () => {
   const handleSpaceSuccess = () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
-    logger.debug("Space operation successful, refreshing spaces...");
+    console.log("Space operation successful, refreshing spaces...");
     triggerRefresh();
     setTimeout(() => setIsRefreshing(false), 1000); // prevent multiple rapid refreshes
   };

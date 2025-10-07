@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface PlaceDetails {
   name: string;
   rating: number;
@@ -32,7 +31,7 @@ export function useGooglePlaceDetails() {
       setPlaceDetails(data.result);
       toast.success("Connexion établie avec succès");
     } catch (error) {
-      logger.error("Erreur lors de la récupération des détails du lieu:", error);
+      console.error("Erreur lors de la récupération des détails du lieu:", error);
       toast.error(error instanceof Error ? error.message : "Erreur inconnue");
       setPlaceDetails(null);
     } finally {

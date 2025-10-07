@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const DEFAULT_TIME_SLOTS = [
   { 
     start_time: '09:00', 
@@ -67,7 +66,7 @@ export const initializeTimeSlots = async (spaceId: string) => {
         if (deleteError.message?.includes('Failed to fetch') || deleteError.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
           throw deleteError;
         }
-        logger.error('❌ Erreur lors de la suppression:', deleteError);
+        console.error('❌ Erreur lors de la suppression:', deleteError);
       }
 
       // Insérer les nouveaux créneaux avec display_order réinitialisé
@@ -93,16 +92,16 @@ export const initializeTimeSlots = async (spaceId: string) => {
         throw insertError;
       }
 
-      logger.debug('✅ Créneaux horaires initialisés avec succès');
+      console.log('✅ Créneaux horaires initialisés avec succès');
       return;
 
     } catch (error: any) {
-      logger.error('❌ Erreur initialisation:', error);
+      console.error('❌ Erreur initialisation:', error);
 
       if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_INSUFFICIENT_RESOURCES')) {
         retryCount++;
         if (retryCount < MAX_RETRIES) {
-          logger.debug(`Tentative ${retryCount}/${MAX_RETRIES}...`);
+          console.log(`Tentative ${retryCount}/${MAX_RETRIES}...`);
           await sleep(RETRY_DELAY * retryCount);
           continue;
         }
@@ -126,7 +125,7 @@ export const duplicateTimeSlotsForWeek = async (spaceId: string) => {
       .eq('day_of_week', 1);
 
     if (!mondaySlots?.length) {
-      logger.debug('Aucun créneau à dupliquer pour le lundi');
+      console.log('Aucun créneau à dupliquer pour le lundi');
       return;
     }
 
@@ -151,10 +150,10 @@ export const duplicateTimeSlotsForWeek = async (spaceId: string) => {
 
     if (error) throw error;
 
-    logger.debug(`✅ ${slotsToInsert.length} créneaux dupliqués pour la semaine`);
+    console.log(`✅ ${slotsToInsert.length} créneaux dupliqués pour la semaine`);
 
   } catch (error) {
-    logger.error('Erreur duplication:', error);
+    console.error('Erreur duplication:', error);
     throw error;
   }
 };

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 /**
  * Hook personnalisé pour persister l'état des onglets dans localStorage
  * @param key - Clé unique pour identifier l'onglet dans localStorage
@@ -13,7 +12,7 @@ export function usePersistedTab(key: string, defaultValue: string) {
       const item = localStorage.getItem(`tab-${key}`);
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-      logger.warn(`Erreur lors de la lecture de l'onglet ${key}:`, error);
+      console.warn(`Erreur lors de la lecture de l'onglet ${key}:`, error);
       return defaultValue;
     }
   });
@@ -22,7 +21,7 @@ export function usePersistedTab(key: string, defaultValue: string) {
     try {
       localStorage.setItem(`tab-${key}`, JSON.stringify(activeTab));
     } catch (error) {
-      logger.warn(`Erreur lors de la sauvegarde de l'onglet ${key}:`, error);
+      console.warn(`Erreur lors de la sauvegarde de l'onglet ${key}:`, error);
     }
   }, [activeTab, key]);
 

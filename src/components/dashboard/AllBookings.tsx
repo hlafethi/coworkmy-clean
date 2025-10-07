@@ -15,8 +15,7 @@ import { updateBookingStatus } from "@/components/admin/bookings/bookingService"
 import { useUserBookings } from "@/hooks/useUserBookings";
 import { formatPrice } from "@/utils/bookingUtils";
 import { useState, useEffect } from "react";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface CardTitleH2Props {
   children: React.ReactNode;
   className?: string;
@@ -76,7 +75,7 @@ export function AllBookings({ onBookingChange }: AllBookingsProps) {
       const success = await updateBookingStatus(bookingId, "cancelled");
       if (success) {
         // La mise à jour sera gérée automatiquement par le hook temps réel
-        logger.debug("✅ Annulation demandée, mise à jour automatique via WebSocket");
+        console.log("✅ Annulation demandée, mise à jour automatique via WebSocket");
       toast.success("Réservation annulée avec succès");
       refetch();
       onBookingChange?.();
@@ -84,7 +83,7 @@ export function AllBookings({ onBookingChange }: AllBookingsProps) {
         toast.error("Impossible d'annuler la réservation");
       }
     } catch (error) {
-      logger.error("Erreur lors de l'annulation:", error);
+      console.error("Erreur lors de l'annulation:", error);
       toast.error("Une erreur est survenue lors de l'annulation");
     }
   };
@@ -94,7 +93,7 @@ export function AllBookings({ onBookingChange }: AllBookingsProps) {
       const response = await apiClient.delete(`/bookings/${bookingId}`);
 
       if (!response.success) {
-        logger.error("Erreur lors de la suppression:", response.error);
+        console.error("Erreur lors de la suppression:", response.error);
         throw new Error(response.error || "Erreur lors de la suppression");
       }
       
@@ -102,7 +101,7 @@ export function AllBookings({ onBookingChange }: AllBookingsProps) {
       refetch();
       onBookingChange?.();
     } catch (error) {
-      logger.error("❌ Erreur lors de la suppression:", error);
+      console.error("❌ Erreur lors de la suppression:", error);
       toast.error("Impossible de supprimer la réservation");
     }
   };

@@ -6,8 +6,7 @@ import type { Space } from "@/components/admin/types";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface SpaceCardProps {
   space: Space;
   onEdit: (space: Space) => void;
@@ -117,11 +116,11 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({
             alt={space.name} 
             className="w-full h-full object-cover"
             onError={(e) => {
-              logger.error('Erreur chargement image:', space.name, space.image_url?.substring(0, 100));
+              console.error('Erreur chargement image:', space.name, space.image_url?.substring(0, 100));
               e.currentTarget.style.display = 'none';
             }}
             onLoad={() => {
-              logger.debug('Image chargée avec succès:', space.name);
+              console.log('Image chargée avec succès:', space.name);
             }}
           />
         </div>

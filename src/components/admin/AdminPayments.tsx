@@ -31,8 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { refundStripePayment } from "@/services/paymentService";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type Profile = {
   id: string;
   first_name?: string;
@@ -100,7 +99,7 @@ const AdminPayments = () => {
         // Convertir les données Stripe vers notre format
         const paymentsData = Array.isArray(result.data) ? result.data.map((stripePayment: any) => {
           // Debug: Log des données Stripe pour comprendre la structure
-          logger.debug('🔍 Debug paiement Stripe:', {
+          console.log('🔍 Debug paiement Stripe:', {
             id: stripePayment.id,
             status: stripePayment.status,
             charges: stripePayment.charges?.data?.length || 0,
@@ -113,12 +112,12 @@ const AdminPayments = () => {
           // Utiliser la nouvelle propriété has_refunds du backend
           if (stripePayment.has_refunds === true) {
             hasRefunds = true;
-            logger.debug('✅ Remboursements détectés via has_refunds:', stripePayment.id);
+            console.log('✅ Remboursements détectés via has_refunds:', stripePayment.id);
           } else {
             // Fallback: vérifier les charges (ancienne méthode)
             if (stripePayment.charges?.data) {
               for (const charge of stripePayment.charges.data) {
-                logger.debug('🔍 Debug charge:', {
+                console.log('🔍 Debug charge:', {
                   id: charge.id,
                   refunded: charge.refunded,
                   refunds: charge.refunds?.data?.length || 0,
@@ -144,7 +143,7 @@ const AdminPayments = () => {
           let finalStatus = stripePayment.status;
           if (hasRefunds) {
             finalStatus = 'refunded';
-            logger.debug('✅ Paiement remboursé détecté:', stripePayment.id);
+            console.log('✅ Paiement remboursé détecté:', stripePayment.id);
           }
           
           return {
@@ -165,14 +164,14 @@ const AdminPayments = () => {
           };
         }) : [];
         setPayments(paymentsData);
-        logger.debug(`✅ ${paymentsData.length} paiements Stripe récupérés`);
+        console.log(`✅ ${paymentsData.length} paiements Stripe récupérés`);
       } else {
-        logger.error('Error fetching payments:', result.error);
+        console.error('Error fetching payments:', result.error);
         toast.error("Impossible de récupérer les paiements");
         setPayments([]);
       }
     } catch (error) {
-      logger.error('Error fetching payments:', error);
+      console.error('Error fetching payments:', error);
       toast.error("Impossible de récupérer les paiements");
       setPayments([]);
     } finally {

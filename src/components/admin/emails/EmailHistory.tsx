@@ -9,8 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/api-client";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface EmailHistoryItem {
   id: string;
   recipient: string;
@@ -32,10 +31,10 @@ export const EmailHistory = () => {
         if (result.success && Array.isArray(result.data)) {
           setHistory(result.data);
         } else {
-          logger.error("Erreur lors de la récupération de l'historique:", result.message);
+          console.error("Erreur lors de la récupération de l'historique:", result.message);
         }
       } catch (error) {
-        logger.error("Erreur lors de la récupération de l'historique:", error);
+        console.error("Erreur lors de la récupération de l'historique:", error);
       } finally {
         setLoading(false);
       }

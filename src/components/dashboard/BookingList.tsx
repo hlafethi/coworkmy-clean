@@ -6,8 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { updateBookingStatus } from "@/components/admin/bookings/bookingService";
 import { toast } from "sonner";
 import { formatDateTime } from "@/utils/dateUtils";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface BookingActivity {
   id: string;
   description: string;
@@ -45,7 +44,7 @@ export const BookingList = ({ activities, getStatusBadge, onUpdate }: BookingLis
         if (onUpdate) onUpdate();
       }
     } catch (error) {
-      logger.error("Erreur lors de l'annulation:", error);
+      console.error("Erreur lors de l'annulation:", error);
       toast.error("Impossible d'annuler la réservation");
     }
   };

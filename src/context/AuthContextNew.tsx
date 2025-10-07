@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface AuthContextType {
   user: User | null | undefined;
   profile: any;
@@ -134,42 +133,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfileAndSetState = async (authUser: User) => {
     try {
-      logger.info('🔍 Récupération du profil pour:', authUser.id);
+      console.log('🔍 Récupération du profil pour:', authUser.id);
       let profile = await fetchProfile(authUser);
       
       if (!profile) {
-        logger.warn('❌ Profil non trouvé pour:', authUser.id);
+        console.warn('❌ Profil non trouvé pour:', authUser.id);
         setIsAdmin(false);
         setProfileError('Profil non trouvé');
         setProfileLoaded(true);
         setLoading(false);
-        logger.info('🔄 État mis à jour: profileLoaded=true, loading=false (profil non trouvé)');
+        console.log('🔄 État mis à jour: profileLoaded=true, loading=false (profil non trouvé)');
         return;
       }
       
       const userIsAdmin = profile?.is_admin === true || profile?.is_admin === 'true';
       
       if (mounted.current) {
-        logger.info('✅ Profil récupéré avec succès:', profile.id);
-        logger.info('🔄 Mise à jour de l\'état avec profileLoaded=true, loading=false');
+        console.log('✅ Profil récupéré avec succès:', profile.id);
+        console.log('🔄 Mise à jour de l\'état avec profileLoaded=true, loading=false');
         setProfile(profile);
         setIsAdmin(userIsAdmin);
         setProfileError(null);
         setProfileLoaded(true);
         setLoading(false);
-        logger.info('✅ État mis à jour avec succès');
+        console.log('✅ État mis à jour avec succès');
       } else {
-        logger.warn('⚠️ Composant démonté, pas de mise à jour d\'état');
+        console.warn('⚠️ Composant démonté, pas de mise à jour d\'état');
       }
       
     } catch (error) {
-      logger.error('❌ Erreur lors du chargement du profil:', error);
+      console.error('❌ Erreur lors du chargement du profil:', error);
       if (mounted.current) {
         setIsAdmin(false);
         setProfileError('Erreur lors du chargement du profil');
         setProfileLoaded(true);
         setLoading(false);
-        logger.info('🔄 État mis à jour: profileLoaded=true, loading=false (erreur)');
+        console.log('🔄 État mis à jour: profileLoaded=true, loading=false (erreur)');
       }
     }
   };

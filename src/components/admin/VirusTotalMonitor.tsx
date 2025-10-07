@@ -15,8 +15,7 @@ import {
   Info
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface ApiUsage {
   used: number;
   limit: number;
@@ -42,7 +41,7 @@ export const VirusTotalMonitor: React.FC = () => {
         setApiUsage(usage);
       }
     } catch (error) {
-      logger.error('Erreur lors de la vérification de l\'API:', error);
+      console.error('Erreur lors de la vérification de l\'API:', error);
       toast.error('Erreur lors de la vérification de l\'API VirusTotal');
     } finally {
       setLoading(false);

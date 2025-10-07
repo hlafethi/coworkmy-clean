@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const SPACE_ID = "2edfb6ad-3959-423c-be20-213b23ff9a0f"; // ID de l'espace "Le Focus"
 
 const DEFAULT_TIME_SLOTS = [
@@ -228,13 +227,13 @@ async function insertDefaultTimeSlots() {
       .select();
 
     if (error) {
-      logger.error("Erreur lors de l'insertion des créneaux:", error);
+      console.error("Erreur lors de l'insertion des créneaux:", error);
       return;
     }
 
-    logger.debug("Créneaux horaires insérés avec succès:", data);
+    console.log("Créneaux horaires insérés avec succès:", data);
   } catch (err) {
-    logger.error("Erreur inattendue:", err);
+    console.error("Erreur inattendue:", err);
   }
 }
 

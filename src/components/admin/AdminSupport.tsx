@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { usePersistedTab } from '@/hooks/usePersistedTab';
 import { 
-import { logger } from '@/utils/logger';
-  LifeBuoy, 
+// Logger supprimé - utilisation de console directement
+LifeBuoy, 
   FileQuestion, 
   FileText, 
   Send, 
@@ -84,7 +84,7 @@ export const AdminSupport = () => {
       ];
       setTickets(mockTickets);
     } catch (error) {
-      logger.error('Erreur chargement tickets:', error);
+      console.error('Erreur chargement tickets:', error);
       toast.error('Erreur lors du chargement des tickets');
     } finally {
       setIsLoadingTickets(false);
@@ -116,7 +116,7 @@ export const AdminSupport = () => {
       ];
       setTicketResponses(mockResponses);
     } catch (error) {
-      logger.error('Erreur chargement réponses:', error);
+      console.error('Erreur chargement réponses:', error);
       toast.error('Erreur lors du chargement des réponses');
     } finally {
       setIsLoadingResponses(false);
@@ -156,7 +156,7 @@ export const AdminSupport = () => {
       toast.success('Réponse ajoutée');
       setResponseMessage('');
     } catch (error) {
-      logger.error('Erreur ajout réponse:', error);
+      console.error('Erreur ajout réponse:', error);
       toast.error('Erreur lors de l\'ajout de la réponse');
     } finally {
       setIsLoading(false);

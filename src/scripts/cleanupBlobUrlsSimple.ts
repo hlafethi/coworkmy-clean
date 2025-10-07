@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 // Configuration Supabase (à adapter selon ton environnement)
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
@@ -8,11 +7,11 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function cleanupBlobUrls() {
-  logger.debug('🧹 Début du nettoyage des URL blob...');
+  console.log('🧹 Début du nettoyage des URL blob...');
 
   try {
     // 1. Nettoyer admin_settings
-    logger.debug('📋 Nettoyage admin_settings...');
+    console.log('📋 Nettoyage admin_settings...');
     const { data: adminSettings, error: adminError } = await supabase
       .from('admin_settings')
       .select('*');
@@ -26,21 +25,21 @@ async function cleanupBlobUrls() {
 
         // Vérifier hero_background_image
         if (newValue.hero_background_image && newValue.hero_background_image.startsWith('blob:')) {
-          logger.debug(`❌ URL blob trouvée dans admin_settings (${setting.key}):`, newValue.hero_background_image);
+          console.log(`❌ URL blob trouvée dans admin_settings (${setting.key}):`, newValue.hero_background_image);
           newValue.hero_background_image = null;
           updated = true;
         }
 
         // Vérifier logo_url
         if (newValue.logo_url && newValue.logo_url.startsWith('blob:')) {
-          logger.debug(`❌ URL blob trouvée dans admin_settings (${setting.key}):`, newValue.logo_url);
+          console.log(`❌ URL blob trouvée dans admin_settings (${setting.key}):`, newValue.logo_url);
           newValue.logo_url = null;
           updated = true;
         }
 
         // Vérifier favicon_url
         if (newValue.favicon_url && newValue.favicon_url.startsWith('blob:')) {
-          logger.debug(`❌ URL blob trouvée dans admin_settings (${setting.key}):`, newValue.favicon_url);
+          console.log(`❌ URL blob trouvée dans admin_settings (${setting.key}):`, newValue.favicon_url);
           newValue.favicon_url = null;
           updated = true;
         }
@@ -52,16 +51,16 @@ async function cleanupBlobUrls() {
             .eq('key', setting.key);
           
           if (updateError) {
-            logger.error('❌ Erreur lors de la mise à jour admin_settings:', updateError);
+            console.error('❌ Erreur lors de la mise à jour admin_settings:', updateError);
           } else {
-            logger.debug(`✅ admin_settings (${setting.key}) nettoyé`);
+            console.log(`✅ admin_settings (${setting.key}) nettoyé`);
           }
         }
       }
     }
 
     // 2. Nettoyer profiles
-    logger.debug('👤 Nettoyage profiles...');
+    console.log('👤 Nettoyage profiles...');
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, avatar_url')
@@ -70,21 +69,21 @@ async function cleanupBlobUrls() {
     if (profilesError) throw profilesError;
 
     for (const profile of profiles || []) {
-      logger.debug(`❌ URL blob trouvée dans profiles (${profile.id}):`, profile.avatar_url);
+      console.log(`❌ URL blob trouvée dans profiles (${profile.id}):`, profile.avatar_url);
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
         .eq('id', profile.id);
       
       if (updateError) {
-        logger.error('❌ Erreur lors de la mise à jour profiles:', updateError);
+        console.error('❌ Erreur lors de la mise à jour profiles:', updateError);
       } else {
-        logger.debug(`✅ Profile (${profile.id}) nettoyé`);
+        console.log(`✅ Profile (${profile.id}) nettoyé`);
       }
     }
 
     // 3. Nettoyer spaces
-    logger.debug('🏢 Nettoyage spaces...');
+    console.log('🏢 Nettoyage spaces...');
     const { data: spaces, error: spacesError } = await supabase
       .from('spaces')
       .select('id, image_url')
@@ -93,21 +92,21 @@ async function cleanupBlobUrls() {
     if (spacesError) throw spacesError;
 
     for (const space of spaces || []) {
-      logger.debug(`❌ URL blob trouvée dans spaces (${space.id}):`, space.image_url);
+      console.log(`❌ URL blob trouvée dans spaces (${space.id}):`, space.image_url);
       const { error: updateError } = await supabase
         .from('spaces')
         .update({ image_url: null })
         .eq('id', space.id);
       
       if (updateError) {
-        logger.error('❌ Erreur lors de la mise à jour spaces:', updateError);
+        console.error('❌ Erreur lors de la mise à jour spaces:', updateError);
       } else {
-        logger.debug(`✅ Space (${space.id}) nettoyé`);
+        console.log(`✅ Space (${space.id}) nettoyé`);
       }
     }
 
     // 4. Nettoyer documents
-    logger.debug('📄 Nettoyage documents...');
+    console.log('📄 Nettoyage documents...');
     const { data: documents, error: documentsError } = await supabase
       .from('documents')
       .select('id, file_url')
@@ -116,21 +115,21 @@ async function cleanupBlobUrls() {
     if (documentsError) throw documentsError;
 
     for (const document of documents || []) {
-      logger.debug(`❌ URL blob trouvée dans documents (${document.id}):`, document.file_url);
+      console.log(`❌ URL blob trouvée dans documents (${document.id}):`, document.file_url);
       const { error: updateError } = await supabase
         .from('documents')
         .update({ file_url: null })
         .eq('id', document.id);
       
       if (updateError) {
-        logger.error('❌ Erreur lors de la mise à jour documents:', updateError);
+        console.error('❌ Erreur lors de la mise à jour documents:', updateError);
       } else {
-        logger.debug(`✅ Document (${document.id}) nettoyé`);
+        console.log(`✅ Document (${document.id}) nettoyé`);
       }
     }
 
     // 5. Nettoyer carousel_images
-    logger.debug('🖼️ Nettoyage carousel_images...');
+    console.log('🖼️ Nettoyage carousel_images...');
     const { data: carouselImages, error: carouselError } = await supabase
       .from('carousel_images')
       .select('id, image_url')
@@ -139,23 +138,23 @@ async function cleanupBlobUrls() {
     if (carouselError) throw carouselError;
 
     for (const image of carouselImages || []) {
-      logger.debug(`❌ URL blob trouvée dans carousel_images (${image.id}):`, image.image_url);
+      console.log(`❌ URL blob trouvée dans carousel_images (${image.id}):`, image.image_url);
       const { error: updateError } = await supabase
         .from('carousel_images')
         .update({ image_url: null })
         .eq('id', image.id);
       
       if (updateError) {
-        logger.error('❌ Erreur lors de la mise à jour carousel_images:', updateError);
+        console.error('❌ Erreur lors de la mise à jour carousel_images:', updateError);
       } else {
-        logger.debug(`✅ Carousel image (${image.id}) nettoyé`);
+        console.log(`✅ Carousel image (${image.id}) nettoyé`);
       }
     }
 
-    logger.debug('✅ Nettoyage terminé !');
+    console.log('✅ Nettoyage terminé !');
 
   } catch (error) {
-    logger.error('❌ Erreur lors du nettoyage:', error);
+    console.error('❌ Erreur lors du nettoyage:', error);
   }
 }
 

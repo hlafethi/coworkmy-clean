@@ -17,8 +17,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface ProfileDocument {
   id: string;
   user_id: string;
@@ -53,7 +52,7 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
   
   // Debug log pour voir les changements de selectedDocumentType
   useEffect(() => {
-    logger.debug('🔍 DocumentsSection - selectedDocumentType changé:', selectedDocumentType);
+    console.log('🔍 DocumentsSection - selectedDocumentType changé:', selectedDocumentType);
   }, [selectedDocumentType]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [forceRender, setForceRender] = useState(0);
@@ -64,17 +63,17 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
 
   const loadDocuments = async () => {
     try {
-      logger.debug('🔄 Chargement des documents pour userId:', userId);
+      console.log('🔄 Chargement des documents pour userId:', userId);
       const result = await apiClient.get(`/users/${userId}/documents`);
       
       if (result.success && result.data) {
         // S'assurer que result.data est un tableau
         const documentsArray = Array.isArray(result.data) ? result.data : [];
-        logger.debug('✅ Documents chargés:', documentsArray.length);
+        console.log('✅ Documents chargés:', documentsArray.length);
         
         // Ajouter des logs de debug pour voir les données
         documentsArray.forEach((doc, index) => {
-          logger.debug(`🔍 Document ${index}:`, {
+          console.log(`🔍 Document ${index}:`, {
             id: doc.id,
             file_name: doc.file_name,
             document_type: doc.document_type,
@@ -87,11 +86,11 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
         
         setDocuments(documentsArray);
       } else {
-        logger.debug('⚠️ Aucun document trouvé');
+        console.log('⚠️ Aucun document trouvé');
         setDocuments([]);
       }
     } catch (error) {
-      logger.error('Erreur lors du chargement des documents:', error);
+      console.error('Erreur lors du chargement des documents:', error);
       toast.error('Erreur lors du chargement des documents');
       setDocuments([]);
     } finally {
@@ -100,13 +99,13 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
   };
 
   const handleRefresh = () => {
-    logger.debug('🔄 Rafraîchissement manuel des documents...');
+    console.log('🔄 Rafraîchissement manuel des documents...');
     setRefreshKey(prev => prev + 1);
     setForceRender(prev => prev + 1);
   };
 
   const handleFileUploaded = (fileData: any) => {
-    logger.debug('✅ Document uploadé, rafraîchissement de la liste...');
+    console.log('✅ Document uploadé, rafraîchissement de la liste...');
     // Déclencher un rafraîchissement complet
     setRefreshKey(prev => prev + 1);
     setForceRender(prev => prev + 1);
@@ -164,7 +163,7 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
         toast.error('Document non disponible');
       }
     } catch (error) {
-      logger.error('Erreur lors du téléchargement:', error);
+      console.error('Erreur lors du téléchargement:', error);
       toast.error('Erreur lors du téléchargement');
     }
   };
@@ -183,15 +182,15 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
       }
 
       // Pour PostgreSQL, pas besoin de suppression de storage spéciale
-      logger.debug('Document supprimé avec succès');
+      console.log('Document supprimé avec succès');
 
       // Déclencher un rafraîchissement complet
-      logger.debug('✅ Document supprimé, rafraîchissement de la liste...');
+      console.log('✅ Document supprimé, rafraîchissement de la liste...');
       setRefreshKey(prev => prev + 1);
       setForceRender(prev => prev + 1);
       toast.success('Document supprimé');
     } catch (error) {
-      logger.error('Erreur lors de la suppression:', error);
+      console.error('Erreur lors de la suppression:', error);
       toast.error('Erreur lors de la suppression');
     }
   };
@@ -293,7 +292,7 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
               <select
                 value={selectedDocumentType}
                 onChange={(e) => {
-                  logger.debug('🔍 DocumentsSection - Changement de type sélectionné:', e.target.value);
+                  console.log('🔍 DocumentsSection - Changement de type sélectionné:', e.target.value);
                   setSelectedDocumentType(e.target.value);
                 }}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"

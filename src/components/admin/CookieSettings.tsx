@@ -10,8 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { Palette, Settings, Save } from "lucide-react"; // 🔧 Suppression de 'Eye'
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface CookieSettings {
   id: string;
   title: string;
@@ -49,15 +48,15 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        logger.debug('🔄 Chargement des paramètres cookies...');
+        console.log('🔄 Chargement des paramètres cookies...');
         
         const result = await apiClient.get('/cookie-settings');
         
         if (result.success && result.data) {
-          logger.debug('✅ Paramètres cookies chargés:', result.data);
+          console.log('✅ Paramètres cookies chargés:', result.data);
           setSettings(result.data);
         } else {
-          logger.debug('📝 Aucun paramètre trouvé, utilisation des valeurs par défaut');
+          console.log('📝 Aucun paramètre trouvé, utilisation des valeurs par défaut');
           setSettings({
             id: 'default',
             title: 'Paramètres de Cookies',
@@ -68,8 +67,8 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
           });
         }
       } catch (error) {
-        logger.error('❌ Erreur lors du chargement des paramètres:', error);
-        logger.debug('📝 Erreur API, utilisation des valeurs par défaut');
+        console.error('❌ Erreur lors du chargement des paramètres:', error);
+        console.log('📝 Erreur API, utilisation des valeurs par défaut');
         setSettings({
           id: 'default',
           title: 'Paramètres de Cookies',
@@ -92,14 +91,14 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
 
     setSaving(true);
     try {
-      logger.debug('💾 Sauvegarde des paramètres cookies...');
+      console.log('💾 Sauvegarde des paramètres cookies...');
       
       const response = await apiClient.post('/cookie-settings', settings);
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de la sauvegarde');
       }
       
-      logger.debug('✅ Paramètres cookies sauvegardés');
+      console.log('✅ Paramètres cookies sauvegardés');
       
       // Mettre à jour le cache pour que les changements soient visibles immédiatement
       localStorage.setItem('cookie-settings-cache', JSON.stringify(response.data));
@@ -111,7 +110,7 @@ export const CookieSettingsAdmin = ({ isDisabled = false }: { isDisabled?: boole
       
       toast.success("Paramètres des cookies enregistrés avec succès");
     } catch (error) {
-      logger.error('❌ Erreur lors de la sauvegarde:', error);
+      console.error('❌ Erreur lors de la sauvegarde:', error);
       toast.error("Impossible d'enregistrer les paramètres");
     } finally {
       setSaving(false);

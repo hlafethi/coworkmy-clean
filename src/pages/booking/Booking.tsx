@@ -10,7 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import type { TimeSlotOption } from "@/types/booking";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 import { toast } from "sonner";
 import { useStripePayment } from "@/hooks/useStripePayment";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
@@ -29,8 +29,8 @@ export default function Booking() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const { createPaymentSession } = useStripePayment();
 
-  logger.log("📍 Page Booking - spaceId:", spaceId);
-  logger.log("📍 Location state:", location.state);
+  console.log("📍 Page Booking - spaceId:", spaceId);
+  console.log("📍 Location state:", location.state);
 
   useEffect(() => {
     if (spaceId) {
@@ -48,7 +48,7 @@ export default function Booking() {
     }
   }, [spaceId]);
 
-  logger.log("Loader state:", { loading });
+  console.log("Loader state:", { loading });
 
   if (loading) {
     return (
@@ -176,7 +176,7 @@ export default function Booking() {
 
       const booking = bookingResponse.data;
 
-      logger.debug('✅ Réservation créée avec succès:', booking);
+      console.log('✅ Réservation créée avec succès:', booking);
       
       // Vérifier si l'utilisateur est admin
       const isAdmin = user?.is_admin;
@@ -204,7 +204,7 @@ export default function Booking() {
           window.location.href = url;
           return; // Arrêter l'exécution ici
         } catch (paymentError) {
-          logger.error("Erreur lors de la création de la session de paiement:", paymentError);
+          console.error("Erreur lors de la création de la session de paiement:", paymentError);
           toast.error("Impossible de créer la session de paiement. Réservation créée sans paiement.");
           
           // Rediriger vers le dashboard admin
@@ -233,14 +233,14 @@ export default function Booking() {
           window.location.href = url;
           return; // Arrêter l'exécution ici
         } catch (paymentError) {
-          logger.error("Erreur lors de la création de la session de paiement:", paymentError);
+          console.error("Erreur lors de la création de la session de paiement:", paymentError);
           toast.error("Impossible de créer la session de paiement. Veuillez réessayer.");
           
           // En cas d'erreur, mettre à jour le statut de la réservation à "cancelled"
           try {
             await updateBookingStatus(booking.id, 'cancelled');
           } catch (updateError) {
-            logger.warn("Erreur lors de l'annulation de la réservation:", updateError);
+            console.warn("Erreur lors de l'annulation de la réservation:", updateError);
           }
           
           return;
@@ -248,7 +248,7 @@ export default function Booking() {
       }
     } catch (error) {
       toast.error("Une erreur est survenue lors de la réservation ou du paiement.");
-      logger.error("Erreur lors de la création de la réservation ou du paiement:", error);
+      console.error("Erreur lors de la création de la réservation ou du paiement:", error);
     }
   };
 
@@ -275,8 +275,8 @@ export default function Booking() {
     price: (currentSelectedSpace as any).price ?? 0,
   } as any) : undefined;
 
-  logger.log("📍 Espace actuel:", currentSpace);
-  logger.log("📍 Créneaux disponibles:", timeSlots);
+  console.log("📍 Espace actuel:", currentSpace);
+  console.log("📍 Créneaux disponibles:", timeSlots);
 
   return (
     <div className="container mx-auto px-4 py-8">

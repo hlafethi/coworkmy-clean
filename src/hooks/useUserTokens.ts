@@ -3,8 +3,7 @@ import { isValidUserToken } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserToken } from "@/components/admin/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type UserTokenInsert = Omit<UserToken, "id" | "created_at" | "updated_at">;
 
 export function useUserTokens(userId: string) {
@@ -28,7 +27,7 @@ export function useUserTokens(userId: string) {
       const validTokens = data.filter(isValidUserToken);
       setTokens(validTokens);
     } catch (err) {
-      logger.error("Erreur lors de la récupération des tokens:", err);
+      console.error("Erreur lors de la récupération des tokens:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des tokens");
     } finally {
@@ -51,7 +50,7 @@ export function useUserTokens(userId: string) {
       toast.success("Token créé avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la création du token:", err);
+      console.error("Erreur lors de la création du token:", err);
       toast.error("Erreur lors de la création du token");
       throw err;
     }
@@ -69,7 +68,7 @@ export function useUserTokens(userId: string) {
       setTokens(prev => prev.filter(t => t.id !== id));
       toast.success("Token révoqué avec succès");
     } catch (err) {
-      logger.error("Erreur lors de la révocation du token:", err);
+      console.error("Erreur lors de la révocation du token:", err);
       toast.error("Erreur lors de la révocation du token");
       throw err;
     }
@@ -87,7 +86,7 @@ export function useUserTokens(userId: string) {
       setTokens([]);
       toast.success("Tous les tokens ont été révoqués");
     } catch (err) {
-      logger.error("Erreur lors de la révocation des tokens:", err);
+      console.error("Erreur lors de la révocation des tokens:", err);
       toast.error("Erreur lors de la révocation des tokens");
       throw err;
     }

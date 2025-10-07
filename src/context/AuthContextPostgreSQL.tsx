@@ -2,8 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/api-client';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface User {
   id: string;
   email: string;
@@ -60,13 +59,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      logger.log('🔐 Tentative de connexion pour:', email);
+      console.log('🔐 Tentative de connexion pour:', email);
       
       const result = await apiClient.signIn(email, password);
-      logger.log('📊 Résultat API:', result);
-      logger.log('📊 result.success:', result.success);
-      logger.log('📊 result.data:', result.data);
-      logger.log('📊 result.data.user:', result.data?.user);
+      console.log('📊 Résultat API:', result);
+      console.log('📊 result.success:', result.success);
+      console.log('📊 result.data:', result.data);
+      console.log('📊 result.data.user:', result.data?.user);
       
       if (result.success && result.data && result.data.user) {
         setUser(result.data.user);
@@ -74,18 +73,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAdmin(result.data.user.is_admin);
         setProfileError(null);
         setProfileLoaded(true);
-        logger.log('✅ Connexion réussie:', { userId: result.data.user.id });
+        console.log('✅ Connexion réussie:', { userId: result.data.user.id });
         return { user: result.data.user, error: null };
       } else {
         const errorMessage = result.error || 'Erreur de connexion';
         setProfileError(errorMessage);
-        logger.error('❌ Erreur de connexion:', errorMessage);
-        logger.error('❌ Détails du résultat:', result);
+        console.error('❌ Erreur de connexion:', errorMessage);
+        console.error('❌ Détails du résultat:', result);
         return { user: null, error: errorMessage };
       }
     } catch (error) {
       setProfileError('Erreur de connexion');
-      logger.error('❌ Erreur de connexion:', error);
+      console.error('❌ Erreur de connexion:', error);
       return { user: null, error: 'Erreur de connexion' };
     } finally {
       setLoading(false);
@@ -96,10 +95,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
       setLoading(true);
-      logger.log('📝 Tentative d\'inscription pour:', email);
+      console.log('📝 Tentative d\'inscription pour:', email);
       
       const result = await apiClient.signUp(email, password, fullName);
-      logger.log('📊 Résultat inscription API:', result);
+      console.log('📊 Résultat inscription API:', result);
       
       if (result.success && result.data && result.data.user) {
         setUser(result.data.user);
@@ -107,19 +106,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAdmin(result.data.user.is_admin);
         setProfileError(null);
         setProfileLoaded(true);
-        logger.log('✅ Inscription réussie:', { userId: result.data.user.id });
+        console.log('✅ Inscription réussie:', { userId: result.data.user.id });
         return { user: result.data.user, error: null };
       } else {
         const errorMessage = result.error || 'Erreur d\'inscription';
         setProfileError(errorMessage);
-        logger.error('❌ Erreur d\'inscription:', errorMessage);
-        logger.error('❌ Détails du résultat:', result);
+        console.error('❌ Erreur d\'inscription:', errorMessage);
+        console.error('❌ Détails du résultat:', result);
         return { user: null, error: errorMessage };
       }
     } catch (error) {
       const errorMessage = 'Erreur d\'inscription';
       setProfileError(errorMessage);
-      logger.error('❌ Erreur d\'inscription:', error);
+      console.error('❌ Erreur d\'inscription:', error);
       return { user: null, error: errorMessage };
     } finally {
       setLoading(false);
@@ -135,12 +134,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAdmin(false);
       setProfileLoaded(false);
       setProfileError(null);
-      logger.log('🚪 Déconnexion réussie');
+      console.log('🚪 Déconnexion réussie');
       
       // Rediriger vers la homepage après déconnexion
       navigate('/');
     } catch (error) {
-      logger.error('❌ Erreur de déconnexion:', error);
+      console.error('❌ Erreur de déconnexion:', error);
     }
   };
 
@@ -159,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfileError(result.error || 'Erreur lors du rechargement');
       }
     } catch (error) {
-      logger.error('❌ Erreur lors du rechargement du profil:', error);
+      console.error('❌ Erreur lors du rechargement du profil:', error);
       setProfileError('Erreur lors du rechargement du profil');
     } finally {
       setLoading(false);
@@ -176,7 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
-          logger.log('ℹ️ Supabase configuré - utilisation de Supabase Auth');
+          console.log('ℹ️ Supabase configuré - utilisation de Supabase Auth');
           // Ici vous pourriez utiliser le contexte Supabase existant
           // Pour l'instant, on utilise PostgreSQL par défaut
         }
@@ -190,13 +189,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAdmin(result.data.user.is_admin);
           setProfileLoaded(true);
           setProfileError(null);
-          logger.log('✅ Session restaurée:', { userId: result.data.user.id });
+          console.log('✅ Session restaurée:', { userId: result.data.user.id });
         } else {
-          logger.log('ℹ️ Aucune session trouvée');
+          console.log('ℹ️ Aucune session trouvée');
         }
         
       } catch (error) {
-        logger.error('❌ Erreur lors de l\'initialisation de l\'auth:', error);
+        console.error('❌ Erreur lors de l\'initialisation de l\'auth:', error);
         setProfileError('Erreur lors de l\'initialisation');
       } finally {
         if (mounted.current) {

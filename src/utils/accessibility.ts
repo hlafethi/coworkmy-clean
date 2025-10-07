@@ -1,6 +1,5 @@
 import axe from 'axe-core';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 /**
  * Accessibility testing utilities
  * This module provides functions for testing and improving accessibility
@@ -29,26 +28,26 @@ export function initAccessibilityTesting() {
         }
       }, (err, results) => {
         if (err) {
-          logger.error('Error running accessibility tests:', err);
+          console.error('Error running accessibility tests:', err);
           return;
         }
         
         // Log results to console
         if (results.violations.length) {
-          logger.warn('Accessibility issues found:');
+          console.warn('Accessibility issues found:');
           
           results.violations.forEach((violation) => {
             const nodes = violation.nodes.map(node => node.html).join('\n');
-            logger.warn(`${violation.impact} impact: ${violation.help}`);
-            logger.warn(`WCAG: ${violation.tags.filter(tag => tag.includes('wcag')).join(', ')}`);
-            logger.warn(`Affected elements:\n${nodes}`);
-            logger.warn(`More info: ${violation.helpUrl}`);
-            logger.warn('---');
+            console.warn(`${violation.impact} impact: ${violation.help}`);
+            console.warn(`WCAG: ${violation.tags.filter(tag => tag.includes('wcag')).join(', ')}`);
+            console.warn(`Affected elements:\n${nodes}`);
+            console.warn(`More info: ${violation.helpUrl}`);
+            console.warn('---');
           });
           
-          logger.warn(`${results.violations.length} accessibility issues found. See above for details.`);
+          console.warn(`${results.violations.length} accessibility issues found. See above for details.`);
         } else {
-          logger.debug('No accessibility issues found!');
+          console.log('No accessibility issues found!');
         }
       });
     }, 3000); // Wait for the app to fully render
@@ -68,7 +67,7 @@ export function checkContrast(element: HTMLElement) {
       }
     }, (err, results) => {
       if (err) {
-        logger.error('Error checking contrast:', err);
+        console.error('Error checking contrast:', err);
         resolve({ passed: false, error: err });
         return;
       }

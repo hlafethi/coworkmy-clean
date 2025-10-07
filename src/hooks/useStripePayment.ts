@@ -1,8 +1,7 @@
 import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { useToast } from "@/hooks/use-toast";
 import { createStripeCheckoutSession } from "@/utils/stripeUtils";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 /**
  * Hook personnalisé pour gérer les paiements Stripe
  * Récupère automatiquement le statut admin et gère les toasts
@@ -46,7 +45,7 @@ export const useStripePayment = () => {
 
       return { url, mode };
     } catch (error) {
-      logger.error("Erreur lors de la création de la session de paiement:", error);
+      console.error("Erreur lors de la création de la session de paiement:", error);
       toast({
         title: "Erreur de paiement",
         description: "Impossible de créer la session de paiement. Veuillez réessayer.",

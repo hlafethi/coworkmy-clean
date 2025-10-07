@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 // Service d'analyse antivirus avec MetaDefender Cloud (OPSWAT)
 // Doc: https://onlinehelp.opswat.com/mdcloud/Getting_Started_with_MetaDefender_Cloud_REST_API.html
 
@@ -16,9 +16,9 @@ class MetaDefenderScanner {
 
   constructor() {
     this.apiKey = process.env.NEXT_PUBLIC_METADEFENDER_API_KEY || (typeof import.meta !== 'undefined' ? import.meta.env.VITE_METADEFENDER_API_KEY : '') || '';
-    logger.debug('METADEFENDER API KEY utilisée:', this.apiKey);
+    console.log('METADEFENDER API KEY utilisée:', this.apiKey);
     if (!this.apiKey) {
-      logger.warn('⚠️ Clé API MetaDefender non configurée. Utilisation du scanner basique.');
+      console.warn('⚠️ Clé API MetaDefender non configurée. Utilisation du scanner basique.');
     }
   }
 
@@ -43,10 +43,10 @@ class MetaDefenderScanner {
       if (!report) {
         return { isClean: false, threat: "Timeout lors de l'analyse antivirus" };
       }
-      logger.debug('Réponse MetaDefender:', report);
+      console.log('Réponse MetaDefender:', report);
       return this.parseMetaDefenderResponse(report, dataId);
     } catch (error) {
-      logger.error('Erreur lors du scan MetaDefender:', error);
+      console.error('Erreur lors du scan MetaDefender:', error);
       return await this.basicScan(file);
     }
   }
@@ -68,7 +68,7 @@ class MetaDefenderScanner {
       const data = await response.json();
       return data.data_id || null;
     } catch (error) {
-      logger.error('Erreur upload MetaDefender:', error);
+      console.error('Erreur upload MetaDefender:', error);
       return null;
     }
   }
@@ -89,7 +89,7 @@ class MetaDefenderScanner {
         // Attendre avant le prochain essai
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
-        logger.error(`Tentative ${attempt + 1} échouée:`, error);
+        console.error(`Tentative ${attempt + 1} échouée:`, error);
       }
     }
     return null;

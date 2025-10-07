@@ -4,8 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const emailConfigSchema = z.object({
   host: z.string().min(1, "Le serveur SMTP est requis"),
   port: z.coerce.number().int().min(1, "Le port est requis"),
@@ -40,19 +39,19 @@ export const useEmailConfig = () => {
   const fetchConfig = async () => {
     setIsLoading(true);
     try {
-      logger.debug('🔄 Chargement de la configuration email...');
+      console.log('🔄 Chargement de la configuration email...');
       
       const result = await apiClient.get('/email-config');
 
       if (!result.success) {
-        logger.error("❌ Erreur lors de la récupération de la configuration:", result.message);
+        console.error("❌ Erreur lors de la récupération de la configuration:", result.message);
         // En cas d'erreur, garder les valeurs par défaut
         form.reset(defaultValues);
         return;
       }
 
       if (result.data) {
-        logger.debug('✅ Configuration trouvée:', result.data.id);
+        console.log('✅ Configuration trouvée:', result.data.id);
         setConfigExists(true);
         setConfigId(result.data.id);
         
@@ -67,13 +66,13 @@ export const useEmailConfig = () => {
         
         form.reset(formValues);
       } else {
-        logger.debug('ℹ️ Aucune configuration trouvée, utilisation des valeurs par défaut');
+        console.log('ℹ️ Aucune configuration trouvée, utilisation des valeurs par défaut');
         setConfigExists(false);
         setConfigId(null);
         form.reset(defaultValues);
       }
     } catch (error) {
-      logger.error("❌ Erreur lors de la récupération de la configuration:", error);
+      console.error("❌ Erreur lors de la récupération de la configuration:", error);
       form.reset(defaultValues);
     } finally {
       setIsLoading(false);
@@ -83,7 +82,7 @@ export const useEmailConfig = () => {
   const saveConfig = async (values: EmailConfigFormValues) => {
     setIsSubmitting(true);
     try {
-      logger.debug('💾 Sauvegarde de la configuration...');
+      console.log('💾 Sauvegarde de la configuration...');
       
       // Mapper les champs du formulaire vers les colonnes de la DB
       const configData = {
@@ -99,10 +98,10 @@ export const useEmailConfig = () => {
 
       let result;
       if (configExists && configId) {
-        logger.debug('🔄 Mise à jour de la configuration existante...');
+        console.log('🔄 Mise à jour de la configuration existante...');
         result = await apiClient.put(`/email-config/${configId}`, configData);
       } else {
-        logger.debug('➕ Création d\'une nouvelle configuration...');
+        console.log('➕ Création d\'une nouvelle configuration...');
         result = await apiClient.post('/email-config', configData);
         
         if (result.success && result.data) {
@@ -115,11 +114,11 @@ export const useEmailConfig = () => {
         throw new Error(result.message || 'Erreur lors de la sauvegarde');
       }
       
-      logger.debug('✅ Configuration sauvegardée avec succès');
+      console.log('✅ Configuration sauvegardée avec succès');
       toast.success("Configuration email enregistrée avec succès");
       
     } catch (error: any) {
-      logger.error("❌ Erreur lors de l'enregistrement de la configuration:", error);
+      console.error("❌ Erreur lors de l'enregistrement de la configuration:", error);
       toast.error(`Erreur: ${error.message || "Erreur lors de l'enregistrement"}`);
     } finally {
       setIsSubmitting(false);

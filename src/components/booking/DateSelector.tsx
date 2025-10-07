@@ -9,8 +9,7 @@ import { cn } from "@/lib/utils";
 import { withRetry } from "@/utils/supabaseUtils";
 
 import type { Space } from "@/components/admin/spaces/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface DateSelectorProps {
   selected: Date | undefined;
   onSelect: (date: Date | undefined) => void;
@@ -30,7 +29,7 @@ export const DateSelector = ({
   spaceId,
   space
 }: DateSelectorProps) => {
-  logger.debug('🔍 DateSelector reçu:', { timeSlotsLength: timeSlots.length, timeSlots, selectedSlot });
+  console.log('🔍 DateSelector reçu:', { timeSlotsLength: timeSlots.length, timeSlots, selectedSlot });
   const [customHours, setCustomHours] = useState<string>("");
   const { setCustomDuration, getCurrentSlotDuration } = useTimeSlots();
   const { checkAvailability } = useSpaceAvailability(spaceId || "");
@@ -99,7 +98,7 @@ export const DateSelector = ({
 
       setAvailability(availabilityResult);
     } catch (error) {
-      logger.error("Erreur lors de la vérification de disponibilité:", error);
+      console.error("Erreur lors de la vérification de disponibilité:", error);
       setAvailability({
         isAvailable: true,
         availableCapacity: 1,

@@ -12,8 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { TimeSlotOption } from "@/types/timeSlots";
 import type { Space } from "@/components/admin/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 // Types simplifiés pour PostgreSQL
 interface BookingInsert {
   space_id: string;
@@ -100,7 +99,7 @@ export function useBookingForm(spaceId?: string) {
   const { timeSlots } = useTimeSlotsAPI(spaceType);
   const [timeSlot, setTimeSlot] = useState<string>("");
   
-  logger.debug('🔍 useBookingForm:', { 
+  console.log('🔍 useBookingForm:', { 
     spaceType,
     selectedSpaceId: selectedSpace?.id, 
     timeSlotsLength: timeSlots.length,
@@ -132,7 +131,7 @@ export function useBookingForm(spaceId?: string) {
 
       return response.data;
     } catch (error) {
-      logger.error('Erreur création réservation:', error);
+      console.error('Erreur création réservation:', error);
       throw error;
     }
   };
@@ -152,7 +151,7 @@ export function useBookingForm(spaceId?: string) {
         throw new Error(response.error || 'Erreur lors de la mise à jour du statut');
       }
     } catch (error) {
-      logger.error('Erreur mise à jour statut:', error);
+      console.error('Erreur mise à jour statut:', error);
       throw error;
     }
   };
@@ -183,7 +182,7 @@ export function useBookingForm(spaceId?: string) {
         space: space as SpaceRow
       };
     } catch (error) {
-      logger.error('Erreur vérification disponibilité:', error);
+      console.error('Erreur vérification disponibilité:', error);
       throw error;
     }
   };
@@ -202,7 +201,7 @@ export function useBookingForm(spaceId?: string) {
       toast.success("Réservation sauvegardée");
     } catch (error) {
       toast.error("Erreur lors de la sauvegarde de la réservation");
-      logger.error(error);
+      console.error(error);
     } finally {
       setLoadingForm(false);
     }
@@ -368,14 +367,14 @@ export function useBookingForm(spaceId?: string) {
           window.location.href = url;
           return; // Arrêter l'exécution ici pour éviter la redirection vers le dashboard
         } catch (error) {
-          logger.error("Erreur lors de la création de la session de paiement:", error);
+          console.error("Erreur lors de la création de la session de paiement:", error);
           toast.error("Impossible de créer la session de paiement. Veuillez réessayer.");
           
           // En cas d'erreur, mettre à jour le statut de la réservation à "cancelled"
           try {
             await updateBookingStatus(bookingData.id, 'cancelled');
           } catch (updateError) {
-            logger.warn("Erreur lors de l'annulation de la réservation:", updateError);
+            console.warn("Erreur lors de l'annulation de la réservation:", updateError);
             // Continuer même en cas d'erreur
           }
           
@@ -391,7 +390,7 @@ export function useBookingForm(spaceId?: string) {
         navigate("/dashboard");
       }, 1500);
     } catch (error) {
-      logger.error("Error creating booking:", error);
+      console.error("Error creating booking:", error);
       toast.error(error instanceof Error ? error.message : "Erreur lors de la réservation");
     } finally {
       setIsSubmitting(false);

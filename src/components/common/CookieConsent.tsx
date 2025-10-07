@@ -6,8 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useCookieConsent } from '@/hooks/useCookieConsent';
 import { useCookieSettings } from '@/hooks/useCookieSettings';
 import { CookieSettings } from '@/types/cookies';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export function CookieConsent() {
   const { 
     acceptCookies, 
@@ -27,7 +26,7 @@ export function CookieConsent() {
   // Écouter les événements de mise à jour des paramètres cookies
   useEffect(() => {
     const handleCookieSettingsUpdate = (e: CustomEvent) => {
-      logger.debug('🔄 Mise à jour des paramètres cookies reçue');
+      console.log('🔄 Mise à jour des paramètres cookies reçue');
       // Rafraîchir les paramètres immédiatement avec forceRefresh
       refetchSettings(true);
     };
@@ -63,7 +62,7 @@ export function CookieConsent() {
       updateCookiePreferences(cookiePreferences);
       setShowSettings(false);
     } catch (error) {
-      logger.error("Erreur lors de la sauvegarde:", error);
+      console.error("Erreur lors de la sauvegarde:", error);
     }
   };
 

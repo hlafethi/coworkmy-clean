@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface AuthContextType {
   user: User | null;
   profile: any;
@@ -29,35 +28,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Récupération du profil avec REST + fallback Supabase
   const fetchProfile = async (authUser: User) => {
     try {
-      logger.log('[fetchProfile] Début récupération user_id:', authUser.id);
+      console.log('[fetchProfile] Début récupération user_id:', authUser.id);
       
       // 1. Récupérer le token
       let accessToken = null;
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         accessToken = session.access_token;
-        logger.log('[fetchProfile] Token via supabase.auth.getSession()');
+        console.log('[fetchProfile] Token via supabase.auth.getSession()');
       } else {
         const sessionData = localStorage.getItem('coworkmy-auth-session');
         if (sessionData) {
           try {
             const parsedSession = JSON.parse(sessionData);
             accessToken = parsedSession.access_token;
-            logger.log('[fetchProfile] Token via localStorage');
+            console.log('[fetchProfile] Token via localStorage');
           } catch (e) {
-            logger.error('[fetchProfile] Erreur parsing localStorage', e);
+            console.error('[fetchProfile] Erreur parsing localStorage', e);
           }
         }
       }
       
       if (!accessToken) {
-        logger.error('[fetchProfile] Pas de token d\'accès');
+        console.error('[fetchProfile] Pas de token d\'accès');
         return null;
       }
       
       // 2. Requête REST
       const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?user_id=eq.${authUser.id}&select=*`;
-      logger.log('[fetchProfile] Requête REST:', url);
+      console.log('[fetchProfile] Requête REST:', url);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -69,22 +68,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       
-      logger.log('[fetchProfile] Status REST:', response.status, response.statusText);
+      console.log('[fetchProfile] Status REST:', response.status, response.statusText);
       
       if (!response.ok) {
-        logger.error('[fetchProfile] Erreur HTTP REST:', response.status, response.statusText);
+        console.error('[fetchProfile] Erreur HTTP REST:', response.status, response.statusText);
         return null;
       }
       
       const data = await response.json();
-      logger.log('[fetchProfile] Data REST:', data);
+      console.log('[fetchProfile] Data REST:', data);
       
       if (data && data.length > 0) {
-        logger.log('[fetchProfile] Profil trouvé via REST:', data[0]);
+        console.log('[fetchProfile] Profil trouvé via REST:', data[0]);
         return data[0];
       }
       
-      logger.warn('[fetchProfile] Aucun profil via REST, fallback Supabase...');
+      console.warn('[fetchProfile] Aucun profil via REST, fallback Supabase...');
       
       // 3. Fallback requête Supabase
       const { data: supaData, error: supaError } = await supabase
@@ -93,27 +92,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', authUser.id)
         .single();
       
-      logger.log('[fetchProfile] Fallback Supabase:', { supaData, supaError });
+      console.log('[fetchProfile] Fallback Supabase:', { supaData, supaError });
       
       if (!supaError && supaData) {
         return supaData;
       }
       
-      logger.warn('[fetchProfile] Aucun profil trouvé via fallback Supabase');
+      console.warn('[fetchProfile] Aucun profil trouvé via fallback Supabase');
       return null;
       
     } catch (error) {
-      logger.error('[fetchProfile] Exception:', error);
+      console.error('[fetchProfile] Exception:', error);
       return null;
     }
   };
 
   const fetchProfileAndSetState = async (authUser: User) => {
     try {
-      logger.log('[useAuth] Fetching profile for user:', authUser.id);
+      console.log('[useAuth] Fetching profile for user:', authUser.id);
       
       let profile = await fetchProfile(authUser);
-      logger.log('[useAuth] Résultat fetchProfile:', profile);
+      console.log('[useAuth] Résultat fetchProfile:', profile);
       
       if (!profile) {
         setIsAdmin(false);
@@ -124,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const userIsAdmin = profile?.is_admin === true || profile?.is_admin === 'true';
-      logger.log('[useAuth] userIsAdmin:', userIsAdmin);
+      console.log('[useAuth] userIsAdmin:', userIsAdmin);
       
       if (mounted.current) {
         setProfile(profile);
@@ -135,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
     } catch (error) {
-      logger.error('[useAuth] fetchProfileAndSetState Exception:', error);
+      console.error('[useAuth] fetchProfileAndSetState Exception:', error);
       
       if (mounted.current) {
         setIsAdmin(false);
@@ -166,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
-        logger.log('[useAuth] Auth event:', event);
+        console.log('[useAuth] Auth event:', event);
         
         if (session && session.user) {
           setUser(session.user);

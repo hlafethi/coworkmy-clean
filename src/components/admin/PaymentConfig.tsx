@@ -9,8 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface StripeConfig {
   test_publishable_key: string;
   test_secret_key: string;
@@ -66,7 +65,7 @@ export const PaymentConfig = () => {
         }
       }
     } catch (error) {
-      logger.error('Erreur inattendue:', error);
+      console.error('Erreur inattendue:', error);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +90,7 @@ export const PaymentConfig = () => {
         throw new Error(result.error || 'Erreur de sauvegarde');
       }
     } catch (error) {
-      logger.error('Erreur sauvegarde:', error);
+      console.error('Erreur sauvegarde:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -201,7 +200,7 @@ export const PaymentConfig = () => {
     } catch (error) {
       setConnectionStatus('error');
       setTestMessage('Erreur lors du test de connexion à Stripe.');
-      logger.error('Error testing Stripe connection:', error);
+      console.error('Error testing Stripe connection:', error);
     }
   };
 

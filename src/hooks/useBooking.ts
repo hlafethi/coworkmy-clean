@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import type { TimeSlotOption } from "@/types/booking";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export function useBooking(spaceId: string | undefined) {
   const [space, setSpace] = useState<any>(null);
   const [timeSlots, setTimeSlots] = useState<TimeSlotOption[]>([]);
@@ -21,7 +20,7 @@ export function useBooking(spaceId: string | undefined) {
           setSpace(response.data);
         }
       } catch (error) {
-        logger.error('Erreur lors du chargement de l\'espace:', error);
+        console.error('Erreur lors du chargement de l\'espace:', error);
       } finally {
         setLoading(false);
       }

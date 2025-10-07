@@ -2,8 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GoogleReviewsFormValues } from "./useGoogleReviewsForm";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export function useSaveGoogleApiSettings() {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,7 +20,7 @@ export function useSaveGoogleApiSettings() {
 
       toast.success("Paramètres sauvegardés avec succès");
     } catch (error) {
-      logger.error("Erreur lors de la sauvegarde des paramètres:", error);
+      console.error("Erreur lors de la sauvegarde des paramètres:", error);
       toast.error("Erreur lors de la sauvegarde des paramètres");
     } finally {
       setIsLoading(false);

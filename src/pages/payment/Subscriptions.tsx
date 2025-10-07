@@ -1,6 +1,6 @@
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 export default function Subscriptions() {
-  logger.debug('🔍 Page Subscriptions chargée');
+  console.log('🔍 Page Subscriptions chargée');
   
   return (
     <div style={{ padding: '20px', backgroundColor: '#f0f0f0', minHeight: '100vh' }}>
@@ -38,7 +38,7 @@ export default function Subscriptions() {
         
         <button 
           onClick={() => {
-            logger.debug('🔄 Redirection vers Stripe...');
+            console.log('🔄 Redirection vers Stripe...');
             alert('Redirection vers Stripe (fonctionnalité à implémenter)');
           }}
           style={{

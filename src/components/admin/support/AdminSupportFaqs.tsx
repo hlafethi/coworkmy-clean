@@ -8,8 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Plus, Edit, Trash2, Save, X, Loader2, FileQuestion } from "lucide-react";
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface FAQ {
     id: string;
     question: string;
@@ -71,7 +70,7 @@ export const AdminSupportFaqs = () => {
         table: 'support_faqs',
         event: '*',
         onMessage: (payload) => {
-            logger.debug('[AdminSupportFaqs] Changement FAQ reçu:', payload);
+            console.log('[AdminSupportFaqs] Changement FAQ reçu:', payload);
             toast.info('📝 FAQ mise à jour', {
                 description: 'Les FAQ ont été modifiées',
                 duration: 3000,
@@ -84,10 +83,10 @@ export const AdminSupportFaqs = () => {
             });
         },
         onError: (error) => {
-            logger.error('[AdminSupportFaqs] Erreur abonnement FAQ:', error);
+            console.error('[AdminSupportFaqs] Erreur abonnement FAQ:', error);
         },
         onStatusChange: (status) => {
-            logger.debug('[AdminSupportFaqs] Statut abonnement FAQ:', status);
+            console.log('[AdminSupportFaqs] Statut abonnement FAQ:', status);
         }
     });
 

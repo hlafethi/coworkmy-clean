@@ -1,8 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isValidProfile } from "@/utils/typeGuards";
 import type { Database } from "@/integrations/supabase/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -19,7 +18,7 @@ export const useProfiles = () => {
 
             return data?.filter(isValidProfile) || [];
         } catch (error) {
-            logger.error('Erreur récupération profils:', error);
+            console.error('Erreur récupération profils:', error);
             throw error;
         }
     };
@@ -39,7 +38,7 @@ export const useProfiles = () => {
 
             return data;
         } catch (error) {
-            logger.error('Erreur récupération profil:', error);
+            console.error('Erreur récupération profil:', error);
             throw error;
         }
     };
@@ -59,7 +58,7 @@ export const useProfiles = () => {
 
             return data;
         } catch (error) {
-            logger.error('Erreur création profil:', error);
+            console.error('Erreur création profil:', error);
             throw error;
         }
     };
@@ -80,7 +79,7 @@ export const useProfiles = () => {
 
             return data;
         } catch (error) {
-            logger.error('Erreur mise à jour profil:', error);
+            console.error('Erreur mise à jour profil:', error);
             throw error;
         }
     };
@@ -94,7 +93,7 @@ export const useProfiles = () => {
 
             if (error) throw error;
         } catch (error) {
-            logger.error('Erreur suppression profil:', error);
+            console.error('Erreur suppression profil:', error);
             throw error;
         }
     };

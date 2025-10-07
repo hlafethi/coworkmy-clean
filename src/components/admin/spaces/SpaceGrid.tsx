@@ -4,8 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Space } from "@/components/admin/types";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface SpaceGridProps {
   spaces: Space[];
   loading: boolean;
@@ -40,7 +39,7 @@ export const SpaceGrid: React.FC<SpaceGridProps> = ({
       // Make sure to refresh the list after toggling status
       onSpacesRefresh();
     } catch (error) {
-      logger.error('Error updating space status:', error);
+      console.error('Error updating space status:', error);
       toast.error("Impossible de mettre à jour l'espace");
     } finally {
       setIsProcessing(null);
@@ -61,7 +60,7 @@ export const SpaceGrid: React.FC<SpaceGridProps> = ({
       toast.success("Espace supprimé avec succès");
       onSpacesRefresh();
     } catch (error: any) {
-      logger.error('Error deleting space:', error);
+      console.error('Error deleting space:', error);
       
       // Message d'erreur plus spécifique
       if (error?.message?.includes('contrainte')) {

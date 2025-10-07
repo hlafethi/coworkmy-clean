@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContextPostgreSQL';
 import { SupportService } from '@/services/supportService';
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 import { 
   FileQuestion, 
   LifeBuoy, 
@@ -78,7 +78,7 @@ export const SupportSystem = () => {
       const tickets = await SupportService.getUserTickets();
       setUserTickets(Array.isArray(tickets) ? tickets : []);
     } catch (error) {
-      logger.error('Erreur chargement tickets:', error);
+      console.error('Erreur chargement tickets:', error);
       toast.error('Erreur lors du chargement des tickets');
     } finally {
       setIsLoadingTickets(false);
@@ -92,7 +92,7 @@ export const SupportSystem = () => {
       const responses = await SupportService.getTicketResponses(ticketId);
       setTicketResponses(responses);
     } catch (error) {
-      logger.error('Erreur chargement réponses:', error);
+      console.error('Erreur chargement réponses:', error);
       toast.error('Erreur lors du chargement des réponses');
     } finally {
       setIsLoadingResponses(false);
@@ -106,7 +106,7 @@ export const SupportSystem = () => {
       const faqData = await SupportService.getFAQs();
       setFaqs(faqData);
     } catch (error) {
-      logger.error('Erreur chargement FAQ:', error);
+      console.error('Erreur chargement FAQ:', error);
     } finally {
       setIsLoadingFaqs(false);
     }
@@ -119,7 +119,7 @@ export const SupportSystem = () => {
       const articles = await SupportService.getKBArticles();
       setKbArticles(articles);
     } catch (error) {
-      logger.error('Erreur chargement documentation:', error);
+      console.error('Erreur chargement documentation:', error);
     } finally {
       setIsLoadingKb(false);
     }
@@ -162,7 +162,7 @@ export const SupportSystem = () => {
       setShowTicketForm(false);
       loadUserTickets();
     } catch (error) {
-      logger.error('Erreur création ticket:', error);
+      console.error('Erreur création ticket:', error);
       toast.error('Erreur lors de la création du ticket');
     } finally {
       setIsLoading(false);
@@ -181,7 +181,7 @@ export const SupportSystem = () => {
       setResponseMessage('');
       loadTicketResponses(selectedTicket.id);
     } catch (error) {
-      logger.error('Erreur ajout réponse:', error);
+      console.error('Erreur ajout réponse:', error);
       toast.error('Erreur lors de l\'ajout de la réponse');
     } finally {
       setIsLoading(false);

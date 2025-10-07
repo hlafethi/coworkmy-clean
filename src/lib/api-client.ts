@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 const API_BASE_URL = 'http://localhost:5000/api';
 
 interface ApiResponse<T = any> {
@@ -42,9 +42,9 @@ class ApiClient {
 
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
-      logger.debug('🔑 Token utilisé pour la requête:', this.token.substring(0, 20) + '...');
+      console.log('🔑 Token utilisé pour la requête:', this.token.substring(0, 20) + '...');
     } else {
-      logger.debug('⚠️ Aucun token disponible pour la requête');
+      console.log('⚠️ Aucun token disponible pour la requête');
     }
 
     try {
@@ -61,7 +61,7 @@ class ApiClient {
 
       return { success: true, data: data.data || data };
     } catch (error) {
-      logger.error('Erreur API:', error);
+      console.error('Erreur API:', error);
       return { success: false, error: 'Erreur de connexion' };
     }
   }
@@ -99,7 +99,7 @@ class ApiClient {
 
       return result;
     } catch (error) {
-      logger.error('Erreur signUp API client:', error);
+      console.error('Erreur signUp API client:', error);
       return { success: false, error: 'Erreur de connexion' };
     }
   }

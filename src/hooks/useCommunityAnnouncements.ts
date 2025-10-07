@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isValidCommunityAnnouncement } from "@/utils/typeGuards";
 import type { CommunityAnnouncement } from "@/components/admin/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type CommunityAnnouncementInsert = Omit<CommunityAnnouncement, 'id' | 'created_at' | 'updated_at'>;
 type CommunityAnnouncementUpdate = Partial<CommunityAnnouncementInsert>;
 
@@ -32,7 +31,7 @@ export function useCommunityAnnouncements() {
       const validAnnouncements = data?.filter(isValidCommunityAnnouncement) || [];
       setAnnouncements(validAnnouncements);
     } catch (error) {
-      logger.error('Erreur lors de la récupération des annonces:', error);
+      console.error('Erreur lors de la récupération des annonces:', error);
       setError(error instanceof Error ? error.message : 'Une erreur est survenue');
       toast.error("Erreur lors de la récupération des annonces");
     } finally {
@@ -57,7 +56,7 @@ export function useCommunityAnnouncements() {
       toast.success("Annonce créée avec succès");
       return data;
     } catch (error) {
-      logger.error('Erreur création annonce:', error);
+      console.error('Erreur création annonce:', error);
       toast.error("Erreur lors de la création de l'annonce");
       throw error;
     }
@@ -85,7 +84,7 @@ export function useCommunityAnnouncements() {
       toast.success("Annonce mise à jour avec succès");
       return data;
     } catch (error) {
-      logger.error('Erreur mise à jour annonce:', error);
+      console.error('Erreur mise à jour annonce:', error);
       toast.error("Erreur lors de la mise à jour de l'annonce");
       throw error;
     }
@@ -105,7 +104,7 @@ export function useCommunityAnnouncements() {
       );
       toast.success("Annonce supprimée avec succès");
     } catch (error) {
-      logger.error('Erreur suppression annonce:', error);
+      console.error('Erreur suppression annonce:', error);
       toast.error("Erreur lors de la suppression de l'annonce");
       throw error;
     }

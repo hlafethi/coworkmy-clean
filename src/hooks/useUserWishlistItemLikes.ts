@@ -3,8 +3,7 @@ import { isValidUserWishlistItemLike } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserWishlistItemLike } from "@/components/admin/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export function useUserWishlistItemLikes(userId: string, wishlistItemId: string) {
   const [likes, setLikes] = useState<UserWishlistItemLike[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +25,7 @@ export function useUserWishlistItemLikes(userId: string, wishlistItemId: string)
       const validLikes = data.filter(isValidUserWishlistItemLike);
       setLikes(validLikes);
     } catch (err) {
-      logger.error("Erreur lors de la récupération des likes:", err);
+      console.error("Erreur lors de la récupération des likes:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des likes");
     } finally {
@@ -49,7 +48,7 @@ export function useUserWishlistItemLikes(userId: string, wishlistItemId: string)
       toast.success("Like ajouté avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de l'ajout du like:", err);
+      console.error("Erreur lors de l'ajout du like:", err);
       toast.error("Erreur lors de l'ajout du like");
       throw err;
     }
@@ -67,7 +66,7 @@ export function useUserWishlistItemLikes(userId: string, wishlistItemId: string)
       setLikes(prev => prev.filter(l => l.id !== id));
       toast.success("Like supprimé avec succès");
     } catch (err) {
-      logger.error("Erreur lors de la suppression du like:", err);
+      console.error("Erreur lors de la suppression du like:", err);
       toast.error("Erreur lors de la suppression du like");
       throw err;
     }

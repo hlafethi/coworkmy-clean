@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 // import { supabase } from "@/integrations/supabase/client"; // Désactivé - utilisation de PostgreSQL
 import { toast } from "sonner";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface ImageUploadFormProps {
   onImageUploaded: (imageUrl: string) => Promise<void>;
 }
@@ -42,7 +41,7 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
             break;
         }
         
-        logger.debug('🔄 Reconstruction du fichier carrousel:', {
+        console.log('🔄 Reconstruction du fichier carrousel:', {
           originalName: originalFile.name,
           originalType: originalFile.type,
           newType: mimeType,
@@ -66,7 +65,7 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
   // 🔧 Upload avec le même système que ImageUploader
   const uploadImage = async (file: File): Promise<string> => {
     try {
-      logger.debug('📁 Upload carrousel - Fichier original:', {
+      console.log('📁 Upload carrousel - Fichier original:', {
         name: file.name,
         size: file.size,
         type: file.type
@@ -75,7 +74,7 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
       // Reconstruire le fichier avec le bon type MIME
       const reconstructedFile = await createImageFile(file);
       
-      logger.debug('📁 Upload carrousel - Fichier reconstruit:', {
+      console.log('📁 Upload carrousel - Fichier reconstruit:', {
         name: reconstructedFile.name,
         size: reconstructedFile.size,
         type: reconstructedFile.type
@@ -87,7 +86,7 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
         reader.onload = (e) => {
           const result = e.target?.result as string;
           if (result) {
-            logger.debug('🔗 URL carrousel générée (base64):', result.substring(0, 50) + '...');
+            console.log('🔗 URL carrousel générée (base64):', result.substring(0, 50) + '...');
             resolve(result);
           } else {
             reject(new Error('Impossible de lire le fichier'));
@@ -99,7 +98,7 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
         reader.readAsDataURL(reconstructedFile);
       });
     } catch (error) {
-      logger.error('❌ Erreur upload carrousel complète:', error);
+      console.error('❌ Erreur upload carrousel complète:', error);
       throw error;
     }
   };
@@ -107,7 +106,7 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      logger.debug('🔍 Fichier carrousel sélectionné:', file);
+      console.log('🔍 Fichier carrousel sélectionné:', file);
       
       // Vérifications
       const extension = file.name.split('.').pop()?.toLowerCase();
@@ -152,7 +151,7 @@ export function ImageUploadForm({ onImageUploaded }: ImageUploadFormProps) {
       
       toast.success("Image ajoutée au carrousel !");
     } catch (error) {
-      logger.error('❌ Erreur ajout image carrousel:', error);
+      console.error('❌ Erreur ajout image carrousel:', error);
       toast.error("Erreur lors de l'ajout de l'image");
     } finally {
       setIsUploading(false);

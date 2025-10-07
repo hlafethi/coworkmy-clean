@@ -1,8 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { BrowserTracing } from '@sentry/tracing';
 import { onCLS, onFID, onLCP } from 'web-vitals';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 // Define types for web vitals
 type MetricName = 'CLS' | 'FID' | 'LCP' | 'FCP' | 'TTFB';
 type MetricValue = {
@@ -24,7 +23,7 @@ interface ITransaction {
  */
 export function initMonitoring() {
   if (import.meta.env.DEV) {
-    logger.debug('Monitoring initialized in', import.meta.env.MODE, 'mode');
+    console.log('Monitoring initialized in', import.meta.env.MODE, 'mode');
   }
   
   if (import.meta.env.PROD) {
@@ -41,11 +40,11 @@ export function initMonitoring() {
         },
       });
       if (import.meta.env.DEV) {
-        logger.debug('[Sentry] Initialisé avec DSN:', dsn);
+        console.log('[Sentry] Initialisé avec DSN:', dsn);
       }
     } else {
       if (import.meta.env.DEV) {
-        logger.warn('[Sentry] Aucune DSN fournie, Sentry n\'est pas initialisé. Ajoutez VITE_SENTRY_DSN à votre .env.production');
+        console.warn('[Sentry] Aucune DSN fournie, Sentry n\'est pas initialisé. Ajoutez VITE_SENTRY_DSN à votre .env.production');
       }
     }
     
@@ -61,7 +60,7 @@ export function initMonitoring() {
         if (webVitals.getTTFB) webVitals.getTTFB(reportWebVital);
       });
     } catch (e) {
-      logger.error('Failed to load web-vitals', e);
+      console.error('Failed to load web-vitals', e);
     }
   }
   
@@ -89,7 +88,7 @@ export function initMonitoring() {
  */
 function reportWebVital(metric: MetricValue) {
   if (import.meta.env.DEV) {
-    logger.debug(`[Web Vital] ${metric.name}: ${metric.value}`);
+    console.log(`[Web Vital] ${metric.name}: ${metric.value}`);
   }
   
   if (import.meta.env.PROD) {
@@ -125,7 +124,7 @@ export function logError(error: Error | unknown, context?: Record<string, unknow
     context
   };
   if (import.meta.env.DEV) {
-    logger.error('Error:', errorInfo);
+    console.error('Error:', errorInfo);
   }
   // In production, send to monitoring service
   if (import.meta.env.PROD) {
@@ -142,7 +141,7 @@ export function logError(error: Error | unknown, context?: Record<string, unknow
  */
 export function logEvent(name: string, data?: Record<string, any>) {
   if (import.meta.env.DEV) {
-    logger.debug('[EVENT]', name, data);
+    console.log('[EVENT]', name, data);
   }
   
   // In production, send to monitoring service
@@ -174,7 +173,7 @@ export function startPerformanceTracking(name: string): ITransaction {
       const transaction = (Sentry as any).startTransaction?.({ name, op: 'performance' });
       if (transaction) return transaction;
     } catch (e) {
-      logger.error('Failed to start Sentry transaction', e);
+      console.error('Failed to start Sentry transaction', e);
     }
   }
   

@@ -6,8 +6,7 @@ import { Input } from '../../components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
 import { Alert, AlertDescription } from '../../components/ui/alert'
 import { Loader2 } from 'lucide-react'
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export default function ResetPassword() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -44,9 +43,9 @@ export default function ResetPassword() {
           type: 'recovery'
         })
         if (error) throw error
-        logger.debug('Token vérifié avec succès')
+        console.log('Token vérifié avec succès')
       } catch (error) {
-        logger.error('Erreur de vérification du token:', error)
+        console.error('Erreur de vérification du token:', error)
         setError('Lien de réinitialisation invalide ou expiré')
       }
     }
@@ -80,7 +79,7 @@ export default function ResetPassword() {
       alert('Mot de passe mis à jour avec succès !')
       navigate('/dashboard')
     } catch (error: any) {
-      logger.error('Erreur:', error)
+      console.error('Erreur:', error)
       setError('Erreur lors de la mise à jour : ' + error.message)
     } finally {
       setLoading(false)

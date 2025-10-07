@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 // État global pour éviter les souscriptions multiples
 let globalState = {
   bookings: [] as any[],
@@ -98,7 +97,7 @@ export function useUserBookings() {
       // Temps réel désactivé - utilisation de PostgreSQL sans Supabase
       // Les mises à jour se feront via rechargement manuel
     } catch (error) {
-      logger.error("❌ Erreur lors du chargement des réservations utilisateur:", error);
+      console.error("❌ Erreur lors du chargement des réservations utilisateur:", error);
       globalState.error = "Erreur lors du chargement des réservations";
       globalState.loading = false;
       notifySubscribers();

@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type DbType = "mysql" | "postgresql";
 
 interface DbConfig {
@@ -48,7 +47,7 @@ const DatabaseConfig = ({ defaultType }: DatabaseConfigProps) => {
       if (error) throw error;
       toast.success("Connexion à la base de données réussie");
     } catch (error) {
-      logger.error("Erreur de connexion:", error);
+      console.error("Erreur de connexion:", error);
       toast.error("Impossible de se connecter à la base de données");
     } finally {
       setLoading(false);
@@ -65,7 +64,7 @@ const DatabaseConfig = ({ defaultType }: DatabaseConfigProps) => {
       if (error) throw error;
       toast.success("Base de données initialisée avec succès");
     } catch (error) {
-      logger.error("Erreur d'initialisation:", error);
+      console.error("Erreur d'initialisation:", error);
       toast.error("Impossible d'initialiser la base de données");
     } finally {
       setLoading(false);

@@ -13,8 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash } from "lucide-react";
 import type { Space } from "@/components/admin/types";
 import { saveAs } from 'file-saver';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface SpacesListProps {
   spaces: Space[];
   onEditSpace: (space: Space) => void;
@@ -43,7 +42,7 @@ export const SpacesList = ({ spaces, onEditSpace, onSpacesRefresh }: SpacesListP
       // Make sure to refresh the list after toggling status
       onSpacesRefresh();
     } catch (error) {
-      logger.error('Error updating space status:', error);
+      console.error('Error updating space status:', error);
       toast.error("Impossible de mettre à jour l'espace");
     } finally {
       setIsProcessing(null);
@@ -61,7 +60,7 @@ export const SpacesList = ({ spaces, onEditSpace, onSpacesRefresh }: SpacesListP
         .eq('space_id', id);
 
       if (cleanupError) {
-        logger.warn('Erreur lors du nettoyage de la queue Stripe:', cleanupError);
+        console.warn('Erreur lors du nettoyage de la queue Stripe:', cleanupError);
       }
 
       // Ensuite, supprimer l'espace
@@ -75,7 +74,7 @@ export const SpacesList = ({ spaces, onEditSpace, onSpacesRefresh }: SpacesListP
       toast.success("Espace supprimé avec succès");
       onSpacesRefresh();
     } catch (error: any) {
-      logger.error('Error deleting space:', error);
+      console.error('Error deleting space:', error);
       
       // Message d'erreur plus spécifique
       if (error?.code === '23502') {

@@ -11,8 +11,7 @@ import { ArrowLeft, User, Building2, MapPin, Camera } from "lucide-react";
 import { useAuth } from "@/context/AuthContextPostgreSQL";
 import { AvatarUploadSimple } from "@/components/profile/AvatarUploadSimple";
 import { LogoUploadSimple } from "@/components/profile/LogoUploadSimple";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const EditProfile = () => {
   const navigate = useNavigate();
   const { user, profile: authProfile, loading: authLoading } = useAuth();
@@ -124,7 +123,7 @@ const EditProfile = () => {
       toast.success("Profil mis à jour avec succès");
       navigate("/profile");
     } catch (error) {
-      logger.error("Error updating profile:", error);
+      console.error("Error updating profile:", error);
       toast.error("Erreur lors de la mise à jour du profil");
     } finally {
       setSaving(false);

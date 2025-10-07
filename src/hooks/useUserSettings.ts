@@ -3,8 +3,7 @@ import { isValidUserSetting } from "@/utils/typeGuards";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { UserSetting } from "@/components/admin/types";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 type UserSettingInsert = Omit<UserSetting, "id" | "created_at" | "updated_at">;
 type UserSettingUpdate = Partial<UserSettingInsert>;
 
@@ -29,7 +28,7 @@ export function useUserSettings(userId: string) {
       const validSettings = data.filter(isValidUserSetting);
       setSettings(validSettings);
     } catch (err) {
-      logger.error("Erreur lors de la récupération des paramètres utilisateur:", err);
+      console.error("Erreur lors de la récupération des paramètres utilisateur:", err);
       setError(err instanceof Error ? err : new Error("Erreur inconnue"));
       toast.error("Erreur lors de la récupération des paramètres utilisateur");
     } finally {
@@ -52,7 +51,7 @@ export function useUserSettings(userId: string) {
       toast.success("Paramètre utilisateur créé avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la création du paramètre utilisateur:", err);
+      console.error("Erreur lors de la création du paramètre utilisateur:", err);
       toast.error("Erreur lors de la création du paramètre utilisateur");
       throw err;
     }
@@ -74,7 +73,7 @@ export function useUserSettings(userId: string) {
       toast.success("Paramètre utilisateur mis à jour avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la mise à jour du paramètre utilisateur:", err);
+      console.error("Erreur lors de la mise à jour du paramètre utilisateur:", err);
       toast.error("Erreur lors de la mise à jour du paramètre utilisateur");
       throw err;
     }
@@ -92,7 +91,7 @@ export function useUserSettings(userId: string) {
       setSettings(prev => prev.filter(s => s.id !== id));
       toast.success("Paramètre utilisateur supprimé avec succès");
     } catch (err) {
-      logger.error("Erreur lors de la suppression du paramètre utilisateur:", err);
+      console.error("Erreur lors de la suppression du paramètre utilisateur:", err);
       toast.error("Erreur lors de la suppression du paramètre utilisateur");
       throw err;
     }

@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,14 +24,14 @@ const LoginForm = () => {
         throw new Error('Veuillez remplir tous les champs');
       }
 
-      logger.log('[LoginForm] Tentative de connexion...');
+      console.log('[LoginForm] Tentative de connexion...');
 
       const result = await signIn(email.trim(), password.trim());
 
       if (result.user && !result.error) {
-        logger.log('[LoginForm] Connexion réussie');
-        logger.log('[LoginForm] User ID:', result.user?.id);
-        logger.log('[LoginForm] User email:', result.user?.email);
+        console.log('[LoginForm] Connexion réussie');
+        console.log('[LoginForm] User ID:', result.user?.id);
+        console.log('[LoginForm] User email:', result.user?.email);
         toast.success('Connexion réussie');
         
         // Rediriger vers la page demandée
@@ -42,7 +41,7 @@ const LoginForm = () => {
       }
 
     } catch (error) {
-      logger.error('[LoginForm] Erreur de connexion:', error);
+      console.error('[LoginForm] Erreur de connexion:', error);
       
       let errorMessage = 'Erreur de connexion';
       

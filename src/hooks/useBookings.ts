@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createChannel, removeChannel } from "@/lib/websocketManager";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface Booking {
   id: string;
   space_id: string;
@@ -44,7 +43,7 @@ export function useBookings() {
 
   const loadBookings = useCallback(async () => {
     try {
-      logger.debug("🔄 Chargement des réservations...");
+      console.log("🔄 Chargement des réservations...");
       setError(null);
       
       const { data, error } = await supabase
@@ -73,14 +72,14 @@ export function useBookings() {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        logger.debug("ℹ️ Aucune réservation trouvée");
+        console.log("ℹ️ Aucune réservation trouvée");
         setBookings([]);
       } else {
-        logger.debug(`✅ ${data.length} réservations chargées`);
+        console.log(`✅ ${data.length} réservations chargées`);
         setBookings(data);
       }
     } catch (error) {
-      logger.error("❌ Erreur lors du chargement des réservations:", error);
+      console.error("❌ Erreur lors du chargement des réservations:", error);
       setError("Erreur lors du chargement des réservations");
     } finally {
       setLoading(false);

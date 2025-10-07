@@ -11,8 +11,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import type { CarouselApi } from "@/components/ui/carousel";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface CarouselImage {
   id: string;
   image_url: string;
@@ -26,16 +25,16 @@ export function WorkspaceCarousel() {
   const { data: carouselImages, isLoading } = useQuery({
     queryKey: ["carousel-images"],
     queryFn: async () => {
-      logger.debug('🔄 Chargement des images du carrousel...');
+      console.log('🔄 Chargement des images du carrousel...');
       
       const response = await apiClient.get('/carousel-images');
       
       if (!response.success) {
-        logger.error('❌ Erreur chargement carrousel:', response.error);
+        console.error('❌ Erreur chargement carrousel:', response.error);
         throw new Error(response.error || 'Erreur lors du chargement des images');
       }
       
-      logger.debug('✅ Images du carrousel chargées:', response.data);
+      console.log('✅ Images du carrousel chargées:', response.data);
       return response.data as CarouselImage[];
     },
   });
@@ -89,7 +88,7 @@ export function WorkspaceCarousel() {
                   alt={`Image du carrousel ${image.display_order}`}
                   className="object-cover w-full h-full"
                   onError={(e) => {
-                    logger.error('❌ Erreur chargement image:', image.image_url);
+                    console.error('❌ Erreur chargement image:', image.image_url);
                     e.currentTarget.src = 'https://images.unsplash.com/photo-1600508774634-4e11d34730e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
                   }}
                 />

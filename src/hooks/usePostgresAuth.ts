@@ -4,8 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { UserService } from "@/integrations/postgres/services";
 import { User } from "@/integrations/postgres/types";
 import { toast } from "sonner";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 // Clé pour stocker l'email de l'utilisateur dans le localStorage
 const USER_EMAIL_KEY = 'coworkmy-user-email';
 
@@ -36,7 +35,7 @@ export function usePostgresAuth() {
       const user = await UserService.getByEmail(email);
       setUser(user);
     } catch (error) {
-      logger.error("Erreur lors de la récupération de l'utilisateur:", error);
+      console.error("Erreur lors de la récupération de l'utilisateur:", error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -71,7 +70,7 @@ export function usePostgresAuth() {
       
       return user;
     } catch (error) {
-      logger.error("Erreur lors de la connexion:", error);
+      console.error("Erreur lors de la connexion:", error);
       toast.error("Erreur lors de la connexion");
       throw error;
     } finally {
@@ -91,7 +90,7 @@ export function usePostgresAuth() {
       toast.success("Déconnexion réussie");
       navigate('/auth/login');
     } catch (error) {
-      logger.error("Erreur lors de la déconnexion:", error);
+      console.error("Erreur lors de la déconnexion:", error);
       toast.error("Erreur lors de la déconnexion");
     }
   };
@@ -133,7 +132,7 @@ export function usePostgresAuth() {
       
       return newUser;
     } catch (error) {
-      logger.error("Erreur lors de l'inscription:", error);
+      console.error("Erreur lors de l'inscription:", error);
       toast.error("Erreur lors de l'inscription");
       throw error;
     } finally {

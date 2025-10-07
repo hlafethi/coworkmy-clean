@@ -1,13 +1,12 @@
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 import { useState } from 'react';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 export default function CompanyDataDebug() {
   const { settings, loading, refetch } = useHomepageSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  logger.debug("🔍 CompanyDataDebug - settings:", settings);
-  logger.debug("🔍 CompanyDataDebug - loading:", loading);
+  console.log("🔍 CompanyDataDebug - settings:", settings);
+  console.log("🔍 CompanyDataDebug - loading:", loading);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -56,7 +55,7 @@ export default function CompanyDataDebug() {
             className="h-16 w-auto object-contain border"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
-              logger.error('Erreur de chargement du logo');
+              console.error('Erreur de chargement du logo');
             }}
           />
         </div>

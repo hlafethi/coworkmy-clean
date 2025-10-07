@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 
 export interface FAQ {
   id: string;
@@ -46,7 +46,7 @@ export class SupportService {
       }
       return response.data || [];
     } catch (error) {
-      logger.error('Erreur récupération FAQ:', error);
+      console.error('Erreur récupération FAQ:', error);
       throw error;
     }
   }
@@ -60,7 +60,7 @@ export class SupportService {
       }
       return response.data || [];
     } catch (error) {
-      logger.error('Erreur récupération articles KB:', error);
+      console.error('Erreur récupération articles KB:', error);
       throw error;
     }
   }
@@ -74,7 +74,7 @@ export class SupportService {
       }
       return response.data || [];
     } catch (error) {
-      logger.error('Erreur récupération tickets:', error);
+      console.error('Erreur récupération tickets:', error);
       throw error;
     }
   }
@@ -86,8 +86,8 @@ export class SupportService {
     priority?: string;
   }): Promise<SupportTicket> {
     try {
-      logger.debug('🔍 SupportService: Création d\'un ticket avec authentification');
-      logger.debug('📝 Données envoyées:', ticketData);
+      console.log('🔍 SupportService: Création d\'un ticket avec authentification');
+      console.log('📝 Données envoyées:', ticketData);
       
       const response = await apiClient.post('/support/tickets', ticketData);
       
@@ -95,10 +95,10 @@ export class SupportService {
         throw new Error(response.error || 'Erreur lors de la création du ticket');
       }
       
-      logger.debug('📝 Ticket créé avec succès:', response.data);
+      console.log('📝 Ticket créé avec succès:', response.data);
       return response.data;
     } catch (error) {
-      logger.error('Erreur création ticket:', error);
+      console.error('Erreur création ticket:', error);
       throw error;
     }
   }
@@ -107,8 +107,8 @@ export class SupportService {
 
   static async getTicketResponses(ticketId: string): Promise<any[]> {
     try {
-      logger.debug('🔍 SupportService: Récupération des réponses avec authentification');
-      logger.debug('📝 Ticket ID:', ticketId);
+      console.log('🔍 SupportService: Récupération des réponses avec authentification');
+      console.log('📝 Ticket ID:', ticketId);
       
       const response = await apiClient.get(`/support/tickets/${ticketId}/responses`);
       
@@ -116,18 +116,18 @@ export class SupportService {
         throw new Error(response.error || 'Erreur lors de la récupération des réponses');
       }
       
-      logger.debug('📝 Réponses récupérées:', response.data);
+      console.log('📝 Réponses récupérées:', response.data);
       return response.data || [];
     } catch (error) {
-      logger.error('Erreur récupération réponses ticket:', error);
+      console.error('Erreur récupération réponses ticket:', error);
       throw error;
     }
   }
 
   static async addTicketResponse(ticketId: string, message: string): Promise<any> {
     try {
-      logger.debug('🔍 SupportService: Ajout d\'une réponse avec authentification');
-      logger.debug('📝 Données envoyées:', { ticketId, message });
+      console.log('🔍 SupportService: Ajout d\'une réponse avec authentification');
+      console.log('📝 Données envoyées:', { ticketId, message });
       
       const response = await apiClient.post(`/support/tickets/${ticketId}/responses`, { message });
       
@@ -135,10 +135,10 @@ export class SupportService {
         throw new Error(response.error || 'Erreur lors de l\'ajout de la réponse');
       }
       
-      logger.debug('📝 Réponse ajoutée avec succès:', response.data);
+      console.log('📝 Réponse ajoutée avec succès:', response.data);
       return response.data;
     } catch (error) {
-      logger.error('Erreur ajout réponse ticket:', error);
+      console.error('Erreur ajout réponse ticket:', error);
       throw error;
     }
   }

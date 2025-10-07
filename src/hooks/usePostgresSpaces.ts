@@ -4,8 +4,7 @@ import { toast } from "sonner";
 import { SpaceService } from "@/integrations/postgres/services";
 import { Space } from "@/integrations/postgres/types";
 import { usePostgresAuth } from "./usePostgresAuth";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 /**
  * Hook pour gérer les espaces de coworking avec PostgreSQL
  */
@@ -34,7 +33,7 @@ export function usePostgresSpaces() {
 
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la récupération des espaces:", err);
+      console.error("Erreur lors de la récupération des espaces:", err);
       setError(err as Error);
       toast.error("Impossible de charger les espaces");
       return [];
@@ -56,7 +55,7 @@ export function usePostgresSpaces() {
 
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la récupération des espaces actifs:", err);
+      console.error("Erreur lors de la récupération des espaces actifs:", err);
       setError(err as Error);
       toast.error("Impossible de charger les espaces actifs");
       return [];
@@ -83,7 +82,7 @@ export function usePostgresSpaces() {
 
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la récupération des espaces populaires:", err);
+      console.error("Erreur lors de la récupération des espaces populaires:", err);
       setError(err as Error);
       toast.error("Impossible de charger les espaces populaires");
       return [];
@@ -104,7 +103,7 @@ export function usePostgresSpaces() {
       const data = await SpaceService.getById(id);
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la récupération de l'espace:", err);
+      console.error("Erreur lors de la récupération de l'espace:", err);
       setError(err as Error);
       toast.error("Impossible de charger l'espace");
       return null;
@@ -130,7 +129,7 @@ export function usePostgresSpaces() {
       toast.success("Espace créé avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la création de l'espace:", err);
+      console.error("Erreur lors de la création de l'espace:", err);
       setError(err as Error);
       toast.error("Impossible de créer l'espace");
       return null;
@@ -157,7 +156,7 @@ export function usePostgresSpaces() {
       toast.success("Espace mis à jour avec succès");
       return data;
     } catch (err) {
-      logger.error("Erreur lors de la mise à jour de l'espace:", err);
+      console.error("Erreur lors de la mise à jour de l'espace:", err);
       setError(err as Error);
       toast.error("Impossible de mettre à jour l'espace");
       return null;
@@ -188,7 +187,7 @@ export function usePostgresSpaces() {
       
       return success;
     } catch (err) {
-      logger.error("Erreur lors de la suppression de l'espace:", err);
+      console.error("Erreur lors de la suppression de l'espace:", err);
       setError(err as Error);
       toast.error("Impossible de supprimer l'espace");
       return false;
@@ -215,7 +214,7 @@ export function usePostgresSpaces() {
       toast.success(`Espace ${isActive ? 'activé' : 'désactivé'} avec succès`);
       return data;
     } catch (err) {
-      logger.error(`Erreur lors de ${isActive ? 'l\'activation' : 'la désactivation'} de l'espace:`, err);
+      console.error(`Erreur lors de ${isActive ? 'l\'activation' : 'la désactivation'} de l'espace:`, err);
       setError(err as Error);
       toast.error(`Impossible de ${isActive ? 'activer' : 'désactiver'} l'espace`);
       return null;

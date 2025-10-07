@@ -24,8 +24,7 @@ import {
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface UserDocument {
   id: string;
   user_id: string;
@@ -74,14 +73,14 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
 
   const loadDocuments = async () => {
     try {
-      logger.debug('🔍 Chargement des documents pour userId:', userId);
-      logger.debug('userId utilisé pour la requête:', userId, typeof userId);
+      console.log('🔍 Chargement des documents pour userId:', userId);
+      console.log('userId utilisé pour la requête:', userId, typeof userId);
       
       // Utiliser l'API client au lieu de Supabase
       const result = await apiClient.get(`/users/${userId}/documents`);
       
       if (result.success && result.data) {
-        logger.debug('📄 Tous les documents:', result.data);
+        console.log('📄 Tous les documents:', result.data);
         
         // Transformer les données pour correspondre à l'interface UserDocument
         const transformedData = result.data.map((doc: any) => {
@@ -99,7 +98,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
             scan_status: 'pending' // Pas de colonne verified dans la structure actuelle
           };
           
-          logger.debug('🔍 Document transformé:', {
+          console.log('🔍 Document transformé:', {
             id: transformed.id,
             file_name: transformed.file_name,
             file_path_exists: !!transformed.file_path,
@@ -113,14 +112,14 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
           return transformed;
         });
 
-        logger.debug('✅ Documents transformés:', transformedData.length, 'documents');
+        console.log('✅ Documents transformés:', transformedData.length, 'documents');
         setDocuments(transformedData);
       } else {
-        logger.debug('⚠️ Aucun document trouvé ou erreur API');
+        console.log('⚠️ Aucun document trouvé ou erreur API');
         setDocuments([]);
       }
     } catch (error) {
-      logger.error('❌ Erreur lors du chargement des documents:', error);
+      console.error('❌ Erreur lors du chargement des documents:', error);
       toast.error('Erreur lors du chargement des documents');
       setDocuments([]);
     } finally {
@@ -193,7 +192,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
 
       toast.success('Document téléchargé');
     } catch (error) {
-      logger.error('Erreur lors du téléchargement:', error);
+      console.error('Erreur lors du téléchargement:', error);
       toast.error('Erreur lors du téléchargement');
     }
   };
@@ -220,7 +219,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
         return;
       }
 
-      logger.debug('🔍 Debug document:', {
+      console.log('🔍 Debug document:', {
         fileName: document.file_name,
         fileType: document.file_type,
         fileUrl: document.file_url,
@@ -235,7 +234,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
       setDocumentUrl(url);
       setIsModalOpen(true);
     } catch (error) {
-      logger.error('Erreur lors de l\'ouverture du document:', error);
+      console.error('Erreur lors de l\'ouverture du document:', error);
       toast.error('Erreur lors de l\'ouverture du document');
     }
   };
@@ -247,7 +246,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
   };
 
   const handleRefresh = () => {
-    logger.debug('🔄 Rafraîchissement forcé des documents...');
+    console.log('🔄 Rafraîchissement forcé des documents...');
     setRefreshKey(prev => prev + 1);
   };
 
@@ -341,7 +340,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
     // Vérifier aussi l'extension dans l'URL si disponible
     const urlExtension = document.file_url ? document.file_url.split('.').pop()?.toLowerCase() : null;
     
-    logger.debug('🔍 Analyse type fichier:', {
+    console.log('🔍 Analyse type fichier:', {
       fileName,
       fileType: document.file_type,
       extension,
@@ -374,7 +373,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
   };
 
   // Ajout du log pour debug
-  logger.debug('🟢 Documents à afficher:', documents);
+  console.log('🟢 Documents à afficher:', documents);
 
   if (loading) {
     return (
@@ -509,7 +508,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
             {documentUrl && selectedDocument && (
               (() => {
                 const docType = getDocumentType(selectedDocument);
-                logger.debug('🎨 Affichage document:', {
+                console.log('🎨 Affichage document:', {
                   fileName: selectedDocument.file_name,
                   fileType: selectedDocument.file_type,
                   docType,
@@ -533,7 +532,7 @@ export const UserDocuments: React.FC<UserDocumentsProps> = ({
                           alt={selectedDocument.file_name}
                           className="max-w-full max-h-[70vh] object-contain rounded"
                           onError={(e) => {
-                            logger.error('❌ Erreur chargement image:', e);
+                            console.error('❌ Erreur chargement image:', e);
                             toast.error('Erreur lors du chargement de l\'image');
                           }}
                         />

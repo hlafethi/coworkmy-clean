@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger';
+// Logger supprimé - utilisation de console directement
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
 
@@ -16,7 +16,7 @@ export async function withRetry<T>(
          error.message.includes('Invalid Refresh Token') ||
          error.message.includes('JWT expired'))) {
       
-      logger.warn(`Retrying operation after error: ${error.message}. Retries left: ${retries}`);
+      console.warn(`Retrying operation after error: ${error.message}. Retries left: ${retries}`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return withRetry(operation, retries - 1, delay * 2);
     }
@@ -45,7 +45,7 @@ export function isTokenExpired(token: string): boolean {
     
     return expired;
   } catch (e) {
-    logger.error('Error checking token expiration:', e);
+    console.error('Error checking token expiration:', e);
     return true; // En cas d'erreur, considérer le token comme expiré
   }
 }
@@ -57,7 +57,7 @@ export async function handleApiResponse(response: Response) {
   const contentType = response.headers.get('content-type');
   if (!contentType || !contentType.includes('application/json')) {
     const text = await response.text();
-    logger.error('Réponse non JSON:', text);
+    console.error('Réponse non JSON:', text);
     throw new Error('Réponse non JSON');
   }
   return response.json();

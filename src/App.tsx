@@ -10,8 +10,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import Support from "@/pages/support/Support";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 // Lazy load components
 const Index = lazy(() => import("@/pages/Index"));
 const Login = lazy(() => import("@/pages/auth/Login"));
@@ -43,7 +42,7 @@ const queryClient = new QueryClient();
 // AppRoutes component that uses useAuth
 const AppRoutes = () => {
   return (
-    <Suspense fallback={<div><script>logger.debug('Suspense fallback affiché');</script><LoadingSpinner /></div>}>
+    <Suspense fallback={<div><script>console.log('Suspense fallback affiché');</script><LoadingSpinner /></div>}>
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />

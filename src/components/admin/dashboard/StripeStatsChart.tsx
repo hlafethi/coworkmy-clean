@@ -6,8 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, TrendingUp, Calendar, DollarSign } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { apiClient } from '@/lib/api-client';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface StripeStatsData {
   date: string;
   revenue: number;
@@ -40,7 +39,7 @@ export const StripeStatsChart = ({ mode, period }: StripeStatsChartProps) => {
         
         setData(response.data || []);
       } catch (err) {
-        logger.error('Erreur chargement stats Stripe:', err);
+        console.error('Erreur chargement stats Stripe:', err);
         setError(err instanceof Error ? err.message : 'Erreur inconnue');
       } finally {
         setLoading(false);

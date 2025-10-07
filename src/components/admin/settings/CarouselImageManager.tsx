@@ -4,8 +4,7 @@ import { toast } from "sonner";
 import { ImageUploadForm } from "./carousel/ImageUploadForm";
 import { CarouselImageList } from "./carousel/CarouselImageList";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface CarouselImage {
   id: string;
   image_url: string;
@@ -19,14 +18,14 @@ export function CarouselImageManager() {
   const { data: images = [], isLoading, refetch } = useQuery({
     queryKey: ["carousel-images"],
     queryFn: async () => {
-      logger.debug('🔄 Chargement des images du carrousel...');
+      console.log('🔄 Chargement des images du carrousel...');
       const result = await apiClient.get('/carousel-images');
       
       if (result.success && result.data) {
-        logger.debug('✅ Images chargées:', result.data.length);
+        console.log('✅ Images chargées:', result.data.length);
         return result.data;
       } else {
-        logger.debug('📝 Aucune image trouvée, utilisation d\'une liste vide');
+        console.log('📝 Aucune image trouvée, utilisation d\'une liste vide');
         return [];
       }
     },
@@ -35,7 +34,7 @@ export function CarouselImageManager() {
 
   const handleAddImage = async (imageUrl: string) => {
     try {
-      logger.debug('🔄 Ajout d\'une nouvelle image:', imageUrl);
+      console.log('🔄 Ajout d\'une nouvelle image:', imageUrl);
       
       const result = await apiClient.post('/carousel-images', {
         image_url: imageUrl,
@@ -43,41 +42,41 @@ export function CarouselImageManager() {
       });
 
       if (result.success) {
-        logger.debug('✅ Image ajoutée à la DB');
+        console.log('✅ Image ajoutée à la DB');
         
         toast.success("Image ajoutée avec succès");
         
         // Invalider et recharger automatiquement
         await queryClient.invalidateQueries({ queryKey: ["carousel-images"] });
-        logger.debug('✅ Cache React Query invalidé');
+        console.log('✅ Cache React Query invalidé');
       } else {
         throw new Error(result.error || 'Erreur lors de l\'ajout');
       }
     } catch (error) {
-      logger.error('❌ Erreur lors de l\'ajout de l\'image:', error);
+      console.error('❌ Erreur lors de l\'ajout de l\'image:', error);
       toast.error("Impossible d'ajouter l'image");
     }
   };
 
   const handleDeleteImage = async (id: string) => {
     try {
-      logger.debug('🗑️ Suppression de l\'image:', id);
+      console.log('🗑️ Suppression de l\'image:', id);
       
       const result = await apiClient.delete(`/carousel-images/${id}`);
 
       if (result.success) {
-        logger.debug('✅ Image supprimée de la DB');
+        console.log('✅ Image supprimée de la DB');
         
         toast.success("Image supprimée avec succès");
         
         // Invalider et recharger automatiquement
         await queryClient.invalidateQueries({ queryKey: ["carousel-images"] });
-        logger.debug('✅ Cache React Query invalidé');
+        console.log('✅ Cache React Query invalidé');
       } else {
         throw new Error(result.error || 'Erreur lors de la suppression');
       }
     } catch (error) {
-      logger.error('❌ Erreur lors de la suppression:', error);
+      console.error('❌ Erreur lors de la suppression:', error);
       toast.error("Impossible de supprimer l'image");
     }
   };
@@ -93,7 +92,7 @@ export function CarouselImageManager() {
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
     try {
-      logger.debug('🔄 Réorganisation des images...');
+      console.log('🔄 Réorganisation des images...');
       
       const [movedImage] = newImages.splice(currentIndex, 1);
       newImages.splice(targetIndex, 0, movedImage);
@@ -112,13 +111,13 @@ export function CarouselImageManager() {
         throw new Error(result.error || 'Erreur lors de la mise à jour');
       }
       
-      logger.debug('✅ Ordre mis à jour dans la DB');
+      console.log('✅ Ordre mis à jour dans la DB');
       
       // Invalider et recharger automatiquement
       await queryClient.invalidateQueries({ queryKey: ["carousel-images"] });
-      logger.debug('✅ Cache React Query invalidé');
+      console.log('✅ Cache React Query invalidé');
     } catch (error) {
-      logger.error('❌ Erreur lors de la réorganisation:', error);
+      console.error('❌ Erreur lors de la réorganisation:', error);
       toast.error("Impossible de réorganiser les images");
     }
   };

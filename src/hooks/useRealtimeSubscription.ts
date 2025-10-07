@@ -1,8 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { logger } from '@/utils/logger';
-
+// Logger supprimé - utilisation de console directement
 interface UseRealtimeSubscriptionOptions {
   channelName: string;
   table: string;
@@ -39,7 +38,7 @@ export const useRealtimeSubscription = ({
       try {
         supabase.removeChannel(channelRef.current);
       } catch (error) {
-        logger.debug(`[useRealtimeSubscription] Erreur lors du nettoyage du canal ${channelName}:`, error);
+        console.log(`[useRealtimeSubscription] Erreur lors du nettoyage du canal ${channelName}:`, error);
       }
       channelRef.current = null;
     }
@@ -49,7 +48,7 @@ export const useRealtimeSubscription = ({
 
   const setupSubscription = useCallback(() => {
     if (isSubscribedRef.current) {
-      logger.debug(`[useRealtimeSubscription] Canal ${channelName} déjà actif, skip...`);
+      console.log(`[useRealtimeSubscription] Canal ${channelName} déjà actif, skip...`);
       return;
     }
 
@@ -57,11 +56,11 @@ export const useRealtimeSubscription = ({
     cleanup();
 
     try {
-      logger.debug(`[useRealtimeSubscription] Création du canal ${channelName}...`);
+      console.log(`[useRealtimeSubscription] Création du canal ${channelName}...`);
       
       // Vérifier que Supabase est configuré
       if (!isSupabaseConfigured() || !supabase) {
-        logger.debug(`[useRealtimeSubscription] Supabase non configuré - souscription temps réel désactivée pour ${channelName}`);
+        console.log(`[useRealtimeSubscription] Supabase non configuré - souscription temps réel désactivée pour ${channelName}`);
         if (onStatusChange) {
           onStatusChange('disconnected');
         }
@@ -81,54 +80,54 @@ export const useRealtimeSubscription = ({
           schema: 'public', 
           table 
         }, (payload) => {
-          logger.debug(`[useRealtimeSubscription] Message reçu sur ${channelName}:`, payload);
+          console.log(`[useRealtimeSubscription] Message reçu sur ${channelName}:`, payload);
           onMessage(payload);
         })
         .on('presence', { event: 'sync' }, () => {
-          logger.debug(`[useRealtimeSubscription] Presence sync pour ${channelName}`);
+          console.log(`[useRealtimeSubscription] Presence sync pour ${channelName}`);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-          logger.debug(`[useRealtimeSubscription] Presence join pour ${channelName}:`, key, newPresences);
+          console.log(`[useRealtimeSubscription] Presence join pour ${channelName}:`, key, newPresences);
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          logger.debug(`[useRealtimeSubscription] Presence leave pour ${channelName}:`, key, leftPresences);
+          console.log(`[useRealtimeSubscription] Presence leave pour ${channelName}:`, key, leftPresences);
         })
         .subscribe((status) => {
-          logger.debug(`[useRealtimeSubscription] Statut canal ${channelName}:`, status);
+          console.log(`[useRealtimeSubscription] Statut canal ${channelName}:`, status);
           
           if (onStatusChange) {
             onStatusChange(status);
           }
           
           if (status === 'SUBSCRIBED') {
-            logger.debug(`[useRealtimeSubscription] ✅ Canal ${channelName} actif`);
+            console.log(`[useRealtimeSubscription] ✅ Canal ${channelName} actif`);
             isSubscribedRef.current = true;
             retryCountRef.current = 0;
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            logger.error(`[useRealtimeSubscription] ❌ Erreur canal ${channelName}:`, status);
+            console.error(`[useRealtimeSubscription] ❌ Erreur canal ${channelName}:`, status);
             isSubscribedRef.current = false;
             
             if (retryCountRef.current < retryAttempts) {
               retryCountRef.current++;
-              logger.debug(`[useRealtimeSubscription] Tentative de reconnexion ${retryCountRef.current}/${retryAttempts} pour ${channelName}...`);
+              console.log(`[useRealtimeSubscription] Tentative de reconnexion ${retryCountRef.current}/${retryAttempts} pour ${channelName}...`);
               
               timeoutRef.current = setTimeout(() => {
                 setupSubscription();
               }, retryDelay * retryCountRef.current);
             } else {
-              logger.error(`[useRealtimeSubscription] Nombre maximum de tentatives atteint pour ${channelName}`);
+              console.error(`[useRealtimeSubscription] Nombre maximum de tentatives atteint pour ${channelName}`);
               if (onError) {
                 onError(new Error(`Impossible de se connecter au canal ${channelName}`));
               }
             }
           } else if (status === 'CLOSED') {
-            logger.debug(`[useRealtimeSubscription] Canal ${channelName} fermé`);
+            console.log(`[useRealtimeSubscription] Canal ${channelName} fermé`);
             isSubscribedRef.current = false;
           }
         });
         
     } catch (error) {
-      logger.error(`[useRealtimeSubscription] Erreur lors de la configuration du canal ${channelName}:`, error);
+      console.error(`[useRealtimeSubscription] Erreur lors de la configuration du canal ${channelName}:`, error);
       if (onError) {
         onError(error);
       }
@@ -137,7 +136,7 @@ export const useRealtimeSubscription = ({
   }, [channelName, table, event, onMessage, onError, onStatusChange, retryAttempts, retryDelay, cleanup]);
 
   useEffect(() => {
-    logger.debug(`[useRealtimeSubscription] Initialisation du canal ${channelName}...`);
+    console.log(`[useRealtimeSubscription] Initialisation du canal ${channelName}...`);
     
     // Démarrer l'abonnement avec un délai pour éviter les conflits
     timeoutRef.current = setTimeout(() => {
@@ -145,7 +144,7 @@ export const useRealtimeSubscription = ({
     }, 1000);
 
     return () => {
-      logger.debug(`[useRealtimeSubscription] Nettoyage du canal ${channelName}...`);
+      console.log(`[useRealtimeSubscription] Nettoyage du canal ${channelName}...`);
       cleanup();
     };
   }, [channelName, setupSubscription, cleanup]);
