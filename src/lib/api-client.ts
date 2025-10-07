@@ -4,8 +4,8 @@ const getApiBaseUrl = () => {
   if (typeof window !== 'undefined' && window.APP_CONFIG?.API_URL) {
     return `${window.APP_CONFIG.API_URL}/api`;
   }
-  // Fallback pour le développement
-  return 'http://localhost:5000/api';
+  // Fallback pour la production - FORCER HTTPS
+  return 'https://coworkmy.fr/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
