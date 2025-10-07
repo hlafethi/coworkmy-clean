@@ -2623,7 +2623,6 @@ app.put('/api/bookings/:id/status', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const isAdmin = req.user.is_admin;
 
-    console.log('🔄 Mise à jour du statut de réservation:', { id, status, userId, isAdmin });
 
     if (!status) {
       return sendResponse(res, false, null, 'Statut requis');
@@ -2656,7 +2655,6 @@ app.put('/api/bookings/:id/status', authenticateToken, async (req, res) => {
       return sendResponse(res, false, null, 'Erreur lors de la mise à jour');
     }
 
-    console.log('✅ Statut de réservation mis à jour:', { id, status });
     sendResponse(res, true, updateResult.rows[0]);
 
   } catch (error) {

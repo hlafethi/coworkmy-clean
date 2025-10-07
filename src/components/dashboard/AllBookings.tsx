@@ -11,7 +11,7 @@ import { formatDateTime } from "@/utils/dateUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { updateBookingStatus } from "@/components/admin/bookings/bookingService";
+// Import supprimé - nous allons créer notre propre fonction
 import { useUserBookings } from "@/hooks/useUserBookings";
 import { formatPrice } from "@/utils/bookingUtils";
 import { useState, useEffect } from "react";
@@ -72,13 +72,13 @@ export function AllBookings({ onBookingChange }: AllBookingsProps) {
 
   const handleCancel = async (bookingId: string) => {
     try {
-      const success = await updateBookingStatus(bookingId, "cancelled");
-      if (success) {
-        // La mise à jour sera gérée automatiquement par le hook temps réel
-        console.log("✅ Annulation demandée, mise à jour automatique via WebSocket");
-      toast.success("Réservation annulée avec succès");
-      refetch();
-      onBookingChange?.();
+      // Utiliser l'endpoint utilisateur pour l'annulation
+      const response = await apiClient.put(`/bookings/${bookingId}/status`, { status: "cancelled" });
+      
+      if (response.success) {
+        toast.success("Réservation annulée avec succès");
+        refetch();
+        onBookingChange?.();
       } else {
         toast.error("Impossible d'annuler la réservation");
       }

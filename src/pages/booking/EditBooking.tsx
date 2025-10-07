@@ -49,11 +49,6 @@ const EditBooking = () => {
         }
 
         setBooking(response.data);
-        console.log('🔍 Données de réservation:', {
-          space_id: response.data.space_id,
-          start_date: response.data.start_date,
-          end_date: response.data.end_date
-        });
         setSpaceType(response.data.space_id);
         setDate(new Date(response.data.start_date));
       } catch (error) {
@@ -70,22 +65,15 @@ const EditBooking = () => {
 
   // Effet séparé pour sélectionner le créneau quand timeSlots est disponible
   useEffect(() => {
-    console.log('🔍 useEffect timeSlots:', { booking: !!booking, timeSlotsLength: timeSlots.length, timeSlots });
     
     // Si on a des créneaux mais pas de réservation chargée, sélectionner le premier créneau
     if (timeSlots.length > 0 && !booking && !timeSlot) {
-      console.log('🔍 Sélection automatique du premier créneau');
       setTimeSlot(timeSlots[0].id);
       return;
     }
     
     if (!booking || timeSlots.length === 0) return;
     
-    console.log('🔍 Recherche du créneau correspondant:', {
-      start_date: booking.start_date,
-      end_date: booking.end_date,
-      timeSlotsAvailable: timeSlots.length
-    });
     
     const startTime = new Date(booking.start_date);
     const endTime = new Date(booking.end_date);
@@ -97,7 +85,6 @@ const EditBooking = () => {
     const startHour = localStartTime.getHours();
     const endHour = localEndTime.getHours();
     
-    console.log('🔍 Heures locales:', { startHour, endHour });
     
     // Chercher un créneau qui correspond à l'heure de début
     const matchingSlot = timeSlots.find(slot => {
@@ -105,13 +92,11 @@ const EditBooking = () => {
       return slotStartHour === startHour;
     });
     
-    console.log('🔍 Créneau trouvé:', matchingSlot);
     
     if (matchingSlot) {
       setTimeSlot(matchingSlot.id);
     } else {
       // Si aucun créneau ne correspond, sélectionner le premier créneau disponible
-      console.log('⚠️ Aucun créneau correspondant trouvé, sélection du premier créneau');
       if (timeSlots.length > 0) {
         setTimeSlot(timeSlots[0].id);
       }
@@ -202,13 +187,6 @@ const EditBooking = () => {
   const selectedTimeSlotObj = timeSlots.find(slot => slot.id === timeSlot);
   
   // Log permanent pour déboguer l'état du bouton
-  console.log('🔍 État du bouton:', {
-    isSubmitting,
-    spaceType: !!spaceType,
-    date: !!date,
-    timeSlot: !!timeSlot,
-    disabled: isSubmitting || !spaceType || !date || !timeSlot
-  });
 
   const selectedSpaceForSummary: Space | undefined = selectedSpace
     ? {

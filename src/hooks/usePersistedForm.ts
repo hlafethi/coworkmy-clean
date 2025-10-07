@@ -20,7 +20,6 @@ export function usePersistedForm<T extends Record<string, any>>(
       const savedData = localStorage.getItem(`form-${key}`);
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        console.log(`🔄 Restauration du formulaire ${key}:`, parsedData);
         form.reset(parsedData);
       }
     } catch (error) {
@@ -35,7 +34,6 @@ export function usePersistedForm<T extends Record<string, any>>(
     const subscription = form.watch((data) => {
       try {
         localStorage.setItem(`form-${key}`, JSON.stringify(data));
-        console.log(`💾 Sauvegarde automatique du formulaire ${key}`);
       } catch (error) {
         console.warn(`Erreur lors de la sauvegarde du formulaire ${key}:`, error);
       }

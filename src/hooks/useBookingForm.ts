@@ -99,12 +99,6 @@ export function useBookingForm(spaceId?: string) {
   const { timeSlots } = useTimeSlotsAPI(spaceType);
   const [timeSlot, setTimeSlot] = useState<string>("");
   
-  console.log('🔍 useBookingForm:', { 
-    spaceType,
-    selectedSpaceId: selectedSpace?.id, 
-    timeSlotsLength: timeSlots.length,
-    timeSlots 
-  });
 
   // Réinitialiser les sélections quand l'espace change
   useEffect(() => {

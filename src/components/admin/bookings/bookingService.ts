@@ -18,7 +18,6 @@ export async function fetchBookings(): Promise<Booking[]> {
 
     // Vérifier que bookingsData est un tableau
     if (!Array.isArray(bookingsData)) {
-      console.log('⚠️ bookingsData n\'est pas un tableau, utilisation d\'un tableau vide');
       return [];
     }
 
@@ -49,7 +48,6 @@ export async function fetchBookings(): Promise<Booking[]> {
 
 export async function updateBookingStatus(id: string, newStatus: string): Promise<boolean> {
   try {
-    console.log(`🔄 Mise à jour du statut de la réservation ${id} vers ${newStatus}`);
     
     // Utiliser l'endpoint admin pour la mise à jour du statut
     const response = await apiClient.put(`/admin/bookings/${id}/status`, { status: newStatus });
@@ -59,7 +57,6 @@ export async function updateBookingStatus(id: string, newStatus: string): Promis
       throw new Error(response.error || "Erreur lors de la mise à jour");
     }
     
-    console.log(`✅ Statut mis à jour avec succès pour la réservation ${id}`);
     return true;
   } catch (error) {
     console.error("❌ Erreur lors de la mise à jour du statut:", error);
@@ -70,10 +67,8 @@ export async function updateBookingStatus(id: string, newStatus: string): Promis
 
 export async function fetchUserBookings(userId: string): Promise<Booking[]> {
   try {
-    console.log(`🔍 Récupération des réservations pour l'utilisateur ${userId}`);
     const allBookings = await fetchBookings();
     const userBookings = allBookings.filter(b => b.user_id === userId);
-    console.log(`✅ ${userBookings.length} réservations trouvées pour l'utilisateur ${userId}`);
     return userBookings;
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des réservations utilisateur:", error);
@@ -84,7 +79,6 @@ export async function fetchUserBookings(userId: string): Promise<Booking[]> {
 
 export async function deleteBooking(id: string): Promise<boolean> {
   try {
-    console.log(`🗑️ Suppression de la réservation ${id}`);
     
     const response = await apiClient.delete(`/bookings/${id}`);
       
@@ -93,7 +87,6 @@ export async function deleteBooking(id: string): Promise<boolean> {
       throw new Error(response.error || "Erreur lors de la suppression");
     }
     
-    console.log(`✅ Réservation ${id} supprimée avec succès`);
     toast.success("Réservation supprimée avec succès");
     return true;
   } catch (error) {

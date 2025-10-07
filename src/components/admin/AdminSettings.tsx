@@ -15,15 +15,15 @@ import { Badge } from "@/components/ui/badge";
 const AdminSettings = () => {
   const { form, isLoading, isSaving, isAdmin, loadSettings, saveSettings } = useAdminSettings();
 
-  useEffect(() => {
-    // Charger les paramètres seulement au premier montage
-    loadSettings();
-  }, [loadSettings]);
+  // Le chargement est maintenant géré dans le hook useAdminSettings
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-4">
-        Chargement des paramètres...
+      <div className="flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Chargement des paramètres...</p>
+        </div>
       </div>
     );
   }

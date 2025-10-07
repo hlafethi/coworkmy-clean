@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import type { SettingsFormValues } from "@/types/settings";
@@ -65,7 +65,6 @@ export function useAdminSettings() {
   const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('🔄 Chargement des paramètres...');
       
       // Vérifier si l'utilisateur est admin via l'API
       const userResult = await apiClient.getCurrentUser();
@@ -75,12 +74,9 @@ export function useAdminSettings() {
       
       // Ne charger les données du serveur que si on ne les a pas encore chargées
       if (!hasLoadedFromServer) {
-        console.log('📡 Récupération des paramètres depuis l\'API...');
         const settingsResult = await apiClient.get('/admin/settings');
-        console.log('📡 Résultat settings:', settingsResult);
       
       if (settingsResult.success && Array.isArray(settingsResult.data)) {
-        console.log('✅ Données reçues:', settingsResult.data);
         
         // Fusionner les settings dans le form
         const homepage = settingsResult.data.find((row: any) => row.key === 'homepage')?.value || {};
@@ -88,8 +84,6 @@ export function useAdminSettings() {
         const stripe = settingsResult.data.find((row: any) => row.key === 'stripe')?.value || {};
         const googleReviews = settingsResult.data.find((row: any) => row.key === 'google_reviews')?.value || {};
         
-        console.log('🏠 Données homepage:', homepage);
-        console.log('🏢 Données company:', company);
         
         const formData = {
           homepage: {
@@ -134,12 +128,10 @@ export function useAdminSettings() {
           }
         };
         
-        console.log('📝 Données du formulaire:', formData);
         form.reset(formData);
         setHasLoadedFromServer(true);
       }
       } else {
-        console.log('📋 Utilisation des données persistées localement');
       }
     } catch (error) {
       console.error("Erreur lors du chargement des paramètres:", error);
@@ -147,7 +139,12 @@ export function useAdminSettings() {
     } finally {
       setIsLoading(false);
     }
-  }, [hasLoadedFromServer, clearPersistedData]);
+  }, [hasLoadedFromServer]);
+
+  // Charger les paramètres une seule fois au montage
+  useEffect(() => {
+    loadSettings();
+  }, []); // Dépendances vides pour éviter la boucle infinie
 
   const saveSettings = async (values: SettingsFormValues) => {
     try {
@@ -173,7 +170,6 @@ export function useAdminSettings() {
         }
       ];
 
-      console.log('[ADMIN_SETTINGS UPSERT]', settingsToUpsert);
 
       // Sauvegarder les paramètres homepage via l'endpoint spécifique
       if (values.homepage) {
@@ -182,7 +178,6 @@ export function useAdminSettings() {
           console.error('[HOMEPAGE_SETTINGS SAVE ERROR]', homepageResult.error);
           throw new Error(homepageResult.error || 'Erreur lors de la sauvegarde des paramètres homepage');
         }
-        console.log("✅ Paramètres homepage sauvegardés:", homepageResult.data);
       }
 
       // Sauvegarder les paramètres company via l'endpoint spécifique
@@ -192,7 +187,6 @@ export function useAdminSettings() {
           console.error('[COMPANY_SETTINGS SAVE ERROR]', companyResult.error);
           throw new Error(companyResult.error || 'Erreur lors de la sauvegarde des paramètres company');
         }
-        console.log("✅ Paramètres company sauvegardés:", companyResult.data);
       }
 
       // Sauvegarder les autres paramètres via l'API générale
