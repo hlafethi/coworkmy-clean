@@ -25,7 +25,6 @@ export function useLegalPages() {
   const fetchPages = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Chargement des pages légales...');
       
       const result = await apiClient.get('/legal-pages');
       const data = result.success ? result.data : null;
@@ -42,7 +41,6 @@ export function useLegalPages() {
         throw error;
       }
 
-      console.log('✅ Pages légales chargées:', data?.length || 0);
       
       // 🔧 CORRECTION : Vérifier que data est un tableau
       const pagesArray = Array.isArray(data) ? data : [];

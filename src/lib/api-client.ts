@@ -42,9 +42,7 @@ class ApiClient {
 
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
-      console.log('🔑 Token utilisé pour la requête:', this.token.substring(0, 20) + '...');
     } else {
-      console.log('⚠️ Aucun token disponible pour la requête');
     }
 
     try {

@@ -25,7 +25,6 @@ export function WorkspaceCarousel() {
   const { data: carouselImages, isLoading } = useQuery({
     queryKey: ["carousel-images"],
     queryFn: async () => {
-      console.log('🔄 Chargement des images du carrousel...');
       
       const response = await apiClient.get('/carousel-images');
       
@@ -34,7 +33,6 @@ export function WorkspaceCarousel() {
         throw new Error(response.error || 'Erreur lors du chargement des images');
       }
       
-      console.log('✅ Images du carrousel chargées:', response.data);
       return response.data as CarouselImage[];
     },
   });

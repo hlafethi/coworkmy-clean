@@ -20,10 +20,6 @@ initAnalytics();
 // initAccessibilityTesting(); // Temporairement désactivé
 
 // Configuration de l'application
-console.log('🚀 Démarrage de CoworkMy');
-console.log('📊 Mode:', import.meta.env.MODE);
-console.log('🔧 Base de données: PostgreSQL VPS');
-console.log('🌐 API: http://localhost:5000');
 
 // Render React root
 ReactDOM.createRoot(document.getElementById('root')!).render(

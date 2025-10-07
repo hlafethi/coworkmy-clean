@@ -17,11 +17,9 @@ export function useCookieSettings() {
       }
 
       setLoading(true);
-      console.log('🔄 Chargement des paramètres cookies...');
       
       const response = await apiClient.get('/cookie-settings');
       if (response.success) {
-        console.log('✅ Paramètres cookies chargés:', response.data);
         
         // Toujours mettre à jour les paramètres si forceRefresh ou si les données ont changé
         const newData = JSON.stringify(response.data);
@@ -31,9 +29,7 @@ export function useCookieSettings() {
           setSettings(response.data);
           // Mettre en cache dans localStorage pour un accès rapide
           localStorage.setItem('cookie-settings-cache', newData);
-          console.log('🎨 Paramètres cookies mis à jour');
         } else {
-          console.log('📦 Paramètres cookies inchangés');
         }
         hasLoadedFromAPI.current = true;
       } else {
@@ -70,11 +66,9 @@ export function useCookieSettings() {
         if (cached) {
           const cachedSettings = JSON.parse(cached);
           setSettings(cachedSettings);
-          console.log('📦 Paramètres cookies chargés depuis le cache');
           hasLoadedFromCache.current = true;
         }
       } catch (err) {
-        console.error('❌ Erreur lors du chargement du cache:', err);
       }
     }
     
@@ -91,9 +85,7 @@ export function useCookieSettings() {
         try {
           const newSettings = JSON.parse(e.newValue);
           setSettings(newSettings);
-          console.log('🔄 Paramètres cookies mis à jour depuis le cache');
         } catch (err) {
-          console.error('❌ Erreur lors de la mise à jour du cache:', err);
         }
       }
     };
