@@ -22,7 +22,7 @@ export const UserHeader = ({ firstName, lastName, onLogout }: UserHeaderProps) =
       </div>
       <div className="space-x-4">
         <Button 
-          onClick={() => navigate("/profile/edit")}
+          onClick={() => navigate("/profile")}
           variant="outline"
         >
           <Users className="mr-2 h-4 w-4" />

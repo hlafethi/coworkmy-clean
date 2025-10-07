@@ -134,8 +134,6 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
       const base64Data = await fileToBase64(file);
 
       // Appel API pour sauvegarder le document
-      console.log('🔍 SecureFileUpload - documentType reçu:', documentType, 'Type:', typeof documentType);
-      
       const response = await apiClient.post(`/users/${userId}/documents`, {
         file_name: file.name,
         file_type: file.type,
@@ -143,8 +141,6 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
         file_content: base64Data,
         document_type: documentType
       });
-      
-      console.log('🔍 SecureFileUpload - document_type envoyé:', documentType);
 
       if (!response.success) {
         throw new Error(response.error || 'Erreur lors de l\'upload');

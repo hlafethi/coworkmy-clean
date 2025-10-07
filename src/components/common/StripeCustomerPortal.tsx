@@ -26,17 +26,19 @@ export const StripeCustomerPortal = ({ className = "", variant = "default" }: St
     try {
       setLoading(true);
       
-      const returnUrl = `${window.location.origin}/dashboard`;
+      const returnUrl = `${window.location.origin}/profile`;
       const { url, mode } = await createStripeCustomerPortal(
         user.email,
         returnUrl,
         isAdmin
       );
 
-      console.log(`[Stripe] Portail client ouvert en mode ${mode}: ${url}`);
+      if (!url) {
+        throw new Error('URL du portail Stripe non fournie');
+      }
       
-      // Ouvrir le portail dans un nouvel onglet
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // Ouvrir le portail dans le même onglet
+      window.location.href = url;
       
       toast.success("Portail client Stripe ouvert");
     } catch (error) {

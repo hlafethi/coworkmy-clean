@@ -55,7 +55,7 @@ class VirusTotalScanner {
     this.apiKey = import.meta.env.VITE_VIRUSTOTAL_API_KEY || '';
     
     if (!this.apiKey) {
-      console.warn('⚠️ Clé API VirusTotal non configurée. Utilisation du scanner basique.');
+      // Clé API VirusTotal non configurée, utilisation du scanner basique
     }
   }
 
@@ -259,27 +259,36 @@ class VirusTotalScanner {
         }
       }
       
-      // Vérification du contenu textuel
-      try {
-        const fileContent = await file.text();
-        const suspiciousStrings = [
-          'eval(', 'exec(', 'system(', 'shell_exec', 'passthru',
-          '<script', 'javascript:', 'vbscript:', 'onload=', 'onerror=',
-          'cmd.exe', 'powershell', '/bin/sh', 'wget', 'curl',
-          'base64_decode', 'gzinflate', 'str_rot13'
-        ];
-        
-        const lowerContent = fileContent.toLowerCase();
-        for (const suspicious of suspiciousStrings) {
-          if (lowerContent.includes(suspicious)) {
-            return {
-              isClean: false,
-              threat: `Code potentiellement malveillant détecté: ${suspicious}`
-            };
+      // Vérification du contenu textuel (seulement pour les fichiers texte/script)
+      const fileType = file.type;
+      const isTextFile = fileType.startsWith('text/') || 
+                        fileType === 'application/javascript' || 
+                        fileType === 'application/x-php' ||
+                        fileType === 'application/x-python' ||
+                        fileType === 'application/x-sh';
+      
+      if (isTextFile) {
+        try {
+          const fileContent = await file.text();
+          const suspiciousStrings = [
+            'eval(', 'exec(', 'system(', 'shell_exec', 'passthru',
+            '<script', 'javascript:', 'vbscript:', 'onload=', 'onerror=',
+            'base64_decode', 'gzinflate', 'str_rot13'
+          ];
+          
+          const lowerContent = fileContent.toLowerCase();
+          for (const suspicious of suspiciousStrings) {
+            if (lowerContent.includes(suspicious)) {
+              return {
+                isClean: false,
+                threat: `Code potentiellement malveillant détecté: ${suspicious}`
+              };
+            }
           }
+        } catch (error) {
+          // Si on ne peut pas lire le contenu, on considère le fichier comme sûr
+          // (probablement un fichier binaire)
         }
-      } catch {
-        // Fichier binaire, pas de vérification textuelle
       }
       
       return { isClean: true };

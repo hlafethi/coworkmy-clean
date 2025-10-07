@@ -31,15 +31,11 @@ export function useUserProfile(userId?: string) {
         setLoading(true);
         setError(null);
         
-        console.log('👤 Récupération du profil utilisateur:', userId);
-        
         const result = await apiClient.get(`/users/${userId}`);
         
         if (result.success && result.data) {
-          console.log('✅ Profil utilisateur récupéré:', result.data);
           setProfile(result.data);
         } else {
-          console.warn('⚠️ Aucun profil utilisateur trouvé');
           setProfile(null);
         }
       } catch (err) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
@@ -14,7 +14,7 @@ import { LogoUploadSimple } from "@/components/profile/LogoUploadSimple";
 // Logger supprimé - utilisation de console directement
 const EditProfile = () => {
   const navigate = useNavigate();
-  const { user, profile: authProfile, loading: authLoading } = useAuth();
+  const { user, profile: authProfile, loading: authLoading, updateProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -77,6 +77,93 @@ const EditProfile = () => {
     }
   }, [navigate, user, authProfile]);
 
+  // Synchroniser formData avec authProfile quand il change
+  useEffect(() => {
+    if (authProfile) {
+      setFormData(prev => ({
+        ...prev,
+        avatar_url: authProfile.avatar_url || "",
+        logo_url: authProfile.logo_url || ""
+      }));
+    }
+  }, [authProfile?.avatar_url, authProfile?.logo_url]);
+
+  // Sauvegarde automatique avec debounce
+  const saveFormData = useCallback(async (data: typeof formData) => {
+    if (!user) return;
+    
+    try {
+      const result = await apiClient.put(`/users/${user.id}`, {
+        ...data,
+        updated_at: new Date().toISOString()
+      });
+      
+      if (result.success) {
+        toast.success("Modifications sauvegardées automatiquement", { duration: 2000 });
+      } else {
+        console.error('Erreur sauvegarde automatique:', result.error);
+        toast.error("Erreur lors de la sauvegarde automatique");
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la sauvegarde automatique:', error);
+      toast.error("Erreur lors de la sauvegarde automatique");
+    }
+  }, [user]);
+
+  // État pour éviter la sauvegarde automatique au chargement initial
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasUserMadeChanges, setHasUserMadeChanges] = useState(false);
+
+  // Debounce pour la sauvegarde automatique (seulement pour les champs texte)
+  useEffect(() => {
+    if (!user || !formData.first_name || isInitialLoad || !hasUserMadeChanges) return;
+
+    // Ne pas sauvegarder automatiquement les images (elles sont déjà sauvegardées)
+    const { avatar_url, logo_url, ...textFields } = formData;
+    
+    // Vérifier qu'il y a des changements significatifs
+    const hasTextChanges = Object.values(textFields).some(value => value && value.trim() !== '');
+    
+    if (!hasTextChanges) return;
+    
+    const timeoutId = setTimeout(() => {
+      saveFormData(textFields);
+    }, 3000); // Augmenté à 3 secondes pour éviter les conflits
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    formData.first_name, 
+    formData.last_name, 
+    formData.email, 
+    formData.phone, 
+    formData.phone_number,
+    formData.company,
+    formData.company_name,
+    formData.city,
+    formData.address,
+    formData.address_street,
+    formData.address_city,
+    formData.address_postal_code,
+    formData.address_country,
+    formData.birth_date,
+    formData.presentation,
+    saveFormData, 
+    user,
+    isInitialLoad,
+    hasUserMadeChanges
+  ]);
+
+  // Marquer la fin du chargement initial
+  useEffect(() => {
+    if (formData.first_name && isInitialLoad) {
+      const timer = setTimeout(() => {
+        setIsInitialLoad(false);
+      }, 2000); // Augmenté à 2 secondes pour laisser le temps aux données de se stabiliser
+      return () => clearTimeout(timer);
+    }
+  }, [formData.first_name, isInitialLoad]);
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -132,10 +219,16 @@ const EditProfile = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    
+    // Marquer que l'utilisateur a fait des changements
+    if (!hasUserMadeChanges) {
+      setHasUserMadeChanges(true);
+    }
   };
 
   const handleAvatarUpdated = async (newAvatarUrl: string) => {
@@ -143,6 +236,28 @@ const EditProfile = () => {
       ...prev,
       avatar_url: newAvatarUrl
     }));
+
+    // Mettre à jour le contexte d'authentification
+    updateProfile({ avatar_url: newAvatarUrl });
+
+    // Sauvegarder immédiatement en base de données
+    if (user) {
+      try {
+        const result = await apiClient.put(`/users/${user.id}`, { 
+          avatar_url: newAvatarUrl,
+          updated_at: new Date().toISOString()
+        });
+        
+        if (result.success) {
+          toast.success("Photo de profil mise à jour");
+        } else {
+          toast.error("Erreur lors de la mise à jour de la photo de profil");
+        }
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour de l\'avatar:', error);
+        toast.error("Erreur lors de la mise à jour de la photo de profil");
+      }
+    }
   };
 
   const handleLogoUpdated = async (newLogoUrl: string) => {
@@ -150,6 +265,28 @@ const EditProfile = () => {
       ...prev,
       logo_url: newLogoUrl
     }));
+
+    // Mettre à jour le contexte d'authentification
+    updateProfile({ logo_url: newLogoUrl });
+
+    // Sauvegarder immédiatement en base de données
+    if (user) {
+      try {
+        const result = await apiClient.put(`/users/${user.id}`, { 
+          logo_url: newLogoUrl,
+          updated_at: new Date().toISOString()
+        });
+        
+        if (result.success) {
+          toast.success("Logo d'entreprise mis à jour");
+        } else {
+          toast.error("Erreur lors de la mise à jour du logo");
+        }
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du logo:', error);
+        toast.error("Erreur lors de la mise à jour du logo");
+      }
+    }
   };
 
   if ((authLoading && !authProfile) || (loading && !formData.first_name) || typeof user === 'undefined') {

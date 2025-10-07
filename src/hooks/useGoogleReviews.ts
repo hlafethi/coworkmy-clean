@@ -52,7 +52,6 @@ interface GoogleReviewsResponse {
 
 const fetchGoogleReviews = async (): Promise<GoogleReview[]> => {
   if (import.meta.env.DEV) {
-    console.log('🔄 Mode développement: Google Reviews désactivé');
     return [];
   }
 

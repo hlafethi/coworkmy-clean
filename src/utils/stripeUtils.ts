@@ -57,7 +57,6 @@ export const createStripeCustomerPortal = async (
   isAdmin: boolean = false
 ): Promise<{ url: string; mode: string; customerId: string }> => {
   try {
-    console.log('[Stripe] Appel create-customer-portal avec :', { customerEmail, returnUrl, isAdmin });
 
     // Récupérer le token d'authentification avec la même logique que AuthContext
     let accessToken = null;
@@ -101,11 +100,9 @@ export const createStripeCustomerPortal = async (
     // 2. Si pas de token dans localStorage, utiliser l'API client
     if (!accessToken) {
       try {
-        console.log('[Stripe] Tentative de récupération du token via API client...');
         // L'API client gère automatiquement l'authentification
         // Pas besoin de récupérer le token manuellement
         accessToken = 'authenticated'; // Marqueur pour indiquer que l'utilisateur est authentifié
-        console.log('[Stripe] Utilisateur authentifié via API client');
       } catch (error) {
         console.warn('[Stripe] Erreur lors de la récupération du token via API client:', error);
       }
@@ -115,10 +112,8 @@ export const createStripeCustomerPortal = async (
       throw new Error('Utilisateur non authentifié - aucun token trouvé');
     }
 
-    console.log('[Stripe] Token d\'authentification récupéré avec succès');
 
     // Utiliser l'API backend avec authentification
-    console.log('[Stripe] Appel API backend pour créer le portail client...');
     
     const response = await apiClient.post('/stripe/create-customer-portal', {
       customerEmail,
@@ -126,14 +121,11 @@ export const createStripeCustomerPortal = async (
       isAdmin
     });
 
-    console.log('[Stripe] Réponse de l\'API :', response);
-
     if (!response.success) {
       throw new Error(response.error || 'Erreur lors de la création du portail client');
     }
 
     const data = response.data;
-    console.log('[Stripe] Portail client créé avec succès :', data);
     return data;
 
   } catch (error) {
