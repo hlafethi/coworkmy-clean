@@ -88,7 +88,6 @@ const Services = () => {
   const { data: spaces, isLoading } = useQuery({
     queryKey: ["available-spaces"],
     queryFn: async () => {
-      console.log('🔄 Chargement des espaces...');
       
       const response = await apiClient.get('/spaces/active');
       
@@ -99,7 +98,6 @@ const Services = () => {
       
       // Les espaces sont déjà filtrés (actifs uniquement)
       const activeSpaces = response.data.filter((space: Space) => space.is_active);
-      console.log('✅ Espaces chargés:', activeSpaces);
       return activeSpaces as Space[];
     },
   });

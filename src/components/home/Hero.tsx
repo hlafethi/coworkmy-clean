@@ -41,7 +41,6 @@ const Hero = () => {
     backgroundAttachment: isMobile ? 'scroll' : 'fixed',
   };
 
-  console.log('🖼️ Style appliqué:', backgroundStyle);
 
   return (
     <section className="relative py-16 md:py-20 overflow-hidden h-[600px] md:h-[700px]">

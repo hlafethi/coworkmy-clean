@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
 
-dotenv.config();
+dotenv.config({ path: './config.env' });
 
 // Configuration Stripe - sera initialisée dynamiquement
 let stripe = null;
@@ -85,7 +85,7 @@ app.use(helmet({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limite chaque IP à 100 requêtes par windowMs
+  max: 2000, // limite chaque IP à 2000 requêtes par windowMs
   message: {
     error: 'Trop de requêtes depuis cette IP, veuillez réessayer plus tard.'
   },
@@ -338,6 +338,114 @@ app.get('/api/auth/me', async (req, res) => {
   } catch (error) {
     console.error('Erreur getCurrentUser:', error);
     sendResponse(res, false, null, 'Erreur serveur');
+  }
+});
+
+// POST /api/auth/forgot-password
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email, redirectUrl } = req.body;
+
+    if (!email) {
+      return sendResponse(res, false, null, 'Email requis');
+    }
+
+    // Vérifier si l'utilisateur existe
+    const userResult = await pool.query(
+      'SELECT id, email FROM profiles WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return sendResponse(res, false, null, 'Aucun compte trouvé avec cet email');
+    }
+
+    const user = userResult.rows[0];
+
+    // Générer un token de réinitialisation
+    const resetToken = jwt.sign(
+      { userId: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Configuration du transporteur email
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+
+    // URL de réinitialisation
+    const resetLink = `${redirectUrl}?token=${resetToken}`;
+
+    // Contenu de l'email
+    const mailOptions = {
+      from: process.env.SMTP_USER,
+      to: email,
+      cc: process.env.SMTP_USER, // Copie pour vérification
+      subject: 'Réinitialisation de votre mot de passe - CoworkMy',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Réinitialisation de votre mot de passe</h2>
+          <p>Bonjour,</p>
+          <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte CoworkMy.</p>
+          <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
+          <p><a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Réinitialiser mon mot de passe</a></p>
+          <p>Ce lien est valide pendant 1 heure.</p>
+          <p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+          <p>Cordialement,<br>L'équipe CoworkMy</p>
+        </div>
+      `
+    };
+
+    // Envoyer l'email
+    await transporter.sendMail(mailOptions);
+
+    sendResponse(res, true, { message: 'Email de réinitialisation envoyé' });
+  } catch (error) {
+    console.error('Erreur forgot-password:', error);
+    sendResponse(res, false, null, 'Erreur lors de l\'envoi de l\'email');
+  }
+});
+
+// POST /api/auth/reset-password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return sendResponse(res, false, null, 'Token et nouveau mot de passe requis');
+    }
+
+    if (password.length < 6) {
+      return sendResponse(res, false, null, 'Le mot de passe doit contenir au moins 6 caractères');
+    }
+
+    // Vérifier le token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { userId } = decoded;
+
+    // Hasher le nouveau mot de passe
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Mettre à jour le mot de passe dans la base de données
+    await pool.query(
+      'UPDATE profiles SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+      [passwordHash, userId]
+    );
+
+    sendResponse(res, true, { message: 'Mot de passe mis à jour avec succès' });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return sendResponse(res, false, null, 'Token invalide ou expiré');
+    }
+    console.error('Erreur reset-password:', error);
+    sendResponse(res, false, null, 'Erreur lors de la mise à jour du mot de passe');
   }
 });
 
@@ -3001,7 +3109,7 @@ app.post('/api/send-email', async (req, res) => {
     return res.status(400).json({ error: 'Champs requis : to, subject, html' });
   }
   try {
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'mail.coworkmy.fr',
       port: Number(process.env.SMTP_PORT) || 587,
       secure: false,

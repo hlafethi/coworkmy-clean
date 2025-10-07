@@ -15,43 +15,19 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const [token_hash, setTokenHash] = useState('')
+
   useEffect(() => {
-    // Récupère le token depuis les query params OU le hash
-    let token_hash = searchParams.get('token_hash')
-    let type = searchParams.get('type')
-
-    if (!token_hash) {
-      // Si pas dans les query params, essaye dans le hash
-      const hashParams = new URLSearchParams(window.location.hash.substring(1))
-      token_hash = hashParams.get('token_hash')
-      type = hashParams.get('type')
-    }
-
-    if (!token_hash || type !== 'recovery') {
+    // Récupère le token depuis les query params
+    const token = searchParams.get('token')
+    
+    if (!token) {
       setError('Lien de réinitialisation invalide ou expiré')
       return
     }
 
-    const exchangeToken = async () => {
-      try {
-        if (!token_hash) {
-          setError('Token de réinitialisation manquant');
-          return;
-        }
-        // Vérification du token via l'API PostgreSQL
-        const result = await apiClient.post('/auth/verify-reset-token', {
-          token: token_hash
-        })
-        if (!result.success) throw new Error(result.error)
-        console.log('Token vérifié avec succès')
-      } catch (error) {
-        console.error('Erreur de vérification du token:', error)
-        setError('Lien de réinitialisation invalide ou expiré')
-      }
-    }
-
-    exchangeToken()
-  }, [searchParams, navigate])
+    setTokenHash(token)
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,8 +53,8 @@ export default function ResetPassword() {
 
       if (!result.success) throw new Error(result.error)
 
-      alert('Mot de passe mis à jour avec succès !')
-      navigate('/dashboard')
+      alert('Mot de passe mis à jour avec succès ! Vous pouvez maintenant vous connecter.')
+      navigate('/auth/login')
     } catch (error: any) {
       console.error('Erreur:', error)
       setError('Erreur lors de la mise à jour : ' + error.message)

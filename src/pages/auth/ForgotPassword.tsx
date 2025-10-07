@@ -24,11 +24,8 @@ const ForgotPassword = () => {
     setSuccess(false);
 
     try {
-      console.log('🔄 Envoi de l\'email de réinitialisation...');
-      console.log('📧 Email:', email);
 
       const redirectUrl = `${window.location.origin}/auth/reset-password`;
-      console.log('🔗 URL de redirection:', redirectUrl);
 
       const result = await apiClient.post('/auth/forgot-password', {
         email: email,
@@ -47,11 +44,9 @@ const ForgotPassword = () => {
         return;
       }
 
-      console.log('✅ Email envoyé avec succès');
       toast.success("Un email de réinitialisation a été envoyé à votre adresse email.");
       setSuccess(true);
     } catch (error: any) {
-      console.error('❌ Erreur complète:', error);
       setError(`Erreur: ${error.message || 'Impossible d\'envoyer l\'email de réinitialisation'}`);
     } finally {
       setLoading(false);

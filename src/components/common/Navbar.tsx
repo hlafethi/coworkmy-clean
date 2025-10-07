@@ -39,7 +39,6 @@ const Navbar = () => {
     <header className="bg-white py-4 shadow-sm sticky top-0 z-50">
       <nav className="container-custom flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          {console.log("🔍 Navbar - homepageSettings:", homepageSettings)}
           {homepageSettings?.company_logo_url && (
             <img 
               src={homepageSettings.company_logo_url} 

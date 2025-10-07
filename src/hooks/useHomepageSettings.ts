@@ -37,7 +37,6 @@ export function useHomepageSettings() {
   const fetchSettings = useCallback(async () => {
       setLoading(true);
       try {
-        console.log("🖼️ Chargement des paramètres homepage depuis l'API...");
         
         // Récupérer les paramètres de la page d'accueil
         const homepageResponse = await fetch('http://localhost:5000/api/homepage-settings');
@@ -48,8 +47,6 @@ export function useHomepageSettings() {
         const companyData = await companyResponse.json();
         
         if (homepageData.success && homepageData.data) {
-          console.log("✅ Paramètres homepage chargés depuis l'API:", homepageData.data);
-          console.log("✅ Paramètres entreprise chargés depuis l'API:", companyData.data);
           
           // Enrichir les paramètres avec les informations du profil utilisateur et de l'entreprise
           const enrichedSettings = {

@@ -189,13 +189,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAdmin(result.data.user.is_admin);
           setProfileLoaded(true);
           setProfileError(null);
-          console.log('✅ Session restaurée:', { userId: result.data.user.id });
         } else {
-          console.log('ℹ️ Aucune session trouvée');
         }
         
       } catch (error) {
-        console.error('❌ Erreur lors de l\'initialisation de l\'auth:', error);
         setProfileError('Erreur lors de l\'initialisation');
       } finally {
         if (mounted.current) {
