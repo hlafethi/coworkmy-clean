@@ -65,7 +65,6 @@ const EditBooking = () => {
 
   // Effet séparé pour sélectionner le créneau quand timeSlots est disponible
   useEffect(() => {
-    
     // Si on a des créneaux mais pas de réservation chargée, sélectionner le premier créneau
     if (timeSlots.length > 0 && !booking && !timeSlot) {
       setTimeSlot(timeSlots[0].id);
@@ -73,7 +72,6 @@ const EditBooking = () => {
     }
     
     if (!booking || timeSlots.length === 0) return;
-    
     
     const startTime = new Date(booking.start_date);
     const endTime = new Date(booking.end_date);
@@ -85,13 +83,11 @@ const EditBooking = () => {
     const startHour = localStartTime.getHours();
     const endHour = localEndTime.getHours();
     
-    
     // Chercher un créneau qui correspond à l'heure de début
     const matchingSlot = timeSlots.find(slot => {
       const slotStartHour = parseInt(slot.startTime.split(':')[0]);
       return slotStartHour === startHour;
     });
-    
     
     if (matchingSlot) {
       setTimeSlot(matchingSlot.id);
@@ -104,25 +100,20 @@ const EditBooking = () => {
   }, [booking, timeSlots, setTimeSlot]);
 
   const handleSubmit = async () => {
-    console.log('🔍 handleSubmit appelé:', { booking: !!booking, spaceType, date, timeSlot });
-    
     try {
       if (!booking || !spaceType || !date || !timeSlot) {
-        console.log('❌ Données manquantes pour la soumission');
         toast.error("Veuillez remplir tous les champs");
         return;
       }
 
       const selectedSpace = spaces.find(space => space.id === spaceType);
       if (!selectedSpace) {
-        console.log('❌ Espace non trouvé');
         toast.error("Espace non trouvé");
         return;
       }
 
       const selectedTimeSlotObj = timeSlots.find(slot => slot.id === timeSlot);
       if (!selectedTimeSlotObj) {
-        console.log('❌ Créneau horaire non trouvé');
         toast.error("Créneau horaire non trouvé");
         return;
       }
@@ -138,23 +129,16 @@ const EditBooking = () => {
         status: 'pending'
       };
 
-      console.log('📝 Données de mise à jour:', updateData);
-
       const response = await apiClient.put(`/bookings/${booking.id}`, updateData);
-      console.log('📝 Réponse API:', response);
 
       if (!response.success) {
-        console.log('❌ Erreur dans la réponse API:', response);
         throw new Error(response.error || 'Erreur lors de la mise à jour');
       }
 
-      console.log('✅ Réservation modifiée avec succès, redirection vers /dashboard');
       toast.success("Réservation modifiée avec succès");
-      console.log('🚀 Tentative de redirection vers /dashboard...');
       navigate("/dashboard");
-      console.log('🚀 Redirection exécutée');
     } catch (error) {
-      console.error("❌ Error updating booking:", error);
+      console.error("Error updating booking:", error);
       toast.error("Erreur lors de la modification de la réservation");
     }
   };
@@ -185,8 +169,6 @@ const EditBooking = () => {
   const selectedSpace = spaces.find(space => space.id === spaceType);
   const prices = getSpacePrice(selectedSpace);
   const selectedTimeSlotObj = timeSlots.find(slot => slot.id === timeSlot);
-  
-  // Log permanent pour déboguer l'état du bouton
 
   const selectedSpaceForSummary: Space | undefined = selectedSpace
     ? {
@@ -271,18 +253,7 @@ const EditBooking = () => {
               <Button
                 type="button"
                 disabled={isSubmitting || !spaceType || !date || !timeSlot}
-                onClick={() => {
-                  console.log('🔍 CLIC SUR LE BOUTON DÉTECTÉ !');
-                  console.log('🔍 État des variables:', {
-                    isSubmitting,
-                    spaceType,
-                    date,
-                    timeSlot,
-                    disabled: isSubmitting || !spaceType || !date || !timeSlot
-                  });
-                  console.log('🔍 Appel direct de handleSubmit...');
-                  handleSubmit();
-                }}
+                onClick={handleSubmit}
               >
                 Modifier la réservation
               </Button>

@@ -8,7 +8,6 @@ export function useTimeSlotsAPI(spaceId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    
     // Générer des créneaux même sans spaceId pour l'édition
     if (!spaceId) {
       const defaultSlots: TimeSlotOption[] = [

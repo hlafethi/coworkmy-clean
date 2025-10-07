@@ -19,8 +19,6 @@ export const createStripeCheckoutSession = async (
   isAdmin: boolean = false
 ): Promise<{ url: string, mode: string }> => {
   try {
-    console.log("[Stripe] Création de session via backend API");
-    
     // Utiliser l'API client qui gère automatiquement l'URL et l'authentification
     const response = await apiClient.post('/stripe/create-checkout-session', {
       booking_id: bookingId,
@@ -88,7 +86,6 @@ export const createStripeCustomerPortal = async (
           
           if (parsed.access_token) {
             accessToken = parsed.access_token;
-            console.log('[Stripe] Token trouvé dans localStorage avec la clé:', key);
             break;
           }
         } catch (e) {
@@ -114,7 +111,6 @@ export const createStripeCustomerPortal = async (
 
 
     // Utiliser l'API backend avec authentification
-    
     const response = await apiClient.post('/stripe/create-customer-portal', {
       customerEmail,
       returnUrl,
@@ -146,7 +142,6 @@ export const updateBookingStatus = async (bookingId: string, status: string): Pr
     if (!response.success) {
       throw new Error(response.error || "Failed to update booking status");
     }
-    console.log(`✅ Statut de la réservation ${bookingId} mis à jour à ${status}`);
   } catch (error) {
     console.error(`❌ Erreur lors de la mise à jour du statut de la réservation ${bookingId}:`, error);
     throw error;
