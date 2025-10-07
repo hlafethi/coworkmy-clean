@@ -1,5 +1,14 @@
 // Logger supprimé - utilisation de console directement
-const API_BASE_URL = 'http://localhost:5000/api';
+const getApiBaseUrl = () => {
+  // Vérifier si on est dans le navigateur et si la configuration est disponible
+  if (typeof window !== 'undefined' && window.APP_CONFIG?.API_URL) {
+    return `${window.APP_CONFIG.API_URL}/api`;
+  }
+  // Fallback pour le développement
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface ApiResponse<T = any> {
   success?: boolean;
