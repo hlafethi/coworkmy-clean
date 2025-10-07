@@ -41,6 +41,7 @@ const getStripeConfig = async () => {
     const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
     const webhookSecret = config.live_webhook_secret || config.webhook_secret;
     
+    
     if (!secretKey) {
       throw new Error(`Clé secrète Stripe manquante pour le mode ${config.mode}`);
     }
@@ -321,19 +322,55 @@ app.get('/api/auth/me', async (req, res) => {
     }
 
     // Vérification du token
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
       if (err) {
         return sendResponse(res, false, null, 'Token invalide');
       }
 
-      // Retourner les informations de l'utilisateur
-      sendResponse(res, true, { 
-        user: {
-          id: user.id,
-          email: user.email,
-          is_admin: user.is_admin || false
+      try {
+        // Récupérer les données complètes du profil depuis la base de données
+        const result = await pool.query(
+          'SELECT * FROM profiles WHERE id = $1',
+          [decoded.userId]
+        );
+
+        if (result.rows.length === 0) {
+          return sendResponse(res, false, null, 'Profil non trouvé');
         }
-      });
+
+        const profile = result.rows[0];
+
+        // Retourner les informations complètes de l'utilisateur
+        sendResponse(res, true, { 
+          user: {
+            id: profile.id,
+            email: profile.email,
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            phone: profile.phone,
+            phone_number: profile.phone_number,
+            company: profile.company,
+            company_name: profile.company_name,
+            city: profile.city,
+            address: profile.address,
+            address_street: profile.address_street,
+            address_city: profile.address_city,
+            address_postal_code: profile.address_postal_code,
+            address_country: profile.address_country,
+            birth_date: profile.birth_date,
+            presentation: profile.presentation,
+            profile_picture: profile.profile_picture,
+            logo_url: profile.logo_url,
+            avatar_url: profile.avatar_url,
+            is_admin: profile.is_admin || false,
+            created_at: profile.created_at,
+            updated_at: profile.updated_at
+          }
+        });
+      } catch (dbError) {
+        console.error('Erreur base de données:', dbError);
+        sendResponse(res, false, null, 'Erreur lors de la récupération du profil');
+      }
     });
   } catch (error) {
     console.error('Erreur getCurrentUser:', error);
@@ -3443,6 +3480,7 @@ app.post('/api/stripe/create-customer-portal', authenticateToken, async (req, re
 
     // Récupérer la configuration Stripe depuis la base de données
     const config = await getStripeConfig();
+    
     const stripeInstance = new Stripe(config.secretKey, {
       apiVersion: '2023-10-16',
     });

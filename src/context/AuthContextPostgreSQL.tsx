@@ -37,6 +37,7 @@ interface AuthContextType {
   profileLoaded: boolean;
   profileError: string | null;
   retryProfileFetch: () => Promise<void>;
+  updateProfile: (updates: Partial<User>) => void;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: string | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ user: User | null; error: string | null }>;
@@ -59,13 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      console.log('🔐 Tentative de connexion pour:', email);
-      
       const result = await apiClient.signIn(email, password);
-      console.log('📊 Résultat API:', result);
-      console.log('📊 result.success:', result.success);
-      console.log('📊 result.data:', result.data);
-      console.log('📊 result.data.user:', result.data?.user);
       
       if (result.success && result.data && result.data.user) {
         setUser(result.data.user);
@@ -73,7 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAdmin(result.data.user.is_admin);
         setProfileError(null);
         setProfileLoaded(true);
-        console.log('✅ Connexion réussie:', { userId: result.data.user.id });
         return { user: result.data.user, error: null };
       } else {
         const errorMessage = result.error || 'Erreur de connexion';
@@ -190,6 +184,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfileLoaded(true);
           setProfileError(null);
         } else {
+          // Si le profil n'est pas trouvé, déconnecter l'utilisateur
+          if (result.data && result.data.error === 'Profil non trouvé') {
+            setUser(null);
+            setProfile(null);
+            setIsAdmin(false);
+            setProfileLoaded(false);
+            setProfileError('Session expirée - veuillez vous reconnecter');
+            // Rediriger vers la page de connexion
+            navigate('/auth/login');
+          }
         }
         
       } catch (error) {
@@ -208,6 +212,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Fonction pour mettre à jour le profil dans le contexte
+  const updateProfile = (updates: Partial<User>) => {
+    if (profile) {
+      const updatedProfile = { ...profile, ...updates };
+      setProfile(updatedProfile);
+      setUser(updatedProfile);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -216,7 +229,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAdmin, 
       profileLoaded, 
       profileError, 
-      retryProfileFetch, 
+      retryProfileFetch,
+      updateProfile,
       signOut,
       signIn,
       signUp

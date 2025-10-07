@@ -24,14 +24,9 @@ const LoginForm = () => {
         throw new Error('Veuillez remplir tous les champs');
       }
 
-      console.log('[LoginForm] Tentative de connexion...');
-
       const result = await signIn(email.trim(), password.trim());
 
       if (result.user && !result.error) {
-        console.log('[LoginForm] Connexion réussie');
-        console.log('[LoginForm] User ID:', result.user?.id);
-        console.log('[LoginForm] User email:', result.user?.email);
         toast.success('Connexion réussie');
         
         // Rediriger vers la page demandée

@@ -70,12 +70,6 @@ const Profile = () => {
     };
 
     useEffect(() => {
-        console.log('🔍 Profile useEffect', { 
-            userId: user?.id, 
-            hasAuthProfile: !!authProfile, 
-            authLoading, 
-            profileLoaded 
-        });
         
         // Attendre que l'authentification soit terminée
         if (typeof user === 'undefined' || authLoading) {
@@ -117,22 +111,6 @@ const Profile = () => {
     setForceRender(prev => prev + 1);
   };
 
-    console.log('PROFILE render', { 
-        profile: profile ? {
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            phone: profile.phone,
-            company: profile.company,
-            city: profile.city
-        } : null,
-        loading, 
-        user: user ? {
-            id: user.id,
-            email: user.email
-        } : null, 
-        profileLoaded 
-    });
-
     if (authLoading || !profileLoaded || (loading && !profile)) {
         return (
             <div className="min-h-screen flex flex-col">
@@ -148,63 +126,96 @@ const Profile = () => {
     return (
         <div className="min-h-screen flex flex-col">
             <Navbar />
-            <main className="flex-grow py-12 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-6xl mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {/* Colonne gauche : avatar, logo, infos principales, bouton édition */}
-                        <div className="flex flex-col items-center md:items-start space-y-6 md:col-span-1">
-                            {/* Avatar */}
-                            {user && (
-                                <AvatarUploadSimple
-                                    currentAvatarUrl={profile?.avatar_url}
-                                    userId={user.id}
-                                    onAvatarUpdated={handleAvatarUpdated}
-                                />
-                            )}
-                            {/* Logo entreprise */}
-                            {user && (
-                                <LogoUploadSimple
-                                    currentLogoUrl={profile?.logo_url}
-                                    userId={user.id}
-                                    onLogoUpdated={handleLogoUpdated}
-                                />
-                            )}
-                            {/* Infos principales */}
-                            <div className="w-full text-center md:text-left">
-                                <h1 className="text-2xl font-bold text-gray-900">
-                                    {profile?.first_name && profile?.last_name 
-                                        ? `${profile.first_name} ${profile.last_name}`
-                                        : 'Mon Profil'}
-                                </h1>
-                                <p className="text-gray-600 mt-1">
-                                    {profile?.email || user?.email}
-                                </p>
-                                {profile?.company && (
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        {profile.company}
+            <main className="flex-grow py-6 px-2 sm:px-4 lg:px-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Colonne gauche : images et infos principales */}
+                        <div className="space-y-6">
+                            {/* Avatar avec infos */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <User className="h-5 w-5" />
+                                        Photo de profil
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="text-center">
+                                    {user && (
+                                        <div className="flex justify-center mb-4">
+                                            <AvatarUploadSimple
+                                                currentAvatarUrl={profile?.avatar_url}
+                                                userId={user.id}
+                                                onAvatarUpdated={handleAvatarUpdated}
+                                            />
+                                        </div>
+                                    )}
+                                    <h1 className="text-xl font-bold text-gray-900 mb-1">
+                                        {profile?.first_name && profile?.last_name 
+                                            ? `${profile.first_name} ${profile.last_name}`
+                                            : 'Mon Profil'}
+                                    </h1>
+                                    <p className="text-gray-600 text-sm mb-4">
+                                        {profile?.email || user?.email}
                                     </p>
-                                )}
-                            </div>
-                            {/* Boutons d'action */}
-                            <div className="flex flex-col gap-2 self-center md:self-start">
-                                <Button 
-                                    onClick={() => navigate("/profile/edit")}
-                                    className="flex items-center gap-2"
-                                >
-                                    <Edit className="h-4 w-4" />
-                                    Modifier le profil
-                                </Button>
-                                <Button 
-                                    onClick={handleRefresh}
-                                    variant="outline"
-                                    className="flex items-center gap-2"
-                                >
-                                    🔄 Actualiser
-                                </Button>
-                            </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Logo entreprise */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Building2 className="h-5 w-5" />
+                                        Logo entreprise
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="text-center">
+                                    {user && (
+                                        <div className="flex justify-center mb-4">
+                                            <LogoUploadSimple
+                                                currentLogoUrl={profile?.logo_url}
+                                                userId={user.id}
+                                                onLogoUpdated={handleLogoUpdated}
+                                            />
+                                        </div>
+                                    )}
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                        {profile?.company || "Aucune entreprise"}
+                                    </h3>
+                                    <p className="text-gray-500 text-sm">
+                                        {profile?.company_name || ""}
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            {/* Bouton d'action */}
+                            <Card>
+                                <CardContent className="pt-6">
+                                    <Button 
+                                        onClick={() => navigate("/profile/edit")}
+                                        className="w-full"
+                                    >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Modifier le profil
+                                    </Button>
+                                </CardContent>
+                            </Card>
+
+                            {/* Gestion des paiements */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Building2 className="h-5 w-5" />
+                                        Gestion des paiements
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <StripeCustomerPortal />
+                                </CardContent>
+                            </Card>
                         </div>
-                        {/* Colonne droite : infos complémentaires, documents, etc. */}
-                        <div className="md:col-span-2 space-y-6">
+
+                        {/* Colonne 2 : informations personnelles, professionnelles et adresse */}
+                        <div className="space-y-6">
                             {/* Informations personnelles */}
                             <Card>
                                 <CardHeader>
@@ -213,18 +224,18 @@ const Profile = () => {
                                         Informations personnelles
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4" key={`profile-content-${forceRender}`}>
+                                <CardContent className="space-y-4" key={`profile-content-${forceRender}`}>
                                     <div key={`firstname-${forceRender}`}>
                                         <Label className="text-sm font-medium text-gray-500">Prénom</Label>
-        <p className="mt-1 text-sm text-gray-900">
-          {profile?.first_name || "Non renseigné"}
-        </p>
+                                        <p className="mt-1 text-sm text-gray-900">
+                                            {profile?.first_name || "Non renseigné"}
+                                        </p>
                                     </div>
                                     <div key={`lastname-${forceRender}`}>
                                         <Label className="text-sm font-medium text-gray-500">Nom</Label>
-        <p className="mt-1 text-sm text-gray-900">
-          {profile?.last_name || "Non renseigné"}
-        </p>
+                                        <p className="mt-1 text-sm text-gray-900">
+                                            {profile?.last_name || "Non renseigné"}
+                                        </p>
                                     </div>
                                     <div>
                                         <Label className="text-sm font-medium text-gray-500">Email</Label>
@@ -238,22 +249,19 @@ const Profile = () => {
                                     </div>
                                     <div key={`phone-${forceRender}`}>
                                         <Label className="text-sm font-medium text-gray-500">Téléphone</Label>
-        <p className="mt-1 text-sm text-gray-900">
-          {profile?.phone || "Non renseigné"}
-        </p>
-                                    </div>
-                                    <div>
-                                        <Label className="text-sm font-medium text-gray-500">Numéro de téléphone</Label>
-                                        <p className="mt-1 text-sm text-gray-900">{profile?.phone_number || "Non renseigné"}</p>
+                                        <p className="mt-1 text-sm text-gray-900">
+                                            {profile?.phone || "Non renseigné"}
+                                        </p>
                                     </div>
                                     {profile?.presentation && (
-                                        <div className="md:col-span-2">
+                                        <div>
                                             <Label className="text-sm font-medium text-gray-500">Présentation</Label>
                                             <p className="mt-1 text-sm text-gray-900">{profile.presentation}</p>
                                         </div>
                                     )}
                                 </CardContent>
                             </Card>
+
                             {/* Informations professionnelles */}
                             <Card>
                                 <CardHeader>
@@ -262,7 +270,7 @@ const Profile = () => {
                                         Informations professionnelles
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <CardContent className="space-y-4">
                                     <div>
                                         <Label className="text-sm font-medium text-gray-500">Entreprise</Label>
                                         <p className="mt-1 text-sm text-gray-900">{profile?.company || "Non renseigné"}</p>
@@ -273,7 +281,39 @@ const Profile = () => {
                                     </div>
                                 </CardContent>
                             </Card>
-                            {/* Documents */}
+
+                            {/* Adresse */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Building2 className="h-5 w-5" />
+                                        Adresse
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div>
+                                        <Label className="text-sm font-medium text-gray-500">Ville</Label>
+                                        <p className="mt-1 text-sm text-gray-900">{profile?.city || "Non renseigné"}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-sm font-medium text-gray-500">Adresse</Label>
+                                        <p className="mt-1 text-sm text-gray-900">{profile?.address || "Non renseigné"}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-sm font-medium text-gray-500">Code postal</Label>
+                                        <p className="mt-1 text-sm text-gray-900">{profile?.address_postal_code || "Non renseigné"}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-sm font-medium text-gray-500">Pays</Label>
+                                        <p className="mt-1 text-sm text-gray-900">{profile?.address_country || "Non renseigné"}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                        </div>
+
+                        {/* Colonne 3 : Documents */}
+                        <div className="space-y-6">
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -285,8 +325,6 @@ const Profile = () => {
                                     <DocumentsSection userId={user?.id || ''} />
                                 </CardContent>
                             </Card>
-                            {/* Portail client Stripe */}
-                            <StripeCustomerPortal />
                         </div>
                     </div>
                 </div>

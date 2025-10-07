@@ -15,19 +15,6 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[ENV CHECK]', {
-      VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? '✅' : '❌',
-      VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅' : '❌',
-      VITE_STRIPE_PUBLISHABLE_KEY: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? '✅' : '❌',
-      VITE_TAWK_TO_ID: import.meta.env.VITE_TAWK_TO_ID ? '✅' : '❌',
-      VITE_CHATWOOT_TOKEN: import.meta.env.VITE_CHATWOOT_TOKEN ? '✅' : '❌',
-      VITE_GOOGLE_ANALYTICS_ID: import.meta.env.VITE_GOOGLE_ANALYTICS_ID ? '✅' : '❌',
-      VITE_SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN ? '✅' : '❌',
-      VITE_SITE_URL: import.meta.env.VITE_SITE_URL ? '✅' : '❌',
-      MODE: import.meta.env.MODE,
-      DEV: import.meta.env.DEV,
-      PROD: import.meta.env.PROD
-    });
   }, []);
 
   useEffect(() => {

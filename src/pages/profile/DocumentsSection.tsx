@@ -50,10 +50,6 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDocumentType, setSelectedDocumentType] = useState<string>('other');
   
-  // Debug log pour voir les changements de selectedDocumentType
-  useEffect(() => {
-    console.log('🔍 DocumentsSection - selectedDocumentType changé:', selectedDocumentType);
-  }, [selectedDocumentType]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [forceRender, setForceRender] = useState(0);
 
@@ -63,26 +59,11 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
 
   const loadDocuments = async () => {
     try {
-      console.log('🔄 Chargement des documents pour userId:', userId);
       const result = await apiClient.get(`/users/${userId}/documents`);
       
       if (result.success && result.data) {
         // S'assurer que result.data est un tableau
         const documentsArray = Array.isArray(result.data) ? result.data : [];
-        console.log('✅ Documents chargés:', documentsArray.length);
-        
-        // Ajouter des logs de debug pour voir les données
-        documentsArray.forEach((doc, index) => {
-          console.log(`🔍 Document ${index}:`, {
-            id: doc.id,
-            file_name: doc.file_name,
-            document_type: doc.document_type,
-            upload_date: doc.upload_date,
-            uploaded_at: doc.uploaded_at,
-            file_path: doc.file_path,
-            file_url: doc.file_url
-          });
-        });
         
         setDocuments(documentsArray);
       } else {
@@ -99,13 +80,11 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
   };
 
   const handleRefresh = () => {
-    console.log('🔄 Rafraîchissement manuel des documents...');
     setRefreshKey(prev => prev + 1);
     setForceRender(prev => prev + 1);
   };
 
   const handleFileUploaded = (fileData: any) => {
-    console.log('✅ Document uploadé, rafraîchissement de la liste...');
     // Déclencher un rafraîchissement complet
     setRefreshKey(prev => prev + 1);
     setForceRender(prev => prev + 1);
@@ -247,32 +226,34 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
             <FolderOpen className="h-5 w-5 text-blue-600" />
             <CardTitle>Documents</CardTitle>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              🔄 Actualiser
-            </Button>
-            <Button
-              onClick={() => {
-                setShowUpload(!showUpload);
-                // Ne plus réinitialiser automatiquement le type de document
-                // L'utilisateur peut garder son choix précédent
-              }}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter un document
-            </Button>
-          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            🔄 Actualiser
+          </Button>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6" key={`documents-content-${forceRender}`}>
+        {/* Bouton Ajouter un document */}
+        <div className="flex justify-start">
+          <Button
+            onClick={() => {
+              setShowUpload(!showUpload);
+              // Ne plus réinitialiser automatiquement le type de document
+              // L'utilisateur peut garder son choix précédent
+            }}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Ajouter un document
+          </Button>
+        </div>
+
         {/* Informations de sécurité */}
         <Alert className="border-green-200 bg-green-50">
           <Shield className="h-4 w-4 text-green-600" />
@@ -292,7 +273,6 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({ userId }) =>
               <select
                 value={selectedDocumentType}
                 onChange={(e) => {
-                  console.log('🔍 DocumentsSection - Changement de type sélectionné:', e.target.value);
                   setSelectedDocumentType(e.target.value);
                 }}
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
