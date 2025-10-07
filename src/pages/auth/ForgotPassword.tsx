@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 // Logger supprimé - utilisation de console directement
 const ForgotPassword = () => {
@@ -30,18 +30,19 @@ const ForgotPassword = () => {
       const redirectUrl = `${window.location.origin}/auth/reset-password`;
       console.log('🔗 URL de redirection:', redirectUrl);
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
+      const result = await apiClient.post('/auth/forgot-password', {
+        email: email,
+        redirectUrl: redirectUrl
       });
 
-      if (error) {
-        console.error('❌ Erreur:', error);
-        if (error.message?.includes('rate limit')) {
+      if (!result.success) {
+        console.error('❌ Erreur:', result.error);
+        if (result.error?.includes('rate limit')) {
           setError("Trop de tentatives. Veuillez attendre quelques minutes avant de réessayer.");
-        } else if (error.message?.includes('invalid email')) {
+        } else if (result.error?.includes('invalid email')) {
           setError("Adresse email invalide.");
         } else {
-          throw error;
+          setError(result.error || 'Erreur lors de l\'envoi de l\'email');
         }
         return;
       }

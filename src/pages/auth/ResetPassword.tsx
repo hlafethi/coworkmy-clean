@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { apiClient } from '@/lib/api-client'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
@@ -38,11 +38,11 @@ export default function ResetPassword() {
           setError('Token de réinitialisation manquant');
           return;
         }
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash,
-          type: 'recovery'
+        // Vérification du token via l'API PostgreSQL
+        const result = await apiClient.post('/auth/verify-reset-token', {
+          token: token_hash
         })
-        if (error) throw error
+        if (!result.success) throw new Error(result.error)
         console.log('Token vérifié avec succès')
       } catch (error) {
         console.error('Erreur de vérification du token:', error)
@@ -70,11 +70,12 @@ export default function ResetPassword() {
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const result = await apiClient.post('/auth/reset-password', {
+        token: token_hash,
         password: password
       })
 
-      if (error) throw error
+      if (!result.success) throw new Error(result.error)
 
       alert('Mot de passe mis à jour avec succès !')
       navigate('/dashboard')

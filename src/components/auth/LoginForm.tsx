@@ -96,6 +96,15 @@ const LoginForm = () => {
       >
         {isLoading ? 'Connexion...' : 'Se connecter'}
       </Button>
+      
+      <div className="text-center mt-4">
+        <a 
+          href="/auth/forgot-password" 
+          className="text-sm text-blue-600 hover:text-blue-800 underline"
+        >
+          Mot de passe oublié ?
+        </a>
+      </div>
     </form>
   );
 };
