@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useAuth } from "@/context/AuthContextPostgreSQL";
 // Logger supprimé - utilisation de console directement
 interface Space {
   id: string;
@@ -23,6 +24,20 @@ interface Space {
 }
 
 const Services = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Fonction pour gérer le clic sur "Réserver"
+  const handleReserve = (spaceId: string) => {
+    if (!user) {
+      // Rediriger vers l'inscription si l'utilisateur n'est pas connecté
+      navigate("/auth/register");
+      return;
+    }
+    // Rediriger vers la page de réservation si l'utilisateur est connecté
+    navigate(`/booking/${spaceId}`);
+  };
+
   // Fonction pour formater les tarifs avec calcul TTC
   const formatPrice = (space: Space) => {
     // Logique de prix améliorée - vérifier le pricing_type d'abord
@@ -184,8 +199,11 @@ const Services = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="pt-3">
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors duration-200" asChild>
-                    <Link to={`/booking/${space.id}`}>Réserver</Link>
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors duration-200"
+                    onClick={() => handleReserve(space.id)}
+                  >
+                    Réserver
                   </Button>
                 </CardFooter>
               </Card>
