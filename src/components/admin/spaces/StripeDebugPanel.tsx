@@ -135,7 +135,7 @@ export default function StripeDebugPanel({ className }: StripeDebugPanelProps) {
 
       // Synchroniser le premier espace actif
       const space = activeSpaces[0];
-      const response = await apiClient.post(`/stripe/sync-space/${space.id}`);
+      const response = await apiClient.post(`/stripe/sync-all`);
       
       if (response.success) {
         addResult({
