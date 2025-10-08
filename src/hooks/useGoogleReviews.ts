@@ -51,55 +51,9 @@ interface GoogleReviewsResponse {
 }
 
 const fetchGoogleReviews = async (): Promise<GoogleReview[]> => {
-  if (import.meta.env.DEV) {
-    return [];
-  }
-
-  try {
-    // Récupération des clés API
-    const { data: keys, error: keysError } = await supabase
-      .from('google_api_keys')
-      .select('api_key, place_id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (keysError) {
-      console.error('Erreur lors de la récupération des clés:', keysError);
-      throw new Error('Configuration Google Business non trouvée');
-    }
-
-    if (!keys || !keys.api_key || !keys.place_id) {
-      throw new Error('Clés API Google non configurées');
-    }
-
-    // Utilisation de l'Edge Function Supabase
-    const { data, error } = await supabase.functions.invoke('get-google-reviews', {
-      body: {
-        placeId: keys.place_id,
-        apiKey: keys.api_key
-      }
-    });
-
-    if (error) {
-      console.error('Erreur Edge Function:', error);
-      throw new Error(`Erreur serveur: ${error.message}`);
-    }
-
-    if (!data || data.status !== 'OK') {
-      console.error('Erreur Google Places:', {
-        status: data?.status,
-        error_message: data?.error_message,
-        placeId: keys.place_id
-      });
-      throw new Error(`Erreur Google Places: ${data?.status}${data?.error_message ? ` - ${data.error_message}` : ''}`);
-    }
-
-    return data.result.reviews;
-  } catch (error) {
-    console.error('Erreur lors de la récupération des avis:', error);
-    throw error;
-  }
+  // Supabase désactivé - retourner des données vides
+  console.log('Google Reviews désactivé - utilisation de PostgreSQL uniquement');
+  return [];
 };
 
 export const useGoogleReviews = () => {
@@ -137,74 +91,18 @@ export function useGoogleApiSettings() {
   return useQuery<GoogleApiSettings | null>({
     queryKey: ["google-api-settings"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("google_api_settings")
-          .select("*")
-          .maybeSingle();
-          
-        if (error) {
-          console.error("Error fetching Google API settings:", error);
-          throw error;
-        }
-        
-        if (!data) {
-          console.warn("No Google API settings found in database");
-          return null;
-        }
-        
-        return {
-          place_id: data.place_id,
-          min_rating: data.min_rating || 4,
-          max_reviews: data.max_reviews || 5
-        };
-      } catch (error) {
-        console.error("Failed to fetch Google API settings:", error);
-        throw error;
-      }
+      // Supabase désactivé - retourner null
+      console.log("Google API Settings désactivé - utilisation de PostgreSQL uniquement");
+      return null;
     }
   });
 }
 
 export function useSaveGoogleApiSettings() {
   const saveSettings = async (settings: GoogleApiSettings) => {
-    try {
-      // Check if settings record exists
-      const { data: existingSettings } = await supabase
-        .from("google_api_settings")
-        .select("id")
-        .maybeSingle();
-      
-      let result;
-      
-      if (existingSettings?.id) {
-        // Update existing record
-        result = await supabase
-          .from("google_api_settings")
-          .update({
-            place_id: settings.place_id,
-            min_rating: settings.min_rating,
-            max_reviews: settings.max_reviews,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingSettings.id);
-      } else {
-        // Insert new record
-        result = await supabase
-          .from("google_api_settings")
-          .insert({
-            place_id: settings.place_id,
-            min_rating: settings.min_rating,
-            max_reviews: settings.max_reviews
-          });
-      }
-        
-      if (result.error) throw result.error;
-      return { success: true };
-    } catch (error: any) {
-      console.error("Failed to save Google API settings:", error);
-      return { success: false, error: error.message };
-    }
+    // Supabase désactivé - ne rien faire
+    console.log("Save Google API Settings désactivé - utilisation de PostgreSQL uniquement");
+    return { success: true };
   };
   
   return { saveSettings };
