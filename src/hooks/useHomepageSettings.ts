@@ -39,11 +39,14 @@ export function useHomepageSettings() {
       try {
         
         // Récupérer les paramètres de la page d'accueil
-        const homepageResponse = await fetch('http://localhost:5000/api/homepage-settings');
+        const apiBaseUrl = typeof window !== 'undefined' && window.APP_CONFIG?.API_URL 
+          ? `${window.APP_CONFIG.API_URL}/api` 
+          : 'https://coworkmy.fr/api';
+        const homepageResponse = await fetch(`${apiBaseUrl}/homepage-settings`);
         const homepageData = await homepageResponse.json();
         
         // Récupérer les paramètres de l'entreprise
-        const companyResponse = await fetch('http://localhost:5000/api/company-settings');
+        const companyResponse = await fetch(`${apiBaseUrl}/company-settings`);
         const companyData = await companyResponse.json();
         
         if (homepageData.success && homepageData.data) {

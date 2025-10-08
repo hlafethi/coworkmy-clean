@@ -19,7 +19,10 @@ export class AdminSupportService {
       // Utilisation temporaire de l'endpoint sans authentification pour contourner le problème de token
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
-      const response = await fetch('http://localhost:5000/api/admin/support/tickets-no-auth', {
+      const apiBaseUrl = typeof window !== 'undefined' && window.APP_CONFIG?.API_URL 
+        ? `${window.APP_CONFIG.API_URL}/api` 
+        : 'https://coworkmy.fr/api';
+      const response = await fetch(`${apiBaseUrl}/admin/support/tickets-no-auth`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +53,7 @@ export class AdminSupportService {
       console.log('📝 Ticket ID:', ticketId);
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
-      const response = await fetch(`http://localhost:5000/api/admin/support/tickets/${ticketId}/responses-no-auth`, {
+      const response = await fetch(`https://coworkmy.fr/api/admin/support/tickets/${ticketId}/responses-no-auth`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +85,7 @@ export class AdminSupportService {
       console.log('📝 Données envoyées:', { ticketId, message });
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
-      const response = await fetch(`http://localhost:5000/api/admin/support/tickets/${ticketId}/responses-no-auth`, {
+      const response = await fetch(`https://coworkmy.fr/api/admin/support/tickets/${ticketId}/responses-no-auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +118,7 @@ export class AdminSupportService {
     try {
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
-      const response = await fetch('http://localhost:5000/api/admin/support/kb-articles', {
+      const response = await fetch('https://coworkmy.fr/api/admin/support/kb-articles', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +147,7 @@ export class AdminSupportService {
     try {
       
       // Appel direct à l'API sans passer par apiClient pour éviter les problèmes de cache
-      const response = await fetch('http://localhost:5000/api/admin/support/faqs', {
+      const response = await fetch('https://coworkmy.fr/api/admin/support/faqs', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
